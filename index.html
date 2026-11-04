@@ -6,613 +6,613 @@
 <!--GAME-START-->
 <title>Dino Island</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="theme-color" content="#0b3a4a">
+<meta name="theme-color" content="#1b8a9a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Nunito:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Nunito:wght@600;800;900&display=swap">
 <style>
-/* Layout: one full-screen canvas (the island), a thin HUD strip on top, modal cards for start / game over. */
+/* Layout: one-screen app. Stats bar → orders strip → 7×9 merge board → item info → tabs. Island tab swaps the middle. */
 :root {
-  --sea-deep: #0b3a4a;
-  --sea: #13708a;
-  --sand: #f2d38b;
-  --leaf: #4caf50;
-  --lava: #ff6a1f;
-  --ink: #fff7e6;
-  --card: rgba(9, 34, 44, 0.86);
+  --sea: #1b8a9a;
+  --sea-deep: #0f5965;
+  --sand: #f6e2ae;
+  --sand-2: #efd598;
+  --leaf: #3f9e4f;
+  --coral: #ff7a59;
+  --sun: #ffc94a;
+  --ink: #2b2118;
+  --paper: #fffaf0;
+  --muted: #8a7a62;
   --display: "Russo One", "Arial Black", system-ui, sans-serif;
   --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: dark;
+  --emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  --cell: 48px;
+  color-scheme: light;
 }
+* { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; overflow: hidden; }
 body {
-  background: var(--sea-deep);
-  color: var(--ink);
-  font-family: var(--body);
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(180deg, #2aa7b5 0%, var(--sea) 45%, var(--sea-deep) 100%);
+  color: var(--ink); font-family: var(--body);
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
 }
-#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-#hud {
-  position: fixed; top: 0; left: 0; right: 0;
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
-  padding-bottom: 10px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  font-family: var(--display); font-size: 20px;
-  text-shadow: 0 2px 0 rgba(0,0,0,.35);
-  pointer-events: none;
-}
-#hud .stat { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
-#hearts { letter-spacing: 2px; color: #ff5470; }
-#pauseBtn {
-  pointer-events: auto; font: inherit; font-size: 18px; color: var(--ink);
-  background: rgba(0,0,0,.25); border: 2px solid rgba(255,255,255,.35); border-radius: 12px;
-  width: 42px; height: 38px; cursor: pointer;
-}
-.overlay {
-  position: fixed; inset: 0; display: grid; place-items: center;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  background: rgba(4, 20, 28, .45);
-}
-.card {
-  width: min(360px, 100%); box-sizing: border-box;
-  background: var(--card); border: 2px solid rgba(242, 211, 139, .35); border-radius: 22px;
-  padding: 26px 22px; text-align: center; display: grid; gap: 14px;
-  box-shadow: 0 18px 40px rgba(0,0,0,.4);
-}
-.card h1 {
-  font-family: var(--display); font-weight: 400; margin: 0;
-  font-size: clamp(34px, 11vw, 46px); line-height: 1; color: var(--sand);
-  text-shadow: 0 4px 0 #b5642a; text-wrap: balance;
-}
-.card h2 { font-family: var(--display); font-weight: 400; margin: 0; font-size: 30px; color: var(--lava); }
-.card p { margin: 0; font-size: 16px; line-height: 1.45; opacity: .92; }
-.card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 15px; text-align: left; }
-.card li { display: flex; gap: 10px; align-items: baseline; }
-.card li b { font-family: var(--display); font-weight: 400; color: var(--sand); min-width: 22px; }
-.big { font-family: var(--display); font-size: 54px; line-height: 1; color: var(--sand); font-variant-numeric: tabular-nums; }
-.btn {
-  font-family: var(--display); font-size: 22px; color: #3a1a05;
-  background: linear-gradient(#ffd166, #ff9f1c); border: none; border-radius: 16px;
-  padding: 14px 18px; cursor: pointer; box-shadow: 0 5px 0 #b5642a;
-}
-.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #b5642a; }
-.btn:focus-visible, #pauseBtn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
-.small { font-size: 13px; opacity: .7; }
 [hidden] { display: none !important; }
+button { font-family: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+#app {
+  height: 100%; display: flex; flex-direction: column; gap: 8px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  max-width: 560px; margin: 0 auto;
+}
+
+/* stats */
+#stats { display: flex; gap: 6px; align-items: center; }
+.pill {
+  display: flex; align-items: center; gap: 5px; background: var(--paper); border-radius: 999px;
+  padding: 4px 10px 4px 6px; font-family: var(--display); font-size: 16px; font-variant-numeric: tabular-nums;
+  box-shadow: 0 3px 0 rgba(0,0,0,.18); border: none; min-width: 0;
+}
+.pill .ico { font-family: var(--emoji); font-size: 18px; }
+.pill small { font-family: var(--body); font-weight: 800; font-size: 10px; color: var(--muted); }
+#energyPill { flex-direction: row; }
+#energyPill .col { display: flex; flex-direction: column; line-height: 1; }
+#energyPill .plus { background: var(--leaf); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: grid; place-items: center; font-size: 14px; margin-left: 2px; }
+#stats .grow { flex: 1; }
+#chapter { font-family: var(--display); color: #fff; font-size: 13px; text-shadow: 0 2px 0 rgba(0,0,0,.25); text-align: right; line-height: 1.1; }
+
+/* orders */
+#orders { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; min-height: 96px; }
+#orders::-webkit-scrollbar { display: none; }
+.order {
+  flex: 0 0 auto; min-width: 120px; background: var(--paper); border-radius: 16px; padding: 8px 10px;
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center;
+  box-shadow: 0 3px 0 rgba(0,0,0,.18); position: relative; transition: transform .2s;
+}
+.order.ready { background: #eaffd9; box-shadow: 0 3px 0 #6bb04a; }
+.order .who { font-family: var(--emoji); font-size: 30px; grid-row: span 2; line-height: 1; }
+.order .needs { display: flex; gap: 4px; }
+.need { position: relative; width: 36px; height: 36px; border-radius: 10px; background: var(--sand); display: grid; place-items: center; font-family: var(--emoji); font-size: 22px; }
+.need.have::after { content: "✓"; position: absolute; right: -4px; bottom: -4px; background: var(--leaf); color: #fff; font: 900 11px/16px var(--body); width: 16px; height: 16px; border-radius: 50%; text-align: center; }
+.order .reward { font-size: 12px; font-weight: 800; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.order .go { grid-column: 1 / -1; background: var(--leaf); color: #fff; border: none; border-radius: 10px; font: 400 14px var(--display); padding: 6px; box-shadow: 0 3px 0 #2c7a3a; }
+.order .go:active { transform: translateY(2px); box-shadow: 0 1px 0 #2c7a3a; }
+
+/* board */
+#boardWrap { flex: 1; min-height: 0; display: grid; place-items: center; }
+#board {
+  display: grid; grid-template-columns: repeat(7, var(--cell)); grid-auto-rows: var(--cell); gap: 3px;
+  padding: 6px; background: #c9a86a; border-radius: 18px; box-shadow: inset 0 0 0 3px rgba(255,255,255,.25), 0 6px 0 rgba(0,0,0,.2);
+}
+.cell {
+  position: relative; border-radius: 10px; background: var(--sand); display: grid; place-items: center;
+  font-family: var(--emoji); font-size: calc(var(--cell) * .62); line-height: 1; touch-action: none;
+}
+.cell:nth-child(odd) { background: var(--sand-2); }
+.cell .it { transition: transform .15s; pointer-events: none; }
+.cell .lv { position: absolute; left: 3px; bottom: 2px; font: 900 calc(var(--cell) * .2) var(--body); color: var(--muted); pointer-events: none; }
+.cell.gen { background: radial-gradient(circle, #fff3c4 0%, #ffd56b 100%); box-shadow: inset 0 0 0 2px #e0a52b; }
+.cell.gen::before { content: "⚡"; position: absolute; right: 2px; top: 1px; font-size: calc(var(--cell) * .22); }
+.cell.sel { box-shadow: inset 0 0 0 3px #fff, 0 0 0 2px var(--coral); z-index: 2; }
+.cell.match::after { content: "✓"; position: absolute; right: 2px; top: 2px; background: var(--leaf); color: #fff; font: 900 calc(var(--cell)*.2)/calc(var(--cell)*.3) var(--body); width: calc(var(--cell)*.3); height: calc(var(--cell)*.3); border-radius: 50%; text-align: center; pointer-events: none; }
+.cell.locked { background: #7aa35a; }
+.cell.locked .it { opacity: .45; filter: grayscale(.5); transform: scale(.8); }
+.cell.locked::before { content: ""; position: absolute; inset: 0; border-radius: 10px; pointer-events: none;
+  background: repeating-linear-gradient(45deg, rgba(40,90,30,.55) 0 4px, transparent 4px 10px), repeating-linear-gradient(-45deg, rgba(40,90,30,.45) 0 3px, transparent 3px 11px); }
+.cell.drag-src .it { opacity: .25; }
+.cell.hover { box-shadow: inset 0 0 0 3px var(--sun); }
+.cell.pop .it { animation: pop .35s ease-out; }
+.cell.shake { animation: shake .3s; }
+@keyframes pop { 0% { transform: scale(.3); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+@keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+#ghost { position: fixed; z-index: 50; pointer-events: none; font-family: var(--emoji); transform: translate(-50%, -60%) scale(1.25); filter: drop-shadow(0 6px 6px rgba(0,0,0,.3)); line-height: 1; }
+
+/* info bar */
+#info { display: flex; align-items: center; gap: 10px; background: var(--paper); border-radius: 16px; padding: 8px 10px; min-height: 56px; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+#info .big { font-family: var(--emoji); font-size: 30px; line-height: 1; }
+#info .txt { flex: 1; min-width: 0; }
+#info .name { font-family: var(--display); font-size: 15px; }
+#info .desc { font-size: 12px; color: var(--muted); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chainrow { font-family: var(--emoji); font-size: 14px; letter-spacing: 1px; }
+.chainrow .q { filter: grayscale(1) brightness(.3); opacity: .35; }
+#sellBtn { border: none; background: var(--coral); color: #fff; border-radius: 12px; padding: 8px 10px; font: 400 13px var(--display); box-shadow: 0 3px 0 #c4522f; }
+
+/* tabs */
+#tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tab { position: relative; border: none; border-radius: 14px; padding: 10px; font: 400 16px var(--display); background: rgba(255,255,255,.35); color: #fff; }
+.tab.on { background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+.tab .badge { position: absolute; top: -4px; right: 10px; background: var(--coral); color: #fff; font: 900 11px/18px var(--body); min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; }
+
+/* island */
+#islandView { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; }
+#scene {
+  position: relative; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; flex: 0 0 auto; border-radius: 22px; overflow: hidden;
+  background: radial-gradient(ellipse 48% 40% at 50% 56%, #7bd389 0 70%, var(--sand) 71% 86%, #7fdde3 87% 93%, transparent 94%), linear-gradient(#5cc4d0, #1b8a9a);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.25);
+}
+.spot { position: absolute; transform: translate(-50%, -50%); font-family: var(--emoji); font-size: clamp(24px, 8vw, 38px); line-height: 1; transition: filter .4s, transform .4s; }
+.spot.off { filter: grayscale(1) brightness(1.4) opacity(.35); }
+.spot.next { animation: bob 1.2s ease-in-out infinite; filter: none; }
+.spot.next::after { content: "❗"; position: absolute; right: -12px; top: -12px; font-size: 16px; }
+@keyframes bob { 50% { transform: translate(-50%, -62%); } }
+.card { background: var(--paper); border-radius: 18px; padding: 14px; box-shadow: 0 3px 0 rgba(0,0,0,.18); display: grid; gap: 8px; }
+.card h3 { margin: 0; font: 400 18px var(--display); text-wrap: balance; }
+.card p { margin: 0; font-size: 14px; line-height: 1.4; }
+.progress { height: 10px; background: #eadfc6; border-radius: 6px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--sun), var(--coral)); }
+.btn { border: none; border-radius: 14px; padding: 12px; font: 400 17px var(--display); background: linear-gradient(#ffd166, #ff9f1c); color: #3a1a05; box-shadow: 0 4px 0 #b5642a; }
+.btn:disabled { background: #e3d9c4; color: var(--muted); box-shadow: 0 4px 0 #c4b89d; }
+.btn.ghost { background: transparent; box-shadow: none; color: var(--muted); font: 800 13px var(--body); padding: 6px; }
+.clues { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
+.clues li { display: flex; gap: 8px; }
+.clues .e { font-family: var(--emoji); }
+
+/* dialog + toast */
+#dialog { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(10,40,45,.35);
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); }
+#dialog .box { width: min(520px, 100%); background: var(--paper); border-radius: 20px; padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+#dialog .av { font-family: var(--emoji); font-size: 48px; line-height: 1; grid-row: span 2; }
+#dialog .who { font: 400 16px var(--display); color: var(--coral); }
+#dialog .say { font-size: 16px; line-height: 1.4; font-weight: 600; }
+#dialog .btn { grid-column: 1 / -1; }
+#toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 60px); transform: translateX(-50%); z-index: 70; background: rgba(43,33,24,.92); color: #fff; padding: 8px 14px; border-radius: 12px; font-weight: 800; font-size: 14px; max-width: calc(100% - 32px); text-align: center; transition: opacity .3s; pointer-events: none; }
+#shop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(10,40,45,.45); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+#shop .card { width: min(340px, 100%); text-align: center; }
+.bump { animation: bump .4s; }
+@keyframes bump { 50% { transform: scale(1.2); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 <!--HEAD-END-->
 </head>
 <body>
-<canvas id="game"></canvas>
+<div id="app">
+  <div id="stats">
+    <button class="pill" id="energyPill" aria-label="Энергия, купить ещё"><span class="ico">⚡</span><span class="col"><span id="energy">100</span><small id="energyTimer"></small></span><span class="plus">+</span></button>
+    <div class="pill" id="coinPill"><span class="ico">🪙</span><span id="coins">0</span></div>
+    <div class="pill" id="starPill"><span class="ico">⭐</span><span id="stars">0</span></div>
+    <div class="grow"></div>
+    <div id="chapter"></div>
+  </div>
 
-<div id="hud" hidden>
-  <div class="stat" id="hearts">♥♥♥</div>
-  <div class="stat"><span>🥚</span><span id="score">0</span></div>
-  <div class="stat"><span id="level">Ур. 1</span><button id="pauseBtn" aria-label="Пауза">II</button></div>
-</div>
+  <div id="mergeView" style="display:contents">
+    <div id="orders"></div>
+    <div id="boardWrap"><div id="board"></div></div>
+    <div id="info"></div>
+  </div>
 
-<div class="overlay" id="startScreen">
-  <div class="card">
-    <h1>Dino Island</h1>
-    <p>Вулкан проснулся! Помоги динозаврику собрать яйца и не попасть под лаву.</p>
-    <ul>
-      <li><b>👆</b><span>Веди пальцем по экрану — дино бежит туда</span></li>
-      <li><b>🥚</b><span>Собирай яйца, золотое даёт +3</span></li>
-      <li><b>🔥</b><span>Красный круг — сюда упадёт лава, убегай</span></li>
-      <li><b>🍓</b><span>Ягода восстанавливает сердечко</span></li>
-    </ul>
-    <button class="btn" id="startBtn">Играть</button>
-    <p class="small" id="bestStart"></p>
+  <div id="islandView" hidden>
+    <div id="scene"></div>
+    <div class="card" id="taskCard"></div>
+    <div class="card"><h3>🔍 Улики</h3><ul class="clues" id="clues"></ul></div>
+    <div class="card"><button class="btn ghost" id="resetBtn">Начать игру заново</button></div>
+  </div>
+
+  <div id="tabs">
+    <button class="tab on" id="tabMerge">🧩 Поле<span class="badge" id="badgeMerge" hidden></span></button>
+    <button class="tab" id="tabIsland">🏝️ Остров<span class="badge" id="badgeIsland" hidden>!</span></button>
   </div>
 </div>
 
-<div class="overlay" id="pauseScreen" hidden>
-  <div class="card">
-    <h2>Пауза</h2>
-    <button class="btn" id="resumeBtn">Продолжить</button>
-  </div>
-</div>
-
-<div class="overlay" id="overScreen" hidden>
-  <div class="card">
-    <h2>Ой, лава!</h2>
-    <div class="big" id="finalScore">0</div>
-    <p id="finalText">яиц собрано</p>
-    <p class="small" id="bestOver"></p>
-    <button class="btn" id="againBtn">Ещё раз</button>
-  </div>
-</div>
+<div id="ghost" hidden></div>
+<div id="toast" style="opacity:0"></div>
+<div id="dialog" hidden><div class="box"><div class="av" id="dAv"></div><div class="who" id="dWho"></div><div class="say" id="dSay"></div><button class="btn" id="dNext">Дальше</button></div></div>
+<div id="shop" hidden><div class="card">
+  <h3>⚡ Энергия</h3>
+  <p>Энергия тратится на гнёзда и деревья. Она восстанавливается сама: +1 каждые 12 секунд.</p>
+  <button class="btn" id="buyEnergy">+25 ⚡ за 20 🪙</button>
+  <button class="btn ghost" id="closeShop">Закрыть</button>
+</div></div>
 
 <script>
 (() => {
-  const cvs = document.getElementById('game');
-  const ctx = cvs.getContext('2d');
-  const $ = id => document.getElementById(id);
-  const hud = $('hud'), startScreen = $('startScreen'), overScreen = $('overScreen'), pauseScreen = $('pauseScreen');
+'use strict';
+const $ = id => document.getElementById(id);
+const COLS = 7, ROWS = 9, N = COLS * ROWS;
+const MAX_E = 100, E_REGEN_MS = 12000, SAVE_KEY = 'dino-island-merge-v1';
 
-  // ---------- storage (safe) ----------
-  const store = {
-    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+// ---------- content ----------
+const CHAINS = {
+  egg:   { gen: '🧺', genName: 'Гнездо-корзинка', items: [['🥚','Яйцо'],['🐣','Вылупыш'],['🐥','Птенчик'],['🦎','Ящерка'],['🐊','Крокодильчик'],['🦕','Бронтозаврик'],['🦖','Тирекс']] },
+  fruit: { gen: '🌳', genName: 'Фруктовое дерево', items: [['🫐','Черника'],['🍒','Вишня'],['🍓','Клубника'],['🍑','Персик'],['🥭','Манго'],['🍍','Ананас'],['🍉','Арбуз']] },
+  shell: { gen: '⛱️', genName: 'Пляжный зонтик', items: [['🐚','Ракушка'],['🦪','Устрица'],['🦀','Краб'],['🐠','Рыбка'],['🐡','Рыба-ёж'],['🐙','Осьминог'],['🐬','Дельфин']] },
+  stone: { gen: '🌋', genName: 'Вулкан', items: [['🪨','Камень'],['🧱','Кирпич'],['🏺','Амфора'],['🗿','Идол'],['💎','Кристалл'],['👑','Корона']] }
+};
+const WHO = {
+  pip:   { e: '🦕', n: 'Пип' },
+  kora:  { e: '🐢', n: 'Бабушка Кора' },
+  kesha: { e: '🦜', n: 'Капитан Кеша' },
+  mo:    { e: '🦦', n: 'Выдра Мо' },
+  vetta: { e: '🦅', n: 'Ветта' }
+};
+// Island restoration = story chapters
+const TASKS = [
+  { t: 'Расчистить пляж', cost: 1, icon: '🏖️', x: 72, y: 74,
+    after: [['pip','Ура, пляж чистый! Ой… смотри, на песке огромные следы с тремя когтями.'],['pip','Такие лапы не у дино. Запишу в улики!']],
+    clue: ['🐾','Следы с тремя когтями на пляже'] },
+  { t: 'Построить хижину Пипа', cost: 2, icon: '🛖', x: 36, y: 58, unlock: 'shell', newWho: 'kesha',
+    after: [['kesha','Карр! Капитан Кеша на связи. Я видел ночью большую тень над вулканом!'],['kesha','Держи пляжный зонтик: под ним всегда найдутся ракушки.']],
+    clue: ['🌑','Ночью над вулканом летает большая тень'] },
+  { t: 'Починить мостик', cost: 2, icon: '🌉', x: 56, y: 44,
+    after: [['kora','Мостик снова цел, внучек. А это что под ним застряло?'],['kora','Перо! Длинное, кожистое… Такие перья я видела только в старых сказках.']],
+    clue: ['🪶','Огромное кожистое перо под мостиком'] },
+  { t: 'Зажечь фонарь у бухты', cost: 3, icon: '🏮', x: 18, y: 46, unlock: 'stone', newWho: 'mo',
+    after: [['mo','Привет! Я Мо, живу в бухте. Свет фонаря разбудил вулкан, и он начал выбрасывать камни.'],['mo','Камни можно соединять. Из них получаются настоящие сокровища!']],
+    clue: ['🔥','Вулкан снова проснулся'] },
+  { t: 'Посадить сад', cost: 3, icon: '🌻', x: 30, y: 76,
+    after: [['pip','Сад! Смотри, у пустых гнёзд лежат тёплые камешки из вулкана.'],['pip','Кто-то будто пытался согреть яйца…']],
+    clue: ['🪨','Тёплые камни возле пустых гнёзд'] },
+  { t: 'Построить причал', cost: 4, icon: '⛵', x: 86, y: 52,
+    after: [['kesha','Причал готов! С мачты видно: тень всегда улетает в пещеру на склоне вулкана.']],
+    clue: ['🕳️','Тень прячется в пещере на вулкане'] },
+  { t: 'Проложить тропу к вулкану', cost: 4, icon: '🥾', x: 36, y: 32,
+    after: [['kora','Тропа открыта. Будь осторожен, внучек. Ночи стали холодными, а вулкан тёплый…']],
+    clue: ['❄️','Ночи на острове стали холодными'] },
+  { t: 'Зажечь факелы в пещере', cost: 5, icon: '🔦', x: 64, y: 20, newWho: 'vetta',
+    after: [['vetta','Ой! Не бойтесь… Я Ветта, птерозавр. Это я уносила яйца.'],['vetta','Ночью было так холодно! Я грела их у лавы, чтобы малыши не замёрзли.'],['pip','Так вот кто это был! Ветта, давай построим тёплый дом для всех яиц!']],
+    clue: ['🦅','Тайна раскрыта: Ветта грела яйца у лавы'] },
+  { t: 'Построить тёплый инкубатор', cost: 5, icon: '🏡', x: 60, y: 66,
+    after: [['vetta','Здесь тепло даже холодной ночью. Спасибо! Теперь все яйца в безопасности.']],
+    clue: ['🥚','Все яйца теперь в тепле'] },
+  { t: 'Устроить праздник острова', cost: 6, icon: '🎉', x: 46, y: 46,
+    after: [['pip','Праздник! Остров снова живой, а у нас появился новый друг.'],['kora','Ты молодец. Заказы будут приходить и дальше, остров всегда рад помощи.']],
+    clue: ['🎆','Остров восстановлен!'] }
+];
+const INTRO = [
+  ['pip','Привет! Я Пип. Добро пожаловать на Дино-остров!'],
+  ['pip','У нас беда: по ночам пропадают яйца, а остров совсем зарос.'],
+  ['pip','Нажимай на корзинку 🧺 и дерево 🌳, чтобы получать предметы. Перетащи два одинаковых предмета друг на друга, и они станут лучше!'],
+  ['kora','А я Бабушка Кора. Выполняй наши заказы наверху, за них дают звёзды ⭐.'],
+  ['pip','За звёзды мы восстановим остров и раскроем тайну пропавших яиц!']
+];
+
+// ---------- state ----------
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; } },
+  set(v) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(v)); } catch (e) {} },
+  clear() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+};
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const idx = (r, c) => r * COLS + c;
+
+function newState() {
+  const board = Array(N).fill(null), locked = Array(N).fill(false);
+  board[idx(0, 1)] = { g: 'egg' };
+  board[idx(0, 5)] = { g: 'fruit' };
+  board[idx(2, 2)] = { c: 'egg', l: 1 };
+  board[idx(2, 4)] = { c: 'egg', l: 1 };
+  board[idx(3, 3)] = { c: 'fruit', l: 1 };
+  for (let r = 5; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const i = idx(r, c); locked[i] = true;
+    if (Math.random() < 0.7) board[i] = { c: pick(['egg', 'fruit']), l: 1 + (Math.random() < 0.3 ? 1 : 0) };
+  }
+  board[idx(7, 3)] = { gift: 1 };
+  return {
+    board, locked, energy: MAX_E, eTs: Date.now(), coins: 10, stars: 0,
+    task: 0, chains: ['egg', 'fruit'], who: ['pip', 'kora'], orders: [], oid: 1,
+    found: { 'egg:1': 1, 'fruit:1': 1 }, introDone: false, hintStar: false, sel: -1
   };
-  let best = parseInt(store.get('dino-island-best') || '0', 10) || 0;
-  const showBest = () => {
-    const t = best > 0 ? 'Рекорд: ' + best : '';
-    $('bestStart').textContent = t; $('bestOver').textContent = t;
-  };
-  showBest();
+}
+let S = store.get();
+if (!S || !S.board || S.board.length !== N) S = newState();
+const save = () => store.set(S);
 
-  // ---------- sound ----------
-  let audio = null;
-  function initAudio() {
-    if (audio) return;
-    try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audio = null; }
+// ---------- helpers ----------
+const item = (c, l) => CHAINS[c].items[l - 1];
+const maxL = c => CHAINS[c].items.length;
+function neighbors(i) {
+  const r = Math.floor(i / COLS), c = i % COLS, out = [];
+  if (r > 0) out.push(i - COLS); if (r < ROWS - 1) out.push(i + COLS);
+  if (c > 0) out.push(i - 1); if (c < COLS - 1) out.push(i + 1);
+  return out;
+}
+function nearestEmpty(from) {
+  const fr = Math.floor(from / COLS), fc = from % COLS; let best = -1, bd = 1e9;
+  for (let i = 0; i < N; i++) if (!S.board[i] && !S.locked[i]) {
+    const d = Math.hypot(Math.floor(i / COLS) - fr, i % COLS - fc);
+    if (d < bd) { bd = d; best = i; }
   }
-  function beep(freq, dur, type = 'square', vol = 0.08, slide = 0) {
-    if (!audio) return;
-    const t = audio.currentTime;
-    const o = audio.createOscillator(), g = audio.createGain();
-    o.type = type; o.frequency.setValueAtTime(freq, t);
-    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
-    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(audio.destination); o.start(t); o.stop(t + dur);
+  return best;
+}
+let toastT = 0;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = 0, 1800); }
+const bump = id => { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); };
+const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+// sound
+let ac = null;
+function tone(f, d = .1, type = 'sine', v = .07, delay = 0) {
+  if (!ac) return; const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
+}
+document.addEventListener('pointerdown', () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } else if (ac.state === 'suspended') ac.resume(); }, { once: false });
+const sfx = {
+  spawn: () => tone(520, .08, 'triangle'),
+  merge: l => { tone(400 + l * 80, .1, 'triangle', .08); tone(600 + l * 100, .14, 'triangle', .08, .07); },
+  deliver: () => [523, 659, 784].forEach((f, i) => tone(f, .14, 'square', .05, i * .08)),
+  build: () => [392, 523, 659, 784, 1046].forEach((f, i) => tone(f, .18, 'triangle', .07, i * .09)),
+  no: () => tone(180, .15, 'sawtooth', .05)
+};
+
+// ---------- energy ----------
+function tickEnergy() {
+  const now = Date.now();
+  if (S.energy >= MAX_E) { S.eTs = now; return; }
+  const gained = Math.floor((now - S.eTs) / E_REGEN_MS);
+  if (gained > 0) { S.energy = Math.min(MAX_E, S.energy + gained); S.eTs += gained * E_REGEN_MS; if (S.energy >= MAX_E) S.eTs = now; }
+}
+function useEnergy() {
+  tickEnergy();
+  if (S.energy <= 0) { sfx.no(); toast('Нет энергии! Подожди или купи ⚡'); openShop(); return false; }
+  if (S.energy >= MAX_E) S.eTs = Date.now();
+  S.energy--; return true;
+}
+
+// ---------- orders ----------
+function makeOrder() {
+  const prog = S.task;
+  const count = prog >= 2 && Math.random() < 0.45 ? 2 : 1;
+  const need = [];
+  for (let k = 0; k < count; k++) {
+    const c = pick(S.chains);
+    const cap = Math.min(maxL(c), 2 + Math.floor(prog * 0.5) + (Math.random() < 0.3 ? 1 : 0));
+    const lo = Math.max(1, cap - 2);
+    need.push({ c, l: lo + rnd(cap - lo + 1) });
   }
-  const sfx = {
-    egg() { beep(660, .08, 'square', .06); setTimeout(() => beep(990, .1, 'square', .06), 70); },
-    gold() { [660, 880, 1320].forEach((f, i) => setTimeout(() => beep(f, .1, 'square', .06), i * 70)); },
-    boom() { beep(140, .35, 'sawtooth', .1, -100); },
-    hurt() { beep(300, .3, 'triangle', .12, -220); },
-    heal() { beep(520, .12, 'sine', .1, 300); },
-    level() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, .12, 'triangle', .08), i * 90)); }
-  };
-  const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
-
-  // ---------- layout ----------
-  let W = 0, H = 0, DPR = 1, CX = 0, CY = 0, R = 100;
-  function resize() {
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
-    W = window.innerWidth; H = window.innerHeight;
-    cvs.width = Math.round(W * DPR); cvs.height = Math.round(H * DPR);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    const top = 64;
-    R = Math.max(80, Math.min(W * 0.46, (H - top - 24) * 0.46));
-    CX = W / 2; CY = top + (H - top) / 2;
+  const top = Math.max(...need.map(n => n.l));
+  const coins = need.reduce((s, n) => s + 2 * Math.pow(2, n.l - 1), 0);
+  return { id: S.oid++, who: pick(S.who), need, coins, stars: top >= 5 ? 2 : 1 };
+}
+function fillOrders() { while (S.orders.length < 3) S.orders.push(makeOrder()); }
+function availableCounts() {
+  const m = {};
+  S.board.forEach((b, i) => { if (b && b.c && !S.locked[i]) { const k = b.c + ':' + b.l; m[k] = (m[k] || 0) + 1; } });
+  return m;
+}
+function orderReady(o, counts) {
+  const m = Object.assign({}, counts);
+  return o.need.every(n => { const k = n.c + ':' + n.l; if (m[k] > 0) { m[k]--; return true; } return false; });
+}
+function deliver(id) {
+  const o = S.orders.find(x => x.id === id); if (!o || !orderReady(o, availableCounts())) return;
+  o.need.forEach(n => { const i = S.board.findIndex((b, j) => b && b.c === n.c && b.l === n.l && !S.locked[j]); if (i >= 0) S.board[i] = null; });
+  S.coins += o.coins; S.stars += o.stars; S.sel = -1;
+  S.orders = S.orders.filter(x => x.id !== id);
+  sfx.deliver(); buzz(20); bump('coinPill'); bump('starPill');
+  toast(`${WHO[o.who].n}: спасибо! +${o.coins} 🪙 +${o.stars} ⭐`);
+  fillOrders(); save(); render();
+  if (!S.hintStar && S.task === 0 && S.stars >= TASKS[0].cost) {
+    S.hintStar = true; save();
+    setTimeout(() => say([['pip','У тебя есть звезда! Открой вкладку «Остров» внизу и начни восстанавливать пляж.']]), 500);
   }
-  window.addEventListener('resize', resize);
-  resize();
-  const px = x => CX + x * R, py = y => CY + y * R;
+}
 
-  // ---------- world ----------
-  const VOLCANO_R = 0.2, EDGE = 0.9, DINO_R = 0.065;
-  const palms = [[-0.72, -0.38], [0.66, -0.5], [-0.55, 0.62], [0.74, 0.42], [0.05, -0.86]];
-  let state = 'menu';
-  let dino, eggs, bombs, puddles, berries, parts, score, level, lives, inv, bombTimer, berryTimer, goldTimer, shake, time, floatTexts;
-
-  function reset() {
-    dino = { x: 0, y: 0.5, vx: 0, vy: 0, face: 1, step: 0 };
-    eggs = []; bombs = []; puddles = []; berries = []; parts = []; floatTexts = [];
-    score = 0; level = 1; lives = 3; inv = 0; bombTimer = 1.5; berryTimer = 12; goldTimer = 9; shake = 0; time = 0;
-    spawnEgg(false);
-    updateHud();
+// ---------- board actions ----------
+let flash = {};
+function produce(i) {
+  const g = S.board[i].g, to = nearestEmpty(i);
+  if (to < 0) { sfx.no(); toast('Поле заполнено! Соедини или продай предметы.'); flash[i] = 'shake'; render(); return; }
+  if (!useEnergy()) { render(); return; }
+  const l = Math.random() < 0.15 ? 2 : 1;
+  S.board[to] = { c: g, l }; discover(g, l);
+  flash[to] = 'pop'; sfx.spawn(); save(); render();
+}
+function openGift(i) {
+  S.board[i] = null; let made = 0;
+  for (let k = 0; k < 3; k++) {
+    const to = nearestEmpty(i); if (to < 0) break;
+    const c = pick(S.chains), l = 1 + rnd(3);
+    S.board[to] = { c, l }; discover(c, l); flash[to] = 'pop'; made++;
   }
+  if (!made) { S.board[i] = { gift: 1 }; toast('Освободи место, чтобы открыть подарок'); return render(); }
+  S.energy = Math.min(MAX_E + 50, S.energy + 10);
+  sfx.merge(3); toast('Подарок! +10 ⚡ и предметы'); save(); render();
+}
+function discover(c, l) {
+  const k = c + ':' + l; if (S.found[k]) return;
+  S.found[k] = 1;
+  if (l > 1) { const bonus = l * 2; S.coins += bonus; const [e, n] = item(c, l); setTimeout(() => toast(`Новое: ${e} ${n}! +${bonus} 🪙`), 50); }
+}
+function drop(from, to) {
+  if (from === to || to < 0) return;
+  const A = S.board[from], B = S.board[to];
+  if (S.locked[to]) {
+    if (B && A.c && B.c === A.c && B.l === A.l && A.l < maxL(A.c)) { S.locked[to] = false; } else { flash[to] = 'shake'; sfx.no(); return render(); }
+  }
+  if (!B) { S.board[to] = A; S.board[from] = null; S.sel = to; }
+  else if (A.c && B.c === A.c && B.l === A.l && A.l < maxL(A.c)) {
+    const nl = A.l + 1;
+    S.board[to] = { c: A.c, l: nl }; S.board[from] = null; S.sel = to;
+    neighbors(to).forEach(n => { if (S.locked[n]) { S.locked[n] = false; flash[n] = 'pop'; } });
+    discover(A.c, nl); flash[to] = 'pop'; sfx.merge(nl); buzz(12);
+  } else if (A.c && B.c === A.c && B.l === A.l) { toast('Это уже максимальный уровень!'); return; }
+  else { S.board[to] = A; S.board[from] = B; S.sel = to; }
+  save(); render();
+}
+function sellSel() {
+  const b = S.board[S.sel]; if (!b || !b.c) return;
+  const price = b.l; S.coins += price; S.board[S.sel] = null; S.sel = -1;
+  toast(`Продано за ${price} 🪙`); bump('coinPill'); save(); render();
+}
 
-  function randomSpot(minDistFromDino = 0.3) {
-    for (let i = 0; i < 40; i++) {
-      const a = Math.random() * Math.PI * 2, r = VOLCANO_R + 0.1 + Math.random() * (EDGE - VOLCANO_R - 0.15);
-      const x = Math.cos(a) * r, y = Math.sin(a) * r;
-      if (!dino || Math.hypot(x - dino.x, y - dino.y) > minDistFromDino) return { x, y };
+// ---------- rendering ----------
+let tab = 'merge';
+function render() {
+  tickEnergy();
+  $('energy').textContent = S.energy; $('coins').textContent = S.coins; $('stars').textContent = S.stars;
+  $('chapter').innerHTML = S.task < TASKS.length ? `Глава ${S.task + 1}/${TASKS.length}<br>${TASKS[S.task].t}` : 'Остров<br>восстановлен!';
+  const counts = availableCounts();
+  const readyN = S.orders.filter(o => orderReady(o, counts)).length;
+  $('badgeMerge').hidden = !readyN; $('badgeMerge').textContent = readyN;
+  $('badgeIsland').hidden = !(S.task < TASKS.length && S.stars >= TASKS[S.task].cost);
+  if (tab === 'merge') { renderOrders(counts); renderBoard(counts); renderInfo(); } else renderIsland();
+  flash = {};
+}
+function renderOrders(counts) {
+  $('orders').innerHTML = S.orders.map(o => {
+    const ready = orderReady(o, counts), m = Object.assign({}, counts);
+    const needs = o.need.map(n => { const k = n.c + ':' + n.l, have = m[k] > 0; if (have) m[k]--; return `<div class="need ${have ? 'have' : ''}" title="${item(n.c, n.l)[1]}">${item(n.c, n.l)[0]}</div>`; }).join('');
+    return `<div class="order ${ready ? 'ready' : ''}"><div class="who" title="${WHO[o.who].n}">${WHO[o.who].e}</div><div class="needs">${needs}</div>
+      <div class="reward">🪙${o.coins} ⭐${o.stars}</div>${ready ? `<button class="go" data-o="${o.id}">Сдать</button>` : ''}</div>`;
+  }).join('');
+}
+function renderBoard(counts) {
+  const wanted = {};
+  S.orders.forEach(o => o.need.forEach(n => wanted[n.c + ':' + n.l] = 1));
+  let h = '';
+  for (let i = 0; i < N; i++) {
+    const b = S.board[i], cls = ['cell']; let inner = '';
+    if (S.locked[i]) cls.push('locked');
+    if (i === S.sel) cls.push('sel');
+    if (flash[i]) cls.push(flash[i]);
+    if (b) {
+      if (b.g) { cls.push('gen'); inner = `<span class="it">${CHAINS[b.g].gen}</span>`; }
+      else if (b.gift) inner = `<span class="it">🎁</span>`;
+      else { inner = `<span class="it">${item(b.c, b.l)[0]}</span><span class="lv">${b.l}</span>`; if (!S.locked[i] && wanted[b.c + ':' + b.l]) cls.push('match'); }
     }
-    return { x: 0.5, y: 0 };
+    h += `<div class="${cls.join(' ')}" data-i="${i}">${inner}</div>`;
   }
-  function spawnEgg(gold) {
-    const s = randomSpot(0.35);
-    eggs.push({ x: s.x, y: s.y, gold, life: gold ? 6 : Infinity, t: 0, hue: Math.floor(Math.random() * 4) });
+  $('board').innerHTML = h;
+}
+function chainRow(c, cur) {
+  return '<span class="chainrow">' + CHAINS[c].items.map(([e], k) => S.found[c + ':' + (k + 1)] || k + 1 <= cur ? e : `<span class="q">${e}</span>`).join('') + '</span>';
+}
+function renderInfo() {
+  const b = S.board[S.sel]; let h;
+  if (!b) h = `<div class="big">🦕</div><div class="txt"><div class="name">Нажми на предмет</div><div class="desc">Соединяй два одинаковых, чтобы улучшить</div></div>`;
+  else if (b.g) h = `<div class="big">${CHAINS[b.g].gen}</div><div class="txt"><div class="name">${CHAINS[b.g].genName}</div><div class="desc">Нажми: −1 ⚡ → ${chainRow(b.g, 0)}</div></div>`;
+  else if (b.gift) h = `<div class="big">🎁</div><div class="txt"><div class="name">Подарок</div><div class="desc">Нажми, чтобы открыть</div></div>`;
+  else {
+    const [e, n] = item(b.c, b.l), mx = maxL(b.c);
+    const lockedTxt = S.locked[S.sel] ? 'В зарослях: положи сверху такой же предмет' : (b.l < mx ? `Ур. ${b.l}/${mx} · ` + chainRow(b.c, b.l) : 'Максимальный уровень! ' + chainRow(b.c, b.l));
+    h = `<div class="big">${e}</div><div class="txt"><div class="name">${n}</div><div class="desc">${lockedTxt}</div></div>${S.locked[S.sel] ? '' : `<button id="sellBtn">Продать ${b.l}🪙</button>`}`;
   }
+  $('info').innerHTML = h;
+  const sb = $('sellBtn'); if (sb) sb.onclick = sellSel;
+}
+function renderIsland() {
+  $('scene').innerHTML = TASKS.map((t, k) => `<div class="spot ${k < S.task ? '' : 'off'} ${k === S.task ? 'next' : ''}" style="left:${t.x}%;top:${t.y}%">${k < S.task || k === S.task ? t.icon : '❔'}</div>`).join('')
+    + `<div class="spot" style="left:50%;top:14%;font-size:clamp(30px,10vw,48px)">🌋</div>`;
+  const tc = $('taskCard');
+  if (S.task < TASKS.length) {
+    const t = TASKS[S.task], ok = S.stars >= t.cost;
+    tc.innerHTML = `<h3>${t.icon} ${t.t}</h3><p>Глава ${S.task + 1} из ${TASKS.length}. Нужно звёзд: ${t.cost} ⭐ (у тебя ${S.stars}).</p>
+      <div class="progress"><i style="width:${Math.min(100, S.stars / t.cost * 100)}%"></i></div>
+      <button class="btn" id="buildBtn" ${ok ? '' : 'disabled'}>${ok ? `Сделать за ${t.cost} ⭐` : 'Выполняй заказы на поле'}</button>`;
+    $('buildBtn').onclick = build;
+  } else tc.innerHTML = `<h3>🎆 Остров восстановлен!</h3><p>Тайна раскрыта, все яйца в тепле. Выполняй заказы дальше и собирай самые редкие предметы.</p>`;
+  const found = TASKS.slice(0, S.task).map(t => `<li><span class="e">${t.clue[0]}</span><span>${t.clue[1]}</span></li>`);
+  $('clues').innerHTML = found.length ? found.join('') : '<li><span class="e">❔</span><span>Пока улик нет. Восстанавливай остров, чтобы их найти.</span></li>';
+}
+function build() {
+  const t = TASKS[S.task]; if (!t || S.stars < t.cost) return;
+  S.stars -= t.cost; S.task++;
+  if (t.unlock && !S.chains.includes(t.unlock)) {
+    S.chains.push(t.unlock);
+    let p = nearestEmpty(idx(0, 3)); if (p < 0) p = S.board.findIndex((b, i) => b && b.c && !S.locked[i]);
+    if (p >= 0) S.board[p] = { g: t.unlock };
+  }
+  if (t.newWho && !S.who.includes(t.newWho)) S.who.push(t.newWho);
+  const g = nearestEmpty(idx(4, 3)); if (g >= 0) S.board[g] = { gift: 1 };
+  sfx.build(); buzz(40); save(); render();
+  say(t.after.concat(t.unlock ? [['pip', `На поле появился ${CHAINS[t.unlock].gen} ${CHAINS[t.unlock].genName}! И я положил тебе подарок 🎁.`]] : [['pip','Я положил тебе на поле подарок 🎁!']]));
+}
 
-  // ---------- input ----------
-  const input = { active: false, ox: 0, oy: 0, x: 0, y: 0, keys: {} };
-  cvs.addEventListener('pointerdown', e => {
-    if (state !== 'play') return;
-    input.active = true; input.ox = input.x = e.clientX; input.oy = input.y = e.clientY;
-    try { cvs.setPointerCapture(e.pointerId); } catch (err) {}
-  });
-  cvs.addEventListener('pointermove', e => { if (input.active) { input.x = e.clientX; input.y = e.clientY; } });
-  const end = () => { input.active = false; };
-  cvs.addEventListener('pointerup', end); cvs.addEventListener('pointercancel', end);
-  window.addEventListener('keydown', e => { input.keys[e.key.toLowerCase()] = true; if (e.key === 'Escape' || e.key === 'p') togglePause(); });
-  window.addEventListener('keyup', e => { input.keys[e.key.toLowerCase()] = false; });
+// ---------- dialog ----------
+let dq = [], dDone = null;
+function say(lines, cb) { dq = lines.slice(); dDone = cb || null; nextLine(); }
+function nextLine() {
+  if (!dq.length) { $('dialog').hidden = true; const f = dDone; dDone = null; f && f(); return; }
+  const [w, txt] = dq.shift(); $('dAv').textContent = WHO[w].e; $('dWho').textContent = WHO[w].n; $('dSay').textContent = txt;
+  $('dNext').textContent = dq.length ? 'Дальше' : 'Понятно!'; $('dialog').hidden = false;
+}
+$('dNext').onclick = nextLine;
 
-  function inputDir() {
-    let dx = 0, dy = 0;
-    const k = input.keys;
-    if (k['arrowleft'] || k['a'] || k['ф']) dx -= 1;
-    if (k['arrowright'] || k['d'] || k['в']) dx += 1;
-    if (k['arrowup'] || k['w'] || k['ц']) dy -= 1;
-    if (k['arrowdown'] || k['s'] || k['ы']) dy += 1;
-    if (input.active) {
-      const ddx = input.x - input.ox, ddy = input.y - input.oy, d = Math.hypot(ddx, ddy);
-      if (d > 6) { const m = Math.min(1, d / 50); dx = ddx / d * m; dy = ddy / d * m; }
-    }
-    const l = Math.hypot(dx, dy);
-    if (l > 1) { dx /= l; dy /= l; }
-    return { dx, dy };
-  }
+// ---------- shop / tabs / reset ----------
+function openShop() { $('shop').hidden = false; }
+$('energyPill').onclick = openShop;
+$('closeShop').onclick = () => $('shop').hidden = true;
+$('buyEnergy').onclick = () => {
+  if (S.coins < 20) { sfx.no(); toast('Не хватает монет. Продавай предметы и выполняй заказы.'); return; }
+  S.coins -= 20; S.energy += 25; sfx.deliver(); bump('energyPill'); save(); render(); $('shop').hidden = true;
+};
+function setTab(t) {
+  tab = t; $('tabMerge').classList.toggle('on', t === 'merge'); $('tabIsland').classList.toggle('on', t === 'island');
+  $('mergeView').style.display = t === 'merge' ? 'contents' : 'none'; $('islandView').hidden = t !== 'island';
+  render(); if (t === 'merge') sizeBoard();
+}
+$('tabMerge').onclick = () => setTab('merge');
+$('tabIsland').onclick = () => setTab('island');
+let resetArmed = false;
+$('resetBtn').onclick = () => {
+  if (!resetArmed) { resetArmed = true; $('resetBtn').textContent = 'Точно? Нажми ещё раз — прогресс удалится'; setTimeout(() => { resetArmed = false; $('resetBtn').textContent = 'Начать игру заново'; }, 3000); return; }
+  store.clear(); S = newState(); fillOrders(); save(); setTab('merge'); say(INTRO, () => { S.introDone = true; save(); });
+};
+$('orders').addEventListener('click', e => { const b = e.target.closest('[data-o]'); if (b) deliver(+b.dataset.o); });
 
-  // ---------- effects ----------
-  function burst(x, y, n, colors, speed = 0.8, life = 0.6) {
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, s = speed * (0.3 + Math.random());
-      parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, c: colors[i % colors.length], r: 0.012 + Math.random() * 0.015 });
-    }
+// ---------- input on board ----------
+const ghost = $('ghost'); let drag = null;
+$('board').addEventListener('pointerdown', e => {
+  const cell = e.target.closest('.cell'); if (!cell) return;
+  const i = +cell.dataset.i, b = S.board[i];
+  if (!b) { S.sel = -1; render(); return; }
+  drag = { i, x0: e.clientX, y0: e.clientY, on: false, hover: -1 };
+  e.preventDefault();
+});
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.on && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 8) {
+    if (S.locked[drag.i]) { drag = null; return; }
+    drag.on = true; const b = S.board[drag.i];
+    ghost.textContent = b.g ? CHAINS[b.g].gen : b.gift ? '🎁' : item(b.c, b.l)[0];
+    ghost.style.fontSize = getComputedStyle(document.documentElement).getPropertyValue('--cell').trim().replace('px', '') * 0.62 + 'px';
+    ghost.hidden = false;
+    const src = $('board').children[drag.i]; src && src.classList.add('drag-src');
   }
-  function floatText(x, y, text, color) { floatTexts.push({ x, y, text, color, t: 0 }); }
+  if (drag.on) {
+    ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
+    const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest('.cell');
+    const h = c ? +c.dataset.i : -1;
+    if (h !== drag.hover) { const kids = $('board').children; if (drag.hover >= 0 && kids[drag.hover]) kids[drag.hover].classList.remove('hover'); if (h >= 0 && h !== drag.i) kids[h].classList.add('hover'); drag.hover = h; }
+  }
+});
+function endDrag(e) {
+  if (!drag) return; const d = drag; drag = null; ghost.hidden = true;
+  if (d.on) { const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest('.cell'); if (c) drop(d.i, +c.dataset.i); else render(); return; }
+  const b = S.board[d.i]; S.sel = d.i;
+  if (S.locked[d.i]) { toast('Заросли! Соедини предметы рядом, чтобы расчистить'); return render(); }
+  if (b.g) produce(d.i); else if (b.gift) openGift(d.i); else render();
+}
+window.addEventListener('pointerup', endDrag);
+window.addEventListener('pointercancel', () => { if (drag) { drag = null; ghost.hidden = true; render(); } });
 
-  // ---------- update ----------
-  function hurt() {
-    if (inv > 0) return;
-    lives--; inv = 1.6; shake = 0.4; sfx.hurt(); buzz(120);
-    burst(dino.x, dino.y, 14, ['#ff5470', '#ffd166'], 0.9);
-    updateHud();
-    if (lives <= 0) gameOver();
-  }
+// ---------- sizing ----------
+function sizeBoard() {
+  const wrap = $('boardWrap'); if (!wrap.clientHeight) return;
+  const w = wrap.clientWidth - 12 - 18, h = wrap.clientHeight - 12 - 24;
+  const cell = Math.max(30, Math.floor(Math.min(w / COLS, h / ROWS, 64)));
+  document.documentElement.style.setProperty('--cell', cell + 'px');
+}
+window.addEventListener('resize', sizeBoard);
 
-  function update(dt) {
-    time += dt;
-    // dino movement
-    const { dx, dy } = inputDir();
-    const speed = 0.85;
-    dino.vx += (dx * speed - dino.vx) * Math.min(1, dt * 12);
-    dino.vy += (dy * speed - dino.vy) * Math.min(1, dt * 12);
-    dino.x += dino.vx * dt; dino.y += dino.vy * dt;
-    if (Math.abs(dino.vx) > 0.05) dino.face = dino.vx > 0 ? 1 : -1;
-    const sp = Math.hypot(dino.vx, dino.vy);
-    dino.step += sp * dt * 28;
-    // keep on island, out of volcano
-    let d = Math.hypot(dino.x, dino.y);
-    if (d > EDGE) { dino.x *= EDGE / d; dino.y *= EDGE / d; }
-    d = Math.hypot(dino.x, dino.y);
-    const minD = VOLCANO_R + DINO_R * 0.7;
-    if (d < minD) { if (d < 1e-4) { dino.x = 0; dino.y = minD; } else { dino.x *= minD / d; dino.y *= minD / d; } }
-    if (inv > 0) inv -= dt;
+// energy timer
+setInterval(() => {
+  const before = S.energy; tickEnergy();
+  if (S.energy !== before) { $('energy').textContent = S.energy; save(); }
+  const t = $('energyTimer');
+  if (S.energy < MAX_E) { const s = Math.ceil((E_REGEN_MS - (Date.now() - S.eTs)) / 1000); t.textContent = '+1 через 0:' + String(Math.max(0, s)).padStart(2, '0'); }
+  else t.textContent = 'полно';
+}, 500);
 
-    // eggs
-    for (let i = eggs.length - 1; i >= 0; i--) {
-      const e = eggs[i]; e.t += dt;
-      if (e.gold) { e.life -= dt; if (e.life <= 0) { eggs.splice(i, 1); continue; } }
-      if (Math.hypot(e.x - dino.x, e.y - dino.y) < DINO_R + 0.05) {
-        eggs.splice(i, 1);
-        const pts = e.gold ? 3 : 1;
-        addScore(pts, e.x, e.y);
-        if (e.gold) { sfx.gold(); burst(e.x, e.y, 18, ['#ffd700', '#fff3b0']); }
-        else { sfx.egg(); burst(e.x, e.y, 10, ['#fff7e6', '#9be7ff']); spawnEgg(false); }
-        buzz(15);
-      }
-    }
-    goldTimer -= dt;
-    if (goldTimer <= 0 && level >= 2) { spawnEgg(true); goldTimer = 10 + Math.random() * 6; }
-
-    // berries
-    berryTimer -= dt;
-    if (berryTimer <= 0) {
-      if (lives < 3 && berries.length === 0) { const s = randomSpot(0.3); berries.push({ x: s.x, y: s.y, t: 0, life: 8 }); }
-      berryTimer = 14 + Math.random() * 8;
-    }
-    for (let i = berries.length - 1; i >= 0; i--) {
-      const b = berries[i]; b.t += dt; b.life -= dt;
-      if (b.life <= 0) { berries.splice(i, 1); continue; }
-      if (Math.hypot(b.x - dino.x, b.y - dino.y) < DINO_R + 0.05) {
-        berries.splice(i, 1);
-        if (lives < 3) lives++;
-        sfx.heal(); burst(b.x, b.y, 12, ['#ff3b6b', '#7bd389']); floatText(b.x, b.y, '+♥', '#ff5470'); updateHud();
-      }
-    }
-
-    // lava bombs
-    bombTimer -= dt;
-    if (bombTimer <= 0) {
-      const count = level >= 6 ? 2 : 1;
-      for (let i = 0; i < count; i++) launchBomb(i === 0 && Math.random() < 0.55);
-      bombTimer = Math.max(0.45, 1.7 - level * 0.14) * (0.7 + Math.random() * 0.6);
-    }
-    for (let i = bombs.length - 1; i >= 0; i--) {
-      const b = bombs[i]; b.t += dt;
-      if (b.t >= b.dur) {
-        bombs.splice(i, 1);
-        sfx.boom(); buzz(30);
-        const near = Math.hypot(b.x - dino.x, b.y - dino.y);
-        shake = Math.max(shake, near < 0.5 ? 0.25 : 0.1);
-        burst(b.x, b.y, 16, ['#ff6a1f', '#ffd166', '#5a2a16'], 1.0, 0.7);
-        puddles.push({ x: b.x, y: b.y, r: b.r, t: 0, life: 0.9 });
-        if (near < b.r + DINO_R * 0.6) hurt();
-      }
-    }
-    for (let i = puddles.length - 1; i >= 0; i--) {
-      const p = puddles[i]; p.t += dt;
-      if (p.t >= p.life) { puddles.splice(i, 1); continue; }
-      if (p.t < p.life * 0.6 && Math.hypot(p.x - dino.x, p.y - dino.y) < p.r * 0.75 + DINO_R * 0.4) hurt();
-    }
-
-    // particles
-    for (let i = parts.length - 1; i >= 0; i--) {
-      const p = parts[i]; p.life -= dt;
-      if (p.life <= 0) { parts.splice(i, 1); continue; }
-      p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.92; p.vy *= 0.92;
-    }
-    for (let i = floatTexts.length - 1; i >= 0; i--) { const f = floatTexts[i]; f.t += dt; if (f.t > 1) floatTexts.splice(i, 1); }
-    if (shake > 0) shake -= dt;
-  }
-
-  function launchBomb(aimAtDino) {
-    let tx, ty;
-    if (aimAtDino) {
-      // lead the target a little so standing still is not safe
-      tx = dino.x + dino.vx * 0.5 + (Math.random() - 0.5) * 0.15;
-      ty = dino.y + dino.vy * 0.5 + (Math.random() - 0.5) * 0.15;
-      const d = Math.hypot(tx, ty);
-      if (d > EDGE) { tx *= EDGE / d; ty *= EDGE / d; }
-      if (d < VOLCANO_R + 0.08) { const s = randomSpot(0); tx = s.x; ty = s.y; }
-    } else { const s = randomSpot(0); tx = s.x; ty = s.y; }
-    const dur = Math.max(0.8, 1.45 - level * 0.06);
-    bombs.push({ x: tx, y: ty, t: 0, dur, r: 0.12 + Math.random() * 0.05 + Math.min(level, 8) * 0.004 });
-  }
-
-  function addScore(pts, x, y) {
-    score += pts;
-    floatText(x, y, '+' + pts, pts > 1 ? '#ffd700' : '#fff7e6');
-    const newLevel = 1 + Math.floor(score / 8);
-    if (newLevel > level) {
-      level = newLevel; sfx.level(); floatText(0, -0.35, 'Уровень ' + level + '!', '#ffd166');
-    }
-    updateHud();
-  }
-
-  function updateHud() {
-    $('hearts').textContent = '♥'.repeat(Math.max(0, lives)) + '♡'.repeat(Math.max(0, 3 - lives));
-    $('score').textContent = score;
-    $('level').textContent = 'Ур. ' + level;
-  }
-
-  // ---------- drawing ----------
-  function drawSea() {
-    const g = ctx.createRadialGradient(CX, CY, R * 0.8, CX, CY, Math.max(W, H));
-    g.addColorStop(0, '#1d93a8'); g.addColorStop(0.35, '#13708a'); g.addColorStop(1, '#0b3a4a');
-    ctx.fillStyle = g; ctx.fillRect(-50, -50, W + 100, H + 100);
-    // wave rings
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 4; i++) {
-      const ph = ((time * 0.25 + i / 4) % 1);
-      ctx.strokeStyle = `rgba(255,255,255,${0.22 * (1 - ph)})`;
-      ctx.beginPath(); ctx.arc(CX, CY, R * (1.05 + ph * 0.5), 0, Math.PI * 2); ctx.stroke();
-    }
-  }
-  function drawIsland() {
-    // shallow water
-    ctx.fillStyle = '#5fd0d6';
-    ctx.beginPath(); ctx.arc(CX, CY, R * 1.06, 0, Math.PI * 2); ctx.fill();
-    // sand
-    ctx.fillStyle = '#f2d38b';
-    ctx.beginPath(); ctx.arc(CX, CY, R, 0, Math.PI * 2); ctx.fill();
-    // grass
-    const g = ctx.createRadialGradient(CX, CY - R * 0.2, R * 0.1, CX, CY, R * 0.85);
-    g.addColorStop(0, '#7bd389'); g.addColorStop(1, '#3f9e4f');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(CX, CY, R * 0.84, 0, Math.PI * 2); ctx.fill();
-    // grass tufts (deterministic)
-    ctx.strokeStyle = 'rgba(30,90,40,.45)'; ctx.lineWidth = Math.max(1.5, R * 0.008);
-    for (let i = 0; i < 40; i++) {
-      const a = i * 2.399, r = 0.3 + ((i * 37) % 50) / 100;
-      const x = px(Math.cos(a) * r), y = py(Math.sin(a) * r), s = R * 0.025;
-      ctx.beginPath(); ctx.moveTo(x - s, y); ctx.lineTo(x - s * 0.5, y - s * 1.3); ctx.moveTo(x, y); ctx.lineTo(x, y - s * 1.6); ctx.moveTo(x + s, y); ctx.lineTo(x + s * 0.5, y - s * 1.3); ctx.stroke();
-    }
-  }
-  function drawVolcano() {
-    const x = CX, y = CY, r = VOLCANO_R * R;
-    ctx.fillStyle = 'rgba(0,0,0,.18)';
-    ctx.beginPath(); ctx.ellipse(x, y + r * 0.25, r * 1.15, r * 0.9, 0, 0, Math.PI * 2); ctx.fill();
-    const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r * 1.1);
-    g.addColorStop(0, '#a0674a'); g.addColorStop(1, '#5a3424');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 1.05, 0, Math.PI * 2); ctx.fill();
-    const pulse = 0.5 + 0.5 * Math.sin(time * 5);
-    const lg = ctx.createRadialGradient(x, y, 0, x, y, r * 0.5);
-    lg.addColorStop(0, '#fff3b0'); lg.addColorStop(0.4, '#ffb347'); lg.addColorStop(1, '#d6361b');
-    ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(x, y, r * (0.42 + pulse * 0.05), 0, Math.PI * 2); ctx.fill();
-    // smoke puffs
-    for (let i = 0; i < 4; i++) {
-      const ph = (time * 0.35 + i / 4) % 1;
-      ctx.fillStyle = `rgba(70,60,60,${0.35 * (1 - ph)})`;
-      ctx.beginPath(); ctx.arc(x + Math.sin(i * 2 + time) * r * 0.3, y - ph * r * 2.2, r * (0.25 + ph * 0.45), 0, Math.PI * 2); ctx.fill();
-    }
-  }
-  function drawPalm(nx, ny) {
-    const x = px(nx), y = py(ny), s = R * 0.09;
-    ctx.fillStyle = 'rgba(0,0,0,.15)';
-    ctx.beginPath(); ctx.ellipse(x, y + s * 0.2, s * 1.2, s * 0.45, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = s * 0.28; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + s * 0.4, y - s, x + s * 0.15, y - s * 1.8); ctx.stroke();
-    ctx.fillStyle = '#2e8b3d';
-    const tx = x + s * 0.15, ty = y - s * 1.8, sw = Math.sin(time * 1.5 + nx * 5) * 0.08;
-    for (let i = 0; i < 5; i++) {
-      const a = -Math.PI / 2 + (i - 2) * 0.75 + sw;
-      ctx.beginPath(); ctx.ellipse(tx + Math.cos(a) * s * 0.6, ty + Math.sin(a) * s * 0.35 + s * 0.15, s * 0.7, s * 0.2, a, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.fillStyle = '#6b3e1f';
-    ctx.beginPath(); ctx.arc(tx - s * 0.1, ty + s * 0.1, s * 0.12, 0, Math.PI * 2); ctx.arc(tx + s * 0.12, ty + s * 0.12, s * 0.12, 0, Math.PI * 2); ctx.fill();
-  }
-  const eggColors = [['#fff7e6', '#9be7ff'], ['#e6fff0', '#7bd389'], ['#fff0f5', '#ff9ec7'], ['#f3ecff', '#b79bff']];
-  function drawEgg(e) {
-    const bob = Math.sin(e.t * 4) * R * 0.008;
-    const x = px(e.x), y = py(e.y) + bob, s = R * 0.045;
-    if (e.gold && e.life < 2 && Math.floor(e.life * 8) % 2 === 0) return;
-    ctx.fillStyle = 'rgba(0,0,0,.2)';
-    ctx.beginPath(); ctx.ellipse(x, py(e.y) + s * 1.1, s * 0.8, s * 0.3, 0, 0, Math.PI * 2); ctx.fill();
-    if (e.gold) {
-      ctx.fillStyle = `rgba(255,215,0,${0.25 + 0.15 * Math.sin(e.t * 8)})`;
-      ctx.beginPath(); ctx.arc(x, y, s * 2, 0, Math.PI * 2); ctx.fill();
-    }
-    const [base, spot] = e.gold ? ['#ffd700', '#ffb300'] : eggColors[e.hue];
-    ctx.fillStyle = base; ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.ellipse(x, y, s * 0.78, s, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = spot;
-    ctx.beginPath(); ctx.arc(x - s * 0.25, y - s * 0.2, s * 0.17, 0, Math.PI * 2); ctx.arc(x + s * 0.3, y + s * 0.25, s * 0.13, 0, Math.PI * 2); ctx.arc(x + s * 0.05, y + s * 0.6, s * 0.1, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.6)';
-    ctx.beginPath(); ctx.ellipse(x - s * 0.3, y - s * 0.45, s * 0.15, s * 0.25, -0.4, 0, Math.PI * 2); ctx.fill();
-  }
-  function drawBerry(b) {
-    if (b.life < 2 && Math.floor(b.life * 8) % 2 === 0) return;
-    const x = px(b.x), y = py(b.y) + Math.sin(b.t * 4) * R * 0.008, s = R * 0.04;
-    ctx.fillStyle = 'rgba(255,84,112,.25)'; ctx.beginPath(); ctx.arc(x, y, s * 1.8, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#e8304f'; ctx.beginPath(); ctx.moveTo(x, y + s); ctx.bezierCurveTo(x - s * 1.3, y, x - s * 0.9, y - s * 1.1, x, y - s * 0.7); ctx.bezierCurveTo(x + s * 0.9, y - s * 1.1, x + s * 1.3, y, x, y + s); ctx.fill();
-    ctx.fillStyle = '#ffe08a';
-    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(x + Math.cos(i * 1.3) * s * 0.4, y - s * 0.1 + Math.sin(i * 1.3) * s * 0.35, s * 0.07, 0, Math.PI * 2); ctx.fill(); }
-    ctx.fillStyle = '#3f9e4f'; ctx.beginPath(); ctx.ellipse(x, y - s * 0.75, s * 0.5, s * 0.18, 0, 0, Math.PI * 2); ctx.fill();
-  }
-  function drawWarning(b) {
-    const k = b.t / b.dur, x = px(b.x), y = py(b.y), r = b.r * R;
-    ctx.fillStyle = `rgba(255,40,20,${0.12 + k * 0.25})`;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = `rgba(255,60,30,${0.5 + k * 0.5})`; ctx.lineWidth = 3;
-    ctx.setLineDash([8, 6]); ctx.lineDashOffset = -time * 30;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(255,90,40,.55)';
-    ctx.beginPath(); ctx.arc(x, y, r * k, 0, Math.PI * 2); ctx.fill();
-  }
-  function drawBombFlight(b) {
-    const k = b.t / b.dur;
-    const sx = CX, sy = CY, ex = px(b.x), ey = py(b.y);
-    const x = sx + (ex - sx) * k, h = Math.sin(k * Math.PI) * R * 0.9, y = sy + (ey - sy) * k - h;
-    const s = R * (0.035 + Math.sin(k * Math.PI) * 0.02);
-    const g = ctx.createRadialGradient(x, y, 0, x, y, s * 2.2);
-    g.addColorStop(0, 'rgba(255,200,80,.9)'); g.addColorStop(1, 'rgba(255,80,20,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s * 2.2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#5a2a16'; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ff6a1f'; ctx.beginPath(); ctx.arc(x - s * 0.25, y - s * 0.25, s * 0.45, 0, Math.PI * 2); ctx.fill();
-  }
-  function drawPuddle(p) {
-    const k = p.t / p.life, x = px(p.x), y = py(p.y), r = p.r * R * (0.8 + 0.2 * (1 - k));
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(255,220,120,${0.9 * (1 - k)})`); g.addColorStop(0.5, `rgba(255,106,31,${0.85 * (1 - k)})`); g.addColorStop(1, `rgba(120,30,10,${0.5 * (1 - k)})`);
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-  }
-  function drawDino() {
-    if (inv > 0 && Math.floor(inv * 12) % 2 === 0) return;
-    const x = px(dino.x), y = py(dino.y), s = R * DINO_R, f = dino.face;
-    const moving = Math.hypot(dino.vx, dino.vy) > 0.08;
-    const leg = moving ? Math.sin(dino.step) * s * 0.25 : 0;
-    const bounce = moving ? Math.abs(Math.sin(dino.step)) * s * 0.12 : 0;
-    ctx.fillStyle = 'rgba(0,0,0,.25)';
-    ctx.beginPath(); ctx.ellipse(x, y + s * 0.95, s * 1.1, s * 0.3, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.save(); ctx.translate(x, y - bounce); ctx.scale(f, 1);
-    const body = '#5ccf7a', dark = '#2f9a54', belly = '#d9f7c4';
-    // tail
-    ctx.fillStyle = body; ctx.beginPath(); ctx.moveTo(-s * 0.6, -s * 0.1); ctx.quadraticCurveTo(-s * 1.6, s * 0.1, -s * 1.7, -s * 0.5); ctx.quadraticCurveTo(-s * 1.2, s * 0.45, -s * 0.4, s * 0.45); ctx.fill();
-    // legs
-    ctx.fillStyle = dark;
-    ctx.fillRect(-s * 0.45 + leg, s * 0.4, s * 0.3, s * 0.5);
-    ctx.fillRect(s * 0.15 - leg, s * 0.4, s * 0.3, s * 0.5);
-    // body
-    ctx.fillStyle = body; ctx.beginPath(); ctx.ellipse(0, s * 0.1, s * 0.8, s * 0.6, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = belly; ctx.beginPath(); ctx.ellipse(s * 0.15, s * 0.3, s * 0.45, s * 0.32, 0, 0, Math.PI * 2); ctx.fill();
-    // spikes
-    ctx.fillStyle = '#ff9f1c';
-    for (let i = 0; i < 4; i++) { const sx = -s * 0.75 + i * s * 0.35; ctx.beginPath(); ctx.moveTo(sx, -s * 0.38 + i * -0.02 * s); ctx.lineTo(sx + s * 0.15, -s * 0.72); ctx.lineTo(sx + s * 0.3, -s * 0.42); ctx.fill(); }
-    // head
-    ctx.fillStyle = body; ctx.beginPath(); ctx.ellipse(s * 0.75, -s * 0.45, s * 0.55, s * 0.45, 0, 0, Math.PI * 2); ctx.fill();
-    // eye
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 0.9, -s * 0.6, s * 0.17, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#1b1b1b'; ctx.beginPath(); ctx.arc(s * 0.95, -s * 0.58, s * 0.09, 0, Math.PI * 2); ctx.fill();
-    // cheek + smile
-    ctx.fillStyle = 'rgba(255,120,140,.6)'; ctx.beginPath(); ctx.arc(s * 0.85, -s * 0.3, s * 0.09, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1.5, s * 0.06);
-    ctx.beginPath(); ctx.arc(s * 1.05, -s * 0.38, s * 0.15, 0.2, 1.3); ctx.stroke();
-    // little arm
-    ctx.strokeStyle = dark; ctx.lineWidth = s * 0.14; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(s * 0.5, s * 0.1); ctx.lineTo(s * 0.75, s * 0.2 + leg * 0.3); ctx.stroke();
-    ctx.restore();
-  }
-  function drawJoystick() {
-    if (!input.active) return;
-    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(input.ox, input.oy, 50, 0, Math.PI * 2); ctx.stroke();
-    let dx = input.x - input.ox, dy = input.y - input.oy; const d = Math.hypot(dx, dy);
-    if (d > 50) { dx = dx / d * 50; dy = dy / d * 50; }
-    ctx.fillStyle = 'rgba(255,255,255,.45)';
-    ctx.beginPath(); ctx.arc(input.ox + dx, input.oy + dy, 22, 0, Math.PI * 2); ctx.fill();
-  }
-
-  function render() {
-    ctx.save();
-    if (shake > 0) ctx.translate((Math.random() - 0.5) * 12 * shake, (Math.random() - 0.5) * 12 * shake);
-    drawSea(); drawIsland();
-    if (state !== 'menu') {
-      puddles.forEach(drawPuddle);
-      bombs.forEach(drawWarning);
-    }
-    // depth-sort objects by y
-    const objs = palms.map(p => ({ y: p[1], draw: () => drawPalm(p[0], p[1]) }));
-    objs.push({ y: 0, draw: drawVolcano });
-    if (state !== 'menu') {
-      eggs.forEach(e => objs.push({ y: e.y, draw: () => drawEgg(e) }));
-      berries.forEach(b => objs.push({ y: b.y, draw: () => drawBerry(b) }));
-      objs.push({ y: dino.y, draw: drawDino });
-    }
-    objs.sort((a, b) => a.y - b.y).forEach(o => o.draw());
-    if (state !== 'menu') {
-      bombs.forEach(drawBombFlight);
-      parts.forEach(p => { ctx.globalAlpha = Math.max(0, p.life / p.max); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(px(p.x), py(p.y), p.r * R, 0, Math.PI * 2); ctx.fill(); });
-      ctx.globalAlpha = 1;
-      ctx.textAlign = 'center'; ctx.font = `${Math.round(R * 0.09)}px "Russo One", "Arial Black", sans-serif`;
-      floatTexts.forEach(f => {
-        ctx.globalAlpha = 1 - f.t; ctx.fillStyle = f.color; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 4;
-        const x = px(f.x), y = py(f.y) - f.t * R * 0.15 - R * 0.06;
-        ctx.strokeText(f.text, x, y); ctx.fillText(f.text, x, y);
-      });
-      ctx.globalAlpha = 1;
-      drawJoystick();
-    }
-    ctx.restore();
-  }
-
-  // ---------- loop ----------
-  let last = performance.now();
-  function frame(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (state === 'play') update(dt);
-    else if (state === 'menu') time += dt;
-    render();
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-
-  // ---------- screens ----------
-  function start() {
-    initAudio(); if (audio && audio.state === 'suspended') audio.resume();
-    reset(); state = 'play';
-    startScreen.hidden = true; overScreen.hidden = true; pauseScreen.hidden = true; hud.hidden = false;
-  }
-  function gameOver() {
-    state = 'over'; input.active = false;
-    if (score > best) { best = score; store.set('dino-island-best', String(best)); $('finalText').textContent = 'Новый рекорд!'; }
-    else $('finalText').textContent = 'яиц собрано';
-    $('finalScore').textContent = score; showBest();
-    setTimeout(() => { overScreen.hidden = false; $('againBtn').focus(); }, 600);
-  }
-  function togglePause() {
-    if (state === 'play') { state = 'pause'; pauseScreen.hidden = false; input.active = false; }
-    else if (state === 'pause') { state = 'play'; pauseScreen.hidden = true; last = performance.now(); }
-  }
-  $('startBtn').addEventListener('click', start);
-  $('againBtn').addEventListener('click', start);
-  $('pauseBtn').addEventListener('click', togglePause);
-  $('resumeBtn').addEventListener('click', togglePause);
-  document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') togglePause(); });
+// boot
+fillOrders(); save(); render(); sizeBoard();
+requestAnimationFrame(sizeBoard);
+if (!S.introDone) setTimeout(() => say(INTRO, () => { S.introDone = true; save(); }), 300);
 })();
 </script>
 <!--GAME-END-->
