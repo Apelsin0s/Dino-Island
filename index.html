@@ -99,10 +99,10 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .cell.gen::before { content: "⚡"; position: absolute; right: 2px; top: 1px; font-size: calc(var(--cell) * .22); }
 .cell.sel { box-shadow: inset 0 0 0 3px #fff, 0 0 0 2px var(--coral); z-index: 2; }
 .cell.match::after { content: "✓"; position: absolute; right: 2px; top: 2px; background: var(--leaf); color: #fff; font: 900 calc(var(--cell)*.2)/calc(var(--cell)*.3) var(--body); width: calc(var(--cell)*.3); height: calc(var(--cell)*.3); border-radius: 50%; text-align: center; pointer-events: none; }
-.cell.locked { background: #7aa35a; }
-.cell.locked .it { opacity: .45; filter: grayscale(.5); transform: scale(.8); }
+.cell.locked { background: #a9cf86; }
+.cell.locked .it { opacity: .85; transform: scale(.85); }
 .cell.locked::before { content: ""; position: absolute; inset: 0; border-radius: 10px; pointer-events: none;
-  background: repeating-linear-gradient(45deg, rgba(40,90,30,.55) 0 4px, transparent 4px 10px), repeating-linear-gradient(-45deg, rgba(40,90,30,.45) 0 3px, transparent 3px 11px); }
+  background: repeating-linear-gradient(45deg, rgba(40,90,30,.35) 0 3px, transparent 3px 12px), repeating-linear-gradient(-45deg, rgba(40,90,30,.3) 0 2px, transparent 2px 13px); }
 .cell.drag-src .it { opacity: .25; }
 .cell.hover { box-shadow: inset 0 0 0 3px var(--sun); }
 .cell.pop .it { animation: pop .35s ease-out; }
@@ -172,7 +172,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 <div id="app">
   <div id="stats">
     <button class="pill" id="energyPill" aria-label="Энергия, купить ещё"><span class="ico">⚡</span><span class="col"><span id="energy">100</span><small id="energyTimer"></small></span><span class="plus">+</span></button>
-    <div class="pill" id="coinPill"><span class="ico">🪙</span><span id="coins">0</span></div>
+    <div class="pill" id="coinPill"><span class="ico">💰</span><span id="coins">0</span></div>
     <div class="pill" id="starPill"><span class="ico">⭐</span><span id="stars">0</span></div>
     <div class="grow"></div>
     <div id="chapter"></div>
@@ -192,7 +192,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
   </div>
 
   <div id="tabs">
-    <button class="tab on" id="tabMerge">🧩 Поле<span class="badge" id="badgeMerge" hidden></span></button>
+    <button class="tab on" id="tabMerge">🎲 Поле<span class="badge" id="badgeMerge" hidden></span></button>
     <button class="tab" id="tabIsland">🏝️ Остров<span class="badge" id="badgeIsland" hidden>!</span></button>
   </div>
 </div>
@@ -203,7 +203,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 <div id="shop" hidden><div class="card">
   <h3>⚡ Энергия</h3>
   <p>Энергия тратится на гнёзда и деревья. Она восстанавливается сама: +1 каждые 12 секунд.</p>
-  <button class="btn" id="buyEnergy">+25 ⚡ за 20 🪙</button>
+  <button class="btn" id="buyEnergy">+25 ⚡ за 20 💰</button>
   <button class="btn ghost" id="closeShop">Закрыть</button>
 </div></div>
 
@@ -217,15 +217,15 @@ const MAX_E = 100, E_REGEN_MS = 12000, SAVE_KEY = 'dino-island-merge-v1';
 // ---------- content ----------
 const CHAINS = {
   egg:   { gen: '🧺', genName: 'Гнездо-корзинка', items: [['🥚','Яйцо'],['🐣','Вылупыш'],['🐥','Птенчик'],['🦎','Ящерка'],['🐊','Крокодильчик'],['🦕','Бронтозаврик'],['🦖','Тирекс']] },
-  fruit: { gen: '🌳', genName: 'Фруктовое дерево', items: [['🫐','Черника'],['🍒','Вишня'],['🍓','Клубника'],['🍑','Персик'],['🥭','Манго'],['🍍','Ананас'],['🍉','Арбуз']] },
-  shell: { gen: '⛱️', genName: 'Пляжный зонтик', items: [['🐚','Ракушка'],['🦪','Устрица'],['🦀','Краб'],['🐠','Рыбка'],['🐡','Рыба-ёж'],['🐙','Осьминог'],['🐬','Дельфин']] },
-  stone: { gen: '🌋', genName: 'Вулкан', items: [['🪨','Камень'],['🧱','Кирпич'],['🏺','Амфора'],['🗿','Идол'],['💎','Кристалл'],['👑','Корона']] }
+  fruit: { gen: '🌳', genName: 'Фруктовое дерево', items: [['🍇','Виноград'],['🍒','Вишня'],['🍓','Клубника'],['🍑','Персик'],['🥭','Манго'],['🍍','Ананас'],['🍉','Арбуз']] },
+  shell: { gen: '⛱️', genName: 'Пляжный зонтик', items: [['🐚','Ракушка'],['🦐','Креветка'],['🦀','Краб'],['🐠','Рыбка'],['🐡','Рыба-ёж'],['🐙','Осьминог'],['🐬','Дельфин']] },
+  stone: { gen: '🌋', genName: 'Вулкан', items: [['🧱','Кирпич'],['🏺','Амфора'],['🗿','Идол'],['🔮','Шар'],['💎','Кристалл'],['👑','Корона']] }
 };
 const WHO = {
   pip:   { e: '🦕', n: 'Пип' },
   kora:  { e: '🐢', n: 'Бабушка Кора' },
   kesha: { e: '🦜', n: 'Капитан Кеша' },
-  mo:    { e: '🦦', n: 'Выдра Мо' },
+  mo:    { e: '🐸', n: 'Лягушонок Мо' },
   vetta: { e: '🦅', n: 'Ветта' }
 };
 // Island restoration = story chapters
@@ -233,22 +233,22 @@ const TASKS = [
   { t: 'Расчистить пляж', cost: 1, icon: '🏖️', x: 72, y: 74,
     after: [['pip','Ура, пляж чистый! Ой… смотри, на песке огромные следы с тремя когтями.'],['pip','Такие лапы не у дино. Запишу в улики!']],
     clue: ['🐾','Следы с тремя когтями на пляже'] },
-  { t: 'Построить хижину Пипа', cost: 2, icon: '🛖', x: 36, y: 58, unlock: 'shell', newWho: 'kesha',
+  { t: 'Построить хижину Пипа', cost: 2, icon: '⛺', x: 36, y: 58, unlock: 'shell', newWho: 'kesha',
     after: [['kesha','Карр! Капитан Кеша на связи. Я видел ночью большую тень над вулканом!'],['kesha','Держи пляжный зонтик: под ним всегда найдутся ракушки.']],
     clue: ['🌑','Ночью над вулканом летает большая тень'] },
   { t: 'Починить мостик', cost: 2, icon: '🌉', x: 56, y: 44,
     after: [['kora','Мостик снова цел, внучек. А это что под ним застряло?'],['kora','Перо! Длинное, кожистое… Такие перья я видела только в старых сказках.']],
-    clue: ['🪶','Огромное кожистое перо под мостиком'] },
+    clue: ['✒️','Огромное кожистое перо под мостиком'] },
   { t: 'Зажечь фонарь у бухты', cost: 3, icon: '🏮', x: 18, y: 46, unlock: 'stone', newWho: 'mo',
     after: [['mo','Привет! Я Мо, живу в бухте. Свет фонаря разбудил вулкан, и он начал выбрасывать камни.'],['mo','Камни можно соединять. Из них получаются настоящие сокровища!']],
     clue: ['🔥','Вулкан снова проснулся'] },
   { t: 'Посадить сад', cost: 3, icon: '🌻', x: 30, y: 76,
     after: [['pip','Сад! Смотри, у пустых гнёзд лежат тёплые камешки из вулкана.'],['pip','Кто-то будто пытался согреть яйца…']],
-    clue: ['🪨','Тёплые камни возле пустых гнёзд'] },
+    clue: ['♨️','Тёплые камни возле пустых гнёзд'] },
   { t: 'Построить причал', cost: 4, icon: '⛵', x: 86, y: 52,
     after: [['kesha','Причал готов! С мачты видно: тень всегда улетает в пещеру на склоне вулкана.']],
     clue: ['🕳️','Тень прячется в пещере на вулкане'] },
-  { t: 'Проложить тропу к вулкану', cost: 4, icon: '🥾', x: 36, y: 32,
+  { t: 'Проложить тропу к вулкану', cost: 4, icon: '👣', x: 36, y: 32,
     after: [['kora','Тропа открыта. Будь осторожен, внучек. Ночи стали холодными, а вулкан тёплый…']],
     clue: ['❄️','Ночи на острове стали холодными'] },
   { t: 'Зажечь факелы в пещере', cost: 5, icon: '🔦', x: 64, y: 20, newWho: 'vetta',
@@ -384,7 +384,7 @@ function deliver(id) {
   S.coins += o.coins; S.stars += o.stars; S.sel = -1;
   S.orders = S.orders.filter(x => x.id !== id);
   sfx.deliver(); buzz(20); bump('coinPill'); bump('starPill');
-  toast(`${WHO[o.who].n}: спасибо! +${o.coins} 🪙 +${o.stars} ⭐`);
+  toast(`${WHO[o.who].n}: спасибо! +${o.coins} 💰 +${o.stars} ⭐`);
   fillOrders(); save(); render();
   if (!S.hintStar && S.task === 0 && S.stars >= TASKS[0].cost) {
     S.hintStar = true; save();
@@ -416,7 +416,7 @@ function openGift(i) {
 function discover(c, l) {
   const k = c + ':' + l; if (S.found[k]) return;
   S.found[k] = 1;
-  if (l > 1) { const bonus = l * 2; S.coins += bonus; const [e, n] = item(c, l); setTimeout(() => toast(`Новое: ${e} ${n}! +${bonus} 🪙`), 50); }
+  if (l > 1) { const bonus = l * 2; S.coins += bonus; const [e, n] = item(c, l); setTimeout(() => toast(`Новое: ${e} ${n}! +${bonus} 💰`), 50); }
 }
 function drop(from, to) {
   if (from === to || to < 0) return;
@@ -437,7 +437,7 @@ function drop(from, to) {
 function sellSel() {
   const b = S.board[S.sel]; if (!b || !b.c) return;
   const price = b.l; S.coins += price; S.board[S.sel] = null; S.sel = -1;
-  toast(`Продано за ${price} 🪙`); bump('coinPill'); save(); render();
+  toast(`Продано за ${price} 💰`); bump('coinPill'); save(); render();
 }
 
 // ---------- rendering ----------
@@ -458,7 +458,7 @@ function renderOrders(counts) {
     const ready = orderReady(o, counts), m = Object.assign({}, counts);
     const needs = o.need.map(n => { const k = n.c + ':' + n.l, have = m[k] > 0; if (have) m[k]--; return `<div class="need ${have ? 'have' : ''}" title="${item(n.c, n.l)[1]}">${item(n.c, n.l)[0]}</div>`; }).join('');
     return `<div class="order ${ready ? 'ready' : ''}"><div class="who" title="${WHO[o.who].n}">${WHO[o.who].e}</div><div class="needs">${needs}</div>
-      <div class="reward">🪙${o.coins} ⭐${o.stars}</div>${ready ? `<button class="go" data-o="${o.id}">Сдать</button>` : ''}</div>`;
+      <div class="reward">💰${o.coins} ⭐${o.stars}</div>${ready ? `<button class="go" data-o="${o.id}">Сдать</button>` : ''}</div>`;
   }).join('');
 }
 function renderBoard(counts) {
@@ -490,7 +490,7 @@ function renderInfo() {
   else {
     const [e, n] = item(b.c, b.l), mx = maxL(b.c);
     const lockedTxt = S.locked[S.sel] ? 'В зарослях: положи сверху такой же предмет' : (b.l < mx ? `Ур. ${b.l}/${mx} · ` + chainRow(b.c, b.l) : 'Максимальный уровень! ' + chainRow(b.c, b.l));
-    h = `<div class="big">${e}</div><div class="txt"><div class="name">${n}</div><div class="desc">${lockedTxt}</div></div>${S.locked[S.sel] ? '' : `<button id="sellBtn">Продать ${b.l}🪙</button>`}`;
+    h = `<div class="big">${e}</div><div class="txt"><div class="name">${n}</div><div class="desc">${lockedTxt}</div></div>${S.locked[S.sel] ? '' : `<button id="sellBtn">Продать ${b.l}💰</button>`}`;
   }
   $('info').innerHTML = h;
   const sb = $('sellBtn'); if (sb) sb.onclick = sellSel;
