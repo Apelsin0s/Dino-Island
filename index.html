@@ -13,7 +13,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Nunito:wght@600;800;900&display=swap">
 <style>
-/* Layout: one-screen app. Stats bar → orders strip → 7×9 merge board → item info → tabs. Island tab swaps the middle. */
+/* Layout: one-screen app with two screens.
+   Map (home): account + currencies → island map with 6 story locations → current goal + Play.
+   Board: back + currencies → orders → 7×9 merge board with events column on the right → item info. */
 :root {
   --sea: #1b8a9a;
   --sea-deep: #0f5965;
@@ -28,7 +30,7 @@
   --display: "Russo One", "Arial Black", system-ui, sans-serif;
   --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
   --emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  --cell: 48px;
+  --cell: 44px;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -40,68 +42,100 @@ body {
 }
 [hidden] { display: none !important; }
 button { font-family: inherit; color: inherit; cursor: pointer; }
-button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 #app {
   height: 100%; display: flex; flex-direction: column; gap: 8px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
-  padding-left: max(12px, env(safe-area-inset-left, 0px));
-  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  padding-left: max(10px, env(safe-area-inset-left, 0px));
+  padding-right: max(10px, env(safe-area-inset-right, 0px));
   max-width: 560px; margin: 0 auto;
 }
+.screen { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 
-/* stats */
-#stats { display: flex; gap: 6px; align-items: center; }
+/* header */
+#top { display: flex; gap: 6px; align-items: center; }
+#acctBtn { display: flex; align-items: center; gap: 8px; border: none; background: none; padding: 0; min-width: 0; }
+.ava { position: relative; width: 46px; height: 46px; flex: 0 0 auto; border-radius: 50%; background: var(--paper); display: grid; place-items: center; font-family: var(--emoji); font-size: 28px; box-shadow: 0 3px 0 rgba(0,0,0,.2), inset 0 0 0 3px var(--sun); }
+.ava b { position: absolute; right: -4px; bottom: -4px; background: var(--coral); color: #fff; font: 400 11px/18px var(--display); min-width: 20px; height: 20px; border-radius: 10px; border: 2px solid var(--paper); text-align: center; }
+.acct-txt { display: flex; flex-direction: column; align-items: flex-start; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.25); min-width: 0; }
+.acct-txt .nm { font: 400 14px var(--display); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xpbar { width: 70px; height: 6px; border-radius: 3px; background: rgba(0,0,0,.25); overflow: hidden; margin-top: 3px; }
+.xpbar i { display: block; height: 100%; background: var(--sun); }
+#backBtn { border: none; background: var(--paper); border-radius: 14px; height: 42px; padding: 0 10px; font: 400 14px var(--display); display: flex; align-items: center; gap: 4px; box-shadow: 0 3px 0 rgba(0,0,0,.18); position: relative; }
+#backBtn .e { font-family: var(--emoji); font-size: 20px; }
+#backBtn .badge, .playBtn .badge { position: absolute; top: -6px; right: -6px; }
+.grow { flex: 1; }
 .pill {
-  display: flex; align-items: center; gap: 5px; background: var(--paper); border-radius: 999px;
-  padding: 4px 10px 4px 6px; font-family: var(--display); font-size: 16px; font-variant-numeric: tabular-nums;
-  box-shadow: 0 3px 0 rgba(0,0,0,.18); border: none; min-width: 0;
+  display: flex; align-items: center; gap: 4px; background: var(--paper); border-radius: 999px;
+  padding: 4px 9px 4px 5px; font-family: var(--display); font-size: 15px; font-variant-numeric: tabular-nums;
+  box-shadow: 0 3px 0 rgba(0,0,0,.18); border: none; min-width: 0; position: relative;
 }
-.pill .ico { font-family: var(--emoji); font-size: 18px; }
-.pill small { font-family: var(--body); font-weight: 800; font-size: 10px; color: var(--muted); }
-#energyPill { flex-direction: row; }
-#energyPill .col { display: flex; flex-direction: column; line-height: 1; }
-#energyPill .plus { background: var(--leaf); color: #fff; border-radius: 50%; width: 18px; height: 18px; display: grid; place-items: center; font-size: 14px; margin-left: 2px; }
-#stats .grow { flex: 1; }
-#chapter { font-family: var(--display); color: #fff; font-size: 13px; text-shadow: 0 2px 0 rgba(0,0,0,.25); text-align: right; line-height: 1.1; }
+.pill .ico { font-family: var(--emoji); font-size: 17px; }
+.pill small { font-family: var(--body); font-weight: 800; font-size: 9px; color: var(--muted); }
+#energyPill .col { display: flex; flex-direction: column; line-height: 1; align-items: flex-start; }
+#energyPill .plus { background: var(--leaf); color: #fff; border-radius: 50%; width: 16px; height: 16px; display: grid; place-items: center; font-size: 13px; }
+.badge { background: var(--coral); color: #fff; font: 900 11px/18px var(--body); min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; text-align: center; box-shadow: 0 0 0 2px var(--paper); }
+
+/* map */
+#mapWrap { flex: 1; min-height: 0; display: grid; place-items: center; }
+#map { position: relative; border-radius: 24px; overflow: hidden; box-shadow: 0 6px 0 rgba(0,0,0,.18), inset 0 0 0 3px rgba(255,255,255,.2); max-width: 100%; }
+#map svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pin { position: absolute; transform: translate(-50%, -50%); border: none; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; z-index: 2; }
+.pin .ic { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-family: var(--emoji); font-size: 26px; background: var(--paper); box-shadow: 0 4px 0 rgba(0,0,0,.25), inset 0 0 0 3px var(--leaf); }
+.pin .lb { font: 400 11px var(--display); color: var(--ink); background: var(--paper); padding: 2px 7px; border-radius: 8px; white-space: nowrap; box-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.pin .pr { font: 900 10px var(--body); color: var(--muted); }
+.pin.done .ic { box-shadow: 0 4px 0 rgba(0,0,0,.25), inset 0 0 0 3px var(--sun); }
+.pin.cur .ic { box-shadow: 0 4px 0 rgba(0,0,0,.25), inset 0 0 0 3px var(--coral); animation: bob 1.3s ease-in-out infinite; }
+.pin.lock .ic { background: #c9d6d2; filter: grayscale(1); opacity: .85; }
+.pin.lock .lb { background: #dfe7e4; color: var(--muted); font-size: 10px; }
+.pin.lock .ic { width: 40px; height: 40px; font-size: 20px; }
+.pin .badge { position: absolute; top: -4px; right: -6px; }
+.deco { position: absolute; transform: translate(-50%, -50%); font-family: var(--emoji); font-size: 20px; line-height: 1; z-index: 1; pointer-events: none; filter: drop-shadow(0 2px 1px rgba(0,0,0,.25)); }
+.deco.new { animation: pop .6s ease-out; }
+@keyframes bob { 50% { transform: translateY(-5px); } }
+#goal { background: var(--paper); border-radius: 18px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+#goal .e { font-family: var(--emoji); font-size: 30px; }
+#goal .t { flex: 1; min-width: 0; }
+#goal .t b { display: block; font: 400 15px var(--display); }
+#goal .t span { font-size: 12px; font-weight: 800; color: var(--muted); }
+.playBtn { position: relative; border: none; border-radius: 18px; padding: 14px; font: 400 22px var(--display); background: linear-gradient(#7dde6a, #3f9e4f); color: #fff; box-shadow: 0 5px 0 #2c7a3a; text-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.playBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #2c7a3a; }
 
 /* orders */
-#orders { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; min-height: 96px; }
+#orders { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; min-height: 92px; }
 #orders::-webkit-scrollbar { display: none; }
 .order {
-  flex: 0 0 auto; min-width: 120px; background: var(--paper); border-radius: 16px; padding: 8px 10px;
-  display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center;
-  box-shadow: 0 3px 0 rgba(0,0,0,.18); position: relative; transition: transform .2s;
+  flex: 0 0 auto; min-width: 116px; background: var(--paper); border-radius: 16px; padding: 7px 9px;
+  display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center; box-shadow: 0 3px 0 rgba(0,0,0,.18);
 }
 .order.ready { background: #eaffd9; box-shadow: 0 3px 0 #6bb04a; }
-.order .who { font-family: var(--emoji); font-size: 30px; grid-row: span 2; line-height: 1; }
+.order .who { font-family: var(--emoji); font-size: 28px; grid-row: span 2; line-height: 1; }
 .order .needs { display: flex; gap: 4px; }
-.need { position: relative; width: 36px; height: 36px; border-radius: 10px; background: var(--sand); display: grid; place-items: center; font-family: var(--emoji); font-size: 22px; }
+.need { position: relative; width: 34px; height: 34px; border-radius: 10px; background: var(--sand); display: grid; place-items: center; font-family: var(--emoji); font-size: 21px; flex: 0 0 auto; }
 .need.have::after { content: "✓"; position: absolute; right: -4px; bottom: -4px; background: var(--leaf); color: #fff; font: 900 11px/16px var(--body); width: 16px; height: 16px; border-radius: 50%; text-align: center; }
-.order .reward { font-size: 12px; font-weight: 800; color: var(--muted); display: flex; gap: 6px; align-items: center; }
-.order .go { grid-column: 1 / -1; background: var(--leaf); color: #fff; border: none; border-radius: 10px; font: 400 14px var(--display); padding: 6px; box-shadow: 0 3px 0 #2c7a3a; }
-.order .go:active { transform: translateY(2px); box-shadow: 0 1px 0 #2c7a3a; }
+.order .reward { font-size: 12px; font-weight: 800; color: var(--muted); }
+.go { grid-column: 1 / -1; background: var(--leaf); color: #fff; border: none; border-radius: 10px; font: 400 14px var(--display); padding: 6px; box-shadow: 0 3px 0 #2c7a3a; }
+.go:active { transform: translateY(2px); box-shadow: 0 1px 0 #2c7a3a; }
 
-/* board */
-#boardWrap { flex: 1; min-height: 0; display: grid; place-items: center; }
+/* board + events */
+#playRow { flex: 1; min-height: 0; display: flex; gap: 6px; align-items: center; }
+#boardWrap { flex: 1; min-width: 0; height: 100%; display: grid; place-items: center; }
 #board {
   display: grid; grid-template-columns: repeat(7, var(--cell)); grid-auto-rows: var(--cell); gap: 3px;
-  padding: 6px; background: #c9a86a; border-radius: 18px; box-shadow: inset 0 0 0 3px rgba(255,255,255,.25), 0 6px 0 rgba(0,0,0,.2);
+  padding: 5px; background: #c9a86a; border-radius: 16px; box-shadow: inset 0 0 0 3px rgba(255,255,255,.25), 0 6px 0 rgba(0,0,0,.2);
 }
-.cell {
-  position: relative; border-radius: 10px; background: var(--sand); display: grid; place-items: center;
-  font-family: var(--emoji); font-size: calc(var(--cell) * .62); line-height: 1; touch-action: none;
-}
+.cell { position: relative; border-radius: 9px; background: var(--sand); display: grid; place-items: center; font-family: var(--emoji); font-size: calc(var(--cell) * .62); line-height: 1; touch-action: none; }
 .cell:nth-child(odd) { background: var(--sand-2); }
 .cell .it { transition: transform .15s; pointer-events: none; }
-.cell .lv { position: absolute; left: 3px; bottom: 2px; font: 900 calc(var(--cell) * .2) var(--body); color: var(--muted); pointer-events: none; }
+.cell .lv { position: absolute; left: 3px; bottom: 1px; font: 900 calc(var(--cell) * .22) var(--body); color: var(--muted); pointer-events: none; }
 .cell.gen { background: radial-gradient(circle, #fff3c4 0%, #ffd56b 100%); box-shadow: inset 0 0 0 2px #e0a52b; }
-.cell.gen::before { content: "⚡"; position: absolute; right: 2px; top: 1px; font-size: calc(var(--cell) * .22); }
+.cell.gen::before { content: "⚡"; position: absolute; right: 1px; top: 0; font-size: calc(var(--cell) * .24); }
 .cell.sel { box-shadow: inset 0 0 0 3px #fff, 0 0 0 2px var(--coral); z-index: 2; }
 .cell.match::after { content: "✓"; position: absolute; right: 2px; top: 2px; background: var(--leaf); color: #fff; font: 900 calc(var(--cell)*.2)/calc(var(--cell)*.3) var(--body); width: calc(var(--cell)*.3); height: calc(var(--cell)*.3); border-radius: 50%; text-align: center; pointer-events: none; }
 .cell.locked { background: #a9cf86; }
 .cell.locked .it { opacity: .85; transform: scale(.85); }
-.cell.locked::before { content: ""; position: absolute; inset: 0; border-radius: 10px; pointer-events: none;
+.cell.locked::before { content: ""; position: absolute; inset: 0; border-radius: 9px; pointer-events: none;
   background: repeating-linear-gradient(45deg, rgba(40,90,30,.35) 0 3px, transparent 3px 12px), repeating-linear-gradient(-45deg, rgba(40,90,30,.3) 0 2px, transparent 2px 13px); }
 .cell.drag-src .it { opacity: .25; }
 .cell.hover { box-shadow: inset 0 0 0 3px var(--sun); }
@@ -110,10 +144,20 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 @keyframes pop { 0% { transform: scale(.3); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
 @keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 #ghost { position: fixed; z-index: 50; pointer-events: none; font-family: var(--emoji); transform: translate(-50%, -60%) scale(1.25); filter: drop-shadow(0 6px 6px rgba(0,0,0,.3)); line-height: 1; }
+#events { width: 54px; flex: 0 0 54px; display: flex; flex-direction: column; gap: 8px; align-self: center; }
+.ev { position: relative; border: none; width: 54px; padding: 6px 0 5px; border-radius: 14px; background: var(--paper); display: flex; flex-direction: column; align-items: center; gap: 2px; box-shadow: 0 3px 0 rgba(0,0,0,.2); }
+.ev .e { font-family: var(--emoji); font-size: 26px; line-height: 1; }
+.ev .l { font: 900 10px var(--body); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ev .bar { width: 40px; height: 4px; border-radius: 2px; background: #eadfc6; overflow: hidden; }
+.ev .bar i { display: block; height: 100%; background: var(--coral); }
+.ev.hot { box-shadow: 0 3px 0 #6bb04a, inset 0 0 0 2px var(--leaf); background: #eaffd9; }
+.ev.hot .e { animation: bob 1.1s ease-in-out infinite; }
+.ev.off { opacity: .55; }
+.ev .badge { position: absolute; top: -6px; right: -6px; }
 
 /* info bar */
-#info { display: flex; align-items: center; gap: 10px; background: var(--paper); border-radius: 16px; padding: 8px 10px; min-height: 56px; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
-#info .big { font-family: var(--emoji); font-size: 30px; line-height: 1; }
+#info { display: flex; align-items: center; gap: 10px; background: var(--paper); border-radius: 16px; padding: 7px 10px; min-height: 54px; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+#info .big { font-family: var(--emoji); font-size: 28px; line-height: 1; }
 #info .txt { flex: 1; min-width: 0; }
 #info .name { font-family: var(--display); font-size: 15px; }
 #info .desc { font-size: 12px; color: var(--muted); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -121,47 +165,60 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 .chainrow .q { filter: grayscale(1) brightness(.3); opacity: .35; }
 #sellBtn { border: none; background: var(--coral); color: #fff; border-radius: 12px; padding: 8px 10px; font: 400 13px var(--display); box-shadow: 0 3px 0 #c4522f; }
 
-/* tabs */
-#tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.tab { position: relative; border: none; border-radius: 14px; padding: 10px; font: 400 16px var(--display); background: rgba(255,255,255,.35); color: #fff; }
-.tab.on { background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 rgba(0,0,0,.18); }
-.tab .badge { position: absolute; top: -4px; right: 10px; background: var(--coral); color: #fff; font: 900 11px/18px var(--body); min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; }
-
-/* island */
-#islandView { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; scrollbar-width: none; }
-#scene {
-  position: relative; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; flex: 0 0 auto; border-radius: 22px; overflow: hidden;
-  background: radial-gradient(ellipse 48% 40% at 50% 56%, #7bd389 0 70%, var(--sand) 71% 86%, #7fdde3 87% 93%, transparent 94%), linear-gradient(#5cc4d0, #1b8a9a);
-  box-shadow: inset 0 0 0 3px rgba(255,255,255,.25);
-}
-.spot { position: absolute; transform: translate(-50%, -50%); font-family: var(--emoji); font-size: clamp(24px, 8vw, 38px); line-height: 1; transition: filter .4s, transform .4s; }
-.spot.off { filter: grayscale(1) brightness(1.4) opacity(.35); }
-.spot.next { animation: bob 1.2s ease-in-out infinite; filter: none; }
-.spot.next::after { content: "❗"; position: absolute; right: -12px; top: -12px; font-size: 16px; }
-@keyframes bob { 50% { transform: translate(-50%, -62%); } }
-.card { background: var(--paper); border-radius: 18px; padding: 14px; box-shadow: 0 3px 0 rgba(0,0,0,.18); display: grid; gap: 8px; }
-.card h3 { margin: 0; font: 400 18px var(--display); text-wrap: balance; }
-.card p { margin: 0; font-size: 14px; line-height: 1.4; }
-.progress { height: 10px; background: #eadfc6; border-radius: 6px; overflow: hidden; }
-.progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--sun), var(--coral)); }
-.btn { border: none; border-radius: 14px; padding: 12px; font: 400 17px var(--display); background: linear-gradient(#ffd166, #ff9f1c); color: #3a1a05; box-shadow: 0 4px 0 #b5642a; }
+/* sheets, dialog, toast */
+.overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(10,40,45,.45);
+  padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px)); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); padding-top: calc(env(safe-area-inset-top, 0px) + 20px); }
+.sheet { width: min(540px, 100%); max-height: 100%; overflow-y: auto; background: var(--paper); border-radius: 22px; padding: 16px; display: grid; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); touch-action: pan-y; }
+.sheet h2 { margin: 0; font: 400 21px var(--display); text-wrap: balance; display: flex; align-items: center; gap: 8px; }
+.sheet h2 .e { font-family: var(--emoji); font-size: 28px; }
+.sheet h2 .x { margin-left: auto; border: none; background: #efe5cf; border-radius: 50%; width: 34px; height: 34px; font: 900 16px var(--body); color: var(--muted); flex: 0 0 auto; }
+.sheet p { margin: 0; font-size: 14px; line-height: 1.45; }
+.sheet h4 { margin: 0; font: 400 14px var(--display); color: var(--muted); letter-spacing: .03em; }
+.tasks { display: grid; gap: 8px; }
+.task { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: #f6efdf; }
+.task .e { font-family: var(--emoji); font-size: 24px; width: 30px; text-align: center; }
+.task .t { flex: 1; min-width: 0; font-weight: 800; font-size: 14px; }
+.task .s { font-weight: 900; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.task.done { background: #e4f5d8; }
+.task.done .s { color: var(--leaf); }
+.task.lock { opacity: .55; }
+.task.cur { background: #fff1d6; box-shadow: inset 0 0 0 2px var(--sun); }
+.btn { border: none; border-radius: 14px; padding: 12px; font: 400 16px var(--display); background: linear-gradient(#ffd166, #ff9f1c); color: #3a1a05; box-shadow: 0 4px 0 #b5642a; }
+.btn.sm { padding: 7px 10px; font-size: 13px; border-radius: 11px; box-shadow: 0 3px 0 #b5642a; }
+.btn.green { background: linear-gradient(#7dde6a, #3f9e4f); color: #fff; box-shadow: 0 4px 0 #2c7a3a; }
 .btn:disabled { background: #e3d9c4; color: var(--muted); box-shadow: 0 4px 0 #c4b89d; }
 .btn.ghost { background: transparent; box-shadow: none; color: var(--muted); font: 800 13px var(--body); padding: 6px; }
 .clues { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
 .clues li { display: flex; gap: 8px; }
 .clues .e { font-family: var(--emoji); }
-
-/* dialog + toast */
-#dialog { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(10,40,45,.35);
-  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); }
-#dialog .box { width: min(520px, 100%); background: var(--paper); border-radius: 20px; padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+.progress { height: 10px; background: #eadfc6; border-radius: 6px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--sun), var(--coral)); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.avas { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.avas button { border: none; border-radius: 12px; background: #f1e8d4; font-family: var(--emoji); font-size: 26px; padding: 6px 0; }
+.avas button.on { background: #fff1d6; box-shadow: inset 0 0 0 3px var(--sun); }
+.field { width: 100%; border: 2px solid #e3d6b8; border-radius: 12px; padding: 10px 12px; font: 800 16px var(--body); background: #fff; color: var(--ink); }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stats div { background: #f6efdf; border-radius: 12px; padding: 8px 10px; }
+.stats b { display: block; font: 400 20px var(--display); font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; font-weight: 800; color: var(--muted); }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 12px; background: #f6efdf; font-weight: 800; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--leaf); }
+.journal { display: grid; gap: 10px; }
+.journal h5 { margin: 6px 0 0; font: 400 14px var(--display); color: var(--coral); }
+.jl { display: flex; gap: 8px; font-size: 14px; line-height: 1.4; }
+.jl .e { font-family: var(--emoji); font-size: 20px; }
+.note { font-size: 12px; font-weight: 800; color: var(--muted); }
+.milestones { display: grid; gap: 6px; }
+.ms { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; background: #f6efdf; font-weight: 800; font-size: 14px; }
+.ms.ok { background: #e4f5d8; }
+#dialog .box { width: min(540px, 100%); background: var(--paper); border-radius: 20px; padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
 #dialog .av { font-family: var(--emoji); font-size: 48px; line-height: 1; grid-row: span 2; }
-#dialog .who { font: 400 16px var(--display); color: var(--coral); }
-#dialog .say { font-size: 16px; line-height: 1.4; font-weight: 600; }
-#dialog .btn { grid-column: 1 / -1; }
-#toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 60px); transform: translateX(-50%); z-index: 70; background: rgba(43,33,24,.92); color: #fff; padding: 8px 14px; border-radius: 12px; font-weight: 800; font-size: 14px; max-width: calc(100% - 32px); text-align: center; transition: opacity .3s; pointer-events: none; }
-#shop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(10,40,45,.45); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-#shop .card { width: min(340px, 100%); text-align: center; }
+#dialog .who { font: 400 16px var(--display); color: var(--coral); display: flex; justify-content: space-between; gap: 8px; }
+#dialog .who small { font: 800 11px var(--body); color: var(--muted); }
+#dialog .say { font-size: 16px; line-height: 1.4; font-weight: 600; min-height: 3em; }
+#dialog .acts { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; gap: 8px; }
+#toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 64px); transform: translateX(-50%); z-index: 80; background: rgba(43,33,24,.92); color: #fff; padding: 8px 14px; border-radius: 12px; font-weight: 800; font-size: 14px; max-width: calc(100% - 32px); text-align: center; transition: opacity .3s; pointer-events: none; }
 .bump { animation: bump .4s; }
 @keyframes bump { 50% { transform: scale(1.2); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
@@ -170,41 +227,39 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 </head>
 <body>
 <div id="app">
-  <div id="stats">
-    <button class="pill" id="energyPill" aria-label="Энергия, купить ещё"><span class="ico">⚡</span><span class="col"><span id="energy">100</span><small id="energyTimer"></small></span><span class="plus">+</span></button>
+  <div id="top">
+    <button id="acctBtn" aria-label="Аккаунт и настройки"><span class="ava" id="topAva">🦕<b id="topLvl">1</b></span><span class="acct-txt"><span class="nm" id="topName">Игрок</span><span class="xpbar"><i id="topXp" style="width:0%"></i></span></span></button>
+    <button id="backBtn" hidden aria-label="К карте"><span class="e">🗺️</span>Карта<span class="badge" id="badgeMap" hidden>!</span></button>
+    <div class="grow"></div>
+    <button class="pill" id="energyPill" aria-label="Энергия"><span class="ico">⚡</span><span class="col"><span id="energy">100</span><small id="energyTimer"></small></span><span class="plus">+</span></button>
     <div class="pill" id="coinPill"><span class="ico">💰</span><span id="coins">0</span></div>
     <div class="pill" id="starPill"><span class="ico">⭐</span><span id="stars">0</span></div>
-    <div class="grow"></div>
-    <div id="chapter"></div>
   </div>
 
-  <div id="mergeView" style="display:contents">
+  <div class="screen" id="mapScreen">
+    <div id="mapWrap"><div id="map"></div></div>
+    <div id="goal"></div>
+    <button class="playBtn" id="playBtn">▶ Играть<span class="badge" id="badgePlay" hidden></span></button>
+  </div>
+
+  <div class="screen" id="boardScreen" hidden>
     <div id="orders"></div>
-    <div id="boardWrap"><div id="board"></div></div>
+    <div id="playRow">
+      <div id="boardWrap"><div id="board"></div></div>
+      <div id="events"></div>
+    </div>
     <div id="info"></div>
-  </div>
-
-  <div id="islandView" hidden>
-    <div id="scene"></div>
-    <div class="card" id="taskCard"></div>
-    <div class="card"><h3>🔍 Улики</h3><ul class="clues" id="clues"></ul></div>
-    <div class="card"><button class="btn ghost" id="resetBtn">Начать игру заново</button></div>
-  </div>
-
-  <div id="tabs">
-    <button class="tab on" id="tabMerge">🎲 Поле<span class="badge" id="badgeMerge" hidden></span></button>
-    <button class="tab" id="tabIsland">🏝️ Остров<span class="badge" id="badgeIsland" hidden>!</span></button>
   </div>
 </div>
 
 <div id="ghost" hidden></div>
 <div id="toast" style="opacity:0"></div>
-<div id="dialog" hidden><div class="box"><div class="av" id="dAv"></div><div class="who" id="dWho"></div><div class="say" id="dSay"></div><button class="btn" id="dNext">Дальше</button></div></div>
-<div id="shop" hidden><div class="card">
-  <h3>⚡ Энергия</h3>
-  <p>Энергия тратится на гнёзда и деревья. Она восстанавливается сама: +1 каждые 12 секунд.</p>
-  <button class="btn" id="buyEnergy">+25 ⚡ за 20 💰</button>
-  <button class="btn ghost" id="closeShop">Закрыть</button>
+<div class="overlay" id="sheetOv" hidden><div class="sheet" id="sheet"></div></div>
+<div class="overlay" id="dialog" hidden><div class="box">
+  <div class="av" id="dAv"></div>
+  <div class="who"><span id="dWho"></span><small id="dCount"></small></div>
+  <div class="say" id="dSay"></div>
+  <div class="acts"><button class="btn ghost" id="dSkip">Пропустить</button><button class="btn" id="dNext">Дальше</button></div>
 </div></div>
 
 <script>
@@ -212,9 +267,9 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
 'use strict';
 const $ = id => document.getElementById(id);
 const COLS = 7, ROWS = 9, N = COLS * ROWS;
-const MAX_E = 100, E_REGEN_MS = 12000, SAVE_KEY = 'dino-island-merge-v1';
+const MAX_E = 100, E_REGEN_MS = 12000, SAVE_KEY = 'dino-island-v2', OLD_KEY = 'dino-island-merge-v1';
 
-// ---------- content ----------
+// ================= CONTENT =================
 const CHAINS = {
   egg:   { gen: '🧺', genName: 'Гнездо-корзинка', items: [['🥚','Яйцо'],['🐣','Вылупыш'],['🐥','Птенчик'],['🦎','Ящерка'],['🐊','Крокодильчик'],['🦕','Бронтозаврик'],['🦖','Тирекс']] },
   fruit: { gen: '🌳', genName: 'Фруктовое дерево', items: [['🍇','Виноград'],['🍒','Вишня'],['🍓','Клубника'],['🍑','Персик'],['🥭','Манго'],['🍍','Ананас'],['🍉','Арбуз']] },
@@ -226,58 +281,158 @@ const WHO = {
   kora:  { e: '🐢', n: 'Бабушка Кора' },
   kesha: { e: '🦜', n: 'Капитан Кеша' },
   mo:    { e: '🐸', n: 'Лягушонок Мо' },
-  vetta: { e: '🦅', n: 'Ветта' }
+  vetta: { e: '🦅', n: 'Ветта' },
+  you:   { e: '⭐', n: 'Ты' }
 };
-// Island restoration = story chapters
-const TASKS = [
-  { t: 'Расчистить пляж', cost: 1, icon: '🏖️', x: 72, y: 74,
-    after: [['pip','Ура, пляж чистый! Ой… смотри, на песке огромные следы с тремя когтями.'],['pip','Такие лапы не у дино. Запишу в улики!']],
-    clue: ['🐾','Следы с тремя когтями на пляже'] },
-  { t: 'Построить хижину Пипа', cost: 2, icon: '⛺', x: 36, y: 58, unlock: 'shell', newWho: 'kesha',
-    after: [['kesha','Карр! Капитан Кеша на связи. Я видел ночью большую тень над вулканом!'],['kesha','Держи пляжный зонтик: под ним всегда найдутся ракушки.']],
-    clue: ['🌑','Ночью над вулканом летает большая тень'] },
-  { t: 'Починить мостик', cost: 2, icon: '🌉', x: 56, y: 44,
-    after: [['kora','Мостик снова цел, внучек. А это что под ним застряло?'],['kora','Перо! Длинное, кожистое… Такие перья я видела только в старых сказках.']],
-    clue: ['✒️','Огромное кожистое перо под мостиком'] },
-  { t: 'Зажечь фонарь у бухты', cost: 3, icon: '🏮', x: 18, y: 46, unlock: 'stone', newWho: 'mo',
-    after: [['mo','Привет! Я Мо, живу в бухте. Свет фонаря разбудил вулкан, и он начал выбрасывать камни.'],['mo','Камни можно соединять. Из них получаются настоящие сокровища!']],
-    clue: ['🔥','Вулкан снова проснулся'] },
-  { t: 'Посадить сад', cost: 3, icon: '🌻', x: 30, y: 76,
-    after: [['pip','Сад! Смотри, у пустых гнёзд лежат тёплые камешки из вулкана.'],['pip','Кто-то будто пытался согреть яйца…']],
-    clue: ['♨️','Тёплые камни возле пустых гнёзд'] },
-  { t: 'Построить причал', cost: 4, icon: '⛵', x: 86, y: 52,
-    after: [['kesha','Причал готов! С мачты видно: тень всегда улетает в пещеру на склоне вулкана.']],
-    clue: ['🕳️','Тень прячется в пещере на вулкане'] },
-  { t: 'Проложить тропу к вулкану', cost: 4, icon: '👣', x: 36, y: 32,
-    after: [['kora','Тропа открыта. Будь осторожен, внучек. Ночи стали холодными, а вулкан тёплый…']],
-    clue: ['❄️','Ночи на острове стали холодными'] },
-  { t: 'Зажечь факелы в пещере', cost: 5, icon: '🔦', x: 64, y: 20, newWho: 'vetta',
-    after: [['vetta','Ой! Не бойтесь… Я Ветта, птерозавр. Это я уносила яйца.'],['vetta','Ночью было так холодно! Я грела их у лавы, чтобы малыши не замёрзли.'],['pip','Так вот кто это был! Ветта, давай построим тёплый дом для всех яиц!']],
-    clue: ['🦅','Тайна раскрыта: Ветта грела яйца у лавы'] },
-  { t: 'Построить тёплый инкубатор', cost: 5, icon: '🏡', x: 60, y: 66,
-    after: [['vetta','Здесь тепло даже холодной ночью. Спасибо! Теперь все яйца в безопасности.']],
-    clue: ['🥚','Все яйца теперь в тепле'] },
-  { t: 'Устроить праздник острова', cost: 6, icon: '🎉', x: 46, y: 46,
-    after: [['pip','Праздник! Остров снова живой, а у нас появился новый друг.'],['kora','Ты молодец. Заказы будут приходить и дальше, остров всегда рад помощи.']],
-    clue: ['🎆','Остров восстановлен!'] }
+const AVATARS = ['🦕','🦖','🐢','🦜','🐸','🦅','🐊','🦎','🐙','🦀','🐬','🐥'];
+
+// The whole island is one story: 6 locations × 4 tasks. x/y are % of the map.
+const LOCS = [
+  { id: 'beach', name: 'Солнечный пляж', icon: '🏖️', x: 70, y: 84, who: ['pip','kora'],
+    desc: 'Здесь ты высадился на остров. Песок завален корягами, а гнёзда у воды пусты.',
+    intro: [
+      ['pip','Привет! Я Пип, малыш-бронтозавр. Добро пожаловать на Дино-остров!'],
+      ['pip','У нас беда: каждую холодную ночь с острова пропадают яйца. Никто не знает, куда.'],
+      ['kora','Здравствуй, путник. Я Бабушка Кора. Остров зарос и опустел: жители прячутся по домам от страха.'],
+      ['pip','Нажимай на корзинку 🧺 и дерево 🌳 на поле, и они дадут предметы. Перетащи два одинаковых предмета друг на друга, и получится предмет получше!'],
+      ['kora','Выполняй заказы жителей наверху поля, за них дают звёзды ⭐. На звёзды мы вместе восстановим остров.'],
+      ['pip','А ещё справа на поле бывают события. Там можно кого-нибудь спасти! Пойдём, начнём с пляжа.']
+    ],
+    tasks: [
+      { t: 'Убрать коряги с пляжа', cost: 1, icon: '🧹',
+        after: [['pip','Пляж чистый! Ой… смотри, на мокром песке огромные следы с тремя когтями.'],['kora','Такие лапы не у дино. Запомни это, внучек.']],
+        clue: ['🐾','Следы с тремя когтями на пляже'] },
+      { t: 'Поставить пляжные зонтики', cost: 1, icon: '⛱️', unlock: 'shell',
+        after: [['pip','Под зонтиками прохладно, а в песке полно ракушек! Теперь на поле есть пляжный зонтик ⛱️.']] },
+      { t: 'Построить спасательную вышку', cost: 2, icon: '🚩',
+        after: [['pip','С вышки видно весь остров! Вон деревня, вон бухта… а над вулканом кружит что-то большое.'],['kora','В старину над нашим островом летали Небесные хранители. Но это сказки…']],
+        clue: ['🌑','Над вулканом кружит большая тень'] },
+      { t: 'Разжечь сигнальный костёр', cost: 2, icon: '🔥',
+        after: [['kora','Тёплый огонь! Жители увидят его и поймут, что на острове снова есть кому помочь.'],['pip','Пойдём в деревню, там тоже пропали яйца!']] }
+    ] },
+  { id: 'village', name: 'Деревня Дино', icon: '🏘️', x: 32, y: 74, who: ['kesha'],
+    desc: 'Тихая деревушка. Хижины покосились, огород зарос, а жители не выходят по ночам.',
+    intro: [
+      ['kora','Это наша деревня. Раньше тут было весело, а теперь все боятся темноты.'],
+      ['kesha','Карр! Кто это тут шумит? Капитан Кеша, попугай и бывалый моряк, к вашим услугам!'],
+      ['kesha','Помогите починить деревню, а я расскажу, что видел своими глазами.']
+    ],
+    tasks: [
+      { t: 'Починить хижины', cost: 2, icon: '⛺',
+        after: [['kesha','Хижины целы! Слушайте: я видел ночью огромную тень. Она летела очень тихо и низко.']],
+        clue: ['🦇','Тень летает ночью тихо и низко'] },
+      { t: 'Расчистить колодец', cost: 2, icon: '⛲',
+        after: [['pip','Вода чистая! А на камнях колодца глубокие царапины… такие же три когтя, как на пляже!']],
+        clue: ['💧','Царапины от трёх когтей у колодца'] },
+      { t: 'Вскопать огород', cost: 3, icon: '🥕',
+        after: [['kesha','Я вёл судовой журнал. Яйца пропадали только в самые холодные ночи. Странно, правда?']],
+        clue: ['❄️','Яйца пропадают только в холодные ночи'] },
+      { t: 'Построить сторожевую башню', cost: 3, icon: '🏯',
+        after: [['kesha','Всю ночь дежурил на башне! Тень пролетела над деревней и опустилась к Мангровой бухте.'],['pip','Значит, нам туда! Говорят, в бухте живёт лягушонок Мо.']] }
+    ] },
+  { id: 'bay', name: 'Мангровая бухта', icon: '🌊', x: 17, y: 48, who: ['mo'],
+    desc: 'Тёплая бухта среди мангровых корней. Здесь по ночам кто-то пьёт воду.',
+    intro: [
+      ['mo','Ква! Гости! Я Мо, хозяин этой бухты. Тут всё заросло тиной и корнями.'],
+      ['mo','По ночам сюда прилетает кто-то огромный, пьёт воду и улетает. Я прячусь под листом и дрожу.']
+    ],
+    tasks: [
+      { t: 'Расчистить протоку', cost: 3, icon: '🛶',
+        after: [['mo','Протока свободна! Ой, гляньте, в корнях застряло перо. Длинное и кожистое, как у летучей мыши, только огромное.']],
+        clue: ['✒️','Огромное кожистое перо в мангровых корнях'] },
+      { t: 'Зажечь фонарь у бухты', cost: 3, icon: '🏮', unlock: 'stone',
+        after: [['mo','Фонарь горит! Ой… земля дрожит. Свет разбудил вулкан, и он начал выбрасывать камни!'],['pip','Камни тоже можно соединять! На поле появился вулкан 🌋.']] },
+      { t: 'Построить причал', cost: 4, icon: '⛵',
+        after: [['kesha','С причала видно лучше, чем с мачты! Следы на иле ведут вглубь Папоротникового леса.']],
+        clue: ['👣','Следы ведут в Папоротниковый лес'] },
+      { t: 'Перекинуть мостик через бухту', cost: 4, icon: '🌉',
+        after: [['mo','Мостик готов, теперь в лес можно пройти посуху. Я с вами! Только чур я сзади.']] }
+    ] },
+  { id: 'forest', name: 'Папоротниковый лес', icon: '🌿', x: 52, y: 52, who: [],
+    desc: 'Древний лес с папоротниками выше дино. В глубине стоит каменный тотем.',
+    intro: [
+      ['kora','Папоротниковый лес… Я не была здесь с юности. Где-то тут стоит тотем Небесных хранителей.'],
+      ['kora','Легенда говорит: хранители берегли остров, пока вулкан был тёплым. Когда он уснул, они улетели.']
+    ],
+    tasks: [
+      { t: 'Проложить тропинку', cost: 4, icon: '🌱',
+        after: [['pip','Смотрите, пустое гнездо! А вокруг него лежат камешки. Они тёплые, как будто из вулкана!']],
+        clue: ['♨️','Тёплые вулканические камни у пустых гнёзд'] },
+      { t: 'Посадить цветочную поляну', cost: 4, icon: '🌻',
+        after: [['mo','Ква! Под цветами скорлупки. Яйцо не разбили, из него кто-то спокойно вылупился!'],['pip','Значит, яйца не воровали ради злого дела. Их кто-то берёг?']],
+        clue: ['🐣','Из пропавших яиц спокойно вылупляются малыши'] },
+      { t: 'Восстановить древний тотем', cost: 5, icon: '🗿',
+        after: [['kora','На тотеме надпись: «Хранитель согреет детей острова у сердца горы, когда придёт холод».'],['pip','Сердце горы… это же вулкан!']],
+        clue: ['📜','Надпись: хранитель греет детей у сердца горы'] },
+      { t: 'Выйти к подножию вулкана', cost: 5, icon: '🌄',
+        after: [['kesha','Карр! Дальше тропа к вулкану. Будьте осторожны, там горячо!']] }
+    ] },
+  { id: 'trail', name: 'Тропа к вулкану', icon: '⛰️', x: 73, y: 31, who: [],
+    desc: 'Горячая каменистая тропа. Чем выше, тем теплее, даже ночью.',
+    intro: [
+      ['pip','Ух, как тепло! Внизу ночи стали холодными, а тут камни греют лапы.'],
+      ['kora','Вулкан долго спал, и остров остывал. Вот почему ночи такие холодные.']
+    ],
+    tasks: [
+      { t: 'Вырубить ступени в скале', cost: 5, icon: '🧗',
+        after: [['pip','Наверху гнездо из тёплых камней! Огромное, как моя хижина.']],
+        clue: ['🏔️','Огромное гнездо из тёплых камней на скале'] },
+      { t: 'Обустроить горячий источник', cost: 5, icon: '♨️',
+        after: [['mo','Тёплая вода! Ква-а-а… Тут можно греться всем жителям в холодные ночи.']] },
+      { t: 'Зажечь факелы на тропе', cost: 6, icon: '🔦',
+        after: [['kesha','Факелы горят! Впереди светится вход в пещеру. Внутри кто-то шевелится…']],
+        clue: ['🕳️','Светящаяся пещера на склоне вулкана'] },
+      { t: 'Расчистить вход в пещеру', cost: 6, icon: '⛏️',
+        after: [['pip','Вход свободен. Мне немного страшно… Но мы же вместе, правда?']] }
+    ] },
+  { id: 'cave', name: 'Пещера хранителя', icon: '🦅', x: 45, y: 17, who: ['vetta'],
+    desc: 'Тёплая пещера у сердца вулкана. Здесь раскрывается тайна острова.',
+    intro: [
+      ['vetta','Ой! Не бойтесь, пожалуйста… Я Ветта, птерозавр. Последняя из Небесных хранителей.'],
+      ['vetta','Когда вулкан уснул, ночи стали ледяными. Яйца в гнёздах замерзали.'],
+      ['vetta','Я уносила их сюда, к тёплой лаве, а потом возвращала малышей… Но все так пугались моей тени, что я перестала показываться.'],
+      ['pip','Так вот кто это был! Ты не воровала яйца, ты их спасала! Ветта, давай устроим всё по-новому, вместе.']
+    ],
+    tasks: [
+      { t: 'Осветить пещеру', cost: 6, icon: '💡',
+        after: [['vetta','Как светло! Смотрите, тут малыши, которых я согрела. Они здоровы!']],
+        clue: ['🦅','Тайна раскрыта: Ветта спасала яйца от холода'] },
+      { t: 'Вернуть малышей домой', cost: 6, icon: '🐣',
+        after: [['kora','Внуки вернулись! Ветта, прости нас, что мы боялись тебя.'],['vetta','Я не сержусь. Мне так долго было одиноко…']] },
+      { t: 'Построить тёплый инкубатор', cost: 7, icon: '🏡',
+        after: [['vetta','В инкубаторе тепло от вулканических камней даже в самую холодную ночь. Больше никто не замёрзнет!']],
+        clue: ['🥚','Все яйца острова теперь в тепле'] },
+      { t: 'Устроить праздник острова', cost: 8, icon: '🎉',
+        after: [['pip','Праздник! Остров снова живой, а у нас появилась новая подруга!'],['vetta','Я буду охранять остров с неба, как хранители в старину.'],['kora','Ты молодец, путник. Это теперь и твой остров. Жители будут рады твоей помощи и дальше.']] }
+    ] }
 ];
-const INTRO = [
-  ['pip','Привет! Я Пип. Добро пожаловать на Дино-остров!'],
-  ['pip','У нас беда: по ночам пропадают яйца, а остров совсем зарос.'],
-  ['pip','Нажимай на корзинку 🧺 и дерево 🌳, чтобы получать предметы. Перетащи два одинаковых предмета друг на друга, и они станут лучше!'],
-  ['kora','А я Бабушка Кора. Выполняй наши заказы наверху, за них дают звёзды ⭐.'],
-  ['pip','За звёзды мы восстановим остров и раскроем тайну пропавших яиц!']
+const TASKS = [];
+LOCS.forEach((L, li) => L.tasks.forEach((t, ti) => TASKS.push(Object.assign({ loc: li, ti }, t))));
+const ENDING = [['pip','Спасибо, что прошёл с нами весь путь! Заказы и спасения продолжаются, остров всегда ждёт тебя.']];
+
+// Rescue events (right column of the board)
+const RESCUES = [
+  { e: '🐢', t: 'Черепашонок в сетях', s: 'Маленький черепашонок запутался в старой сети у пляжа. Принеси то, что нужно, чтобы его освободить!', thanks: ['kora','Это мой правнук! Спасибо, что выпутал его из сети.'] },
+  { e: '🐣', t: 'Птенец упал из гнезда', s: 'Птенчик выпал из гнезда и пищит под пальмой. Помоги вернуть его наверх!', thanks: ['pip','Птенчик снова в гнезде и уже спит. Ты герой!'] },
+  { e: '🦎', t: 'Ящерку унесло на плоту', s: 'Ящерка уснула на листе, и её унесло течением в бухту. Собери всё для спасательной лодки!', thanks: ['mo','Ква! Ящерка на берегу, мокрая, но довольная.'] },
+  { e: '🐸', t: 'Лягушата в ловушке лиан', s: 'Лягушата Мо запутались в лианах на болоте. Нужно расчистить им путь!', thanks: ['mo','Мои братишки дома! Я тебе этого не забуду, ква!'] },
+  { e: '🦕', t: 'Малыш заблудился в лесу', s: 'Малыш-дино ушёл за бабочкой и заблудился в Папоротниковом лесу. Помоги собрать поисковый отряд!', thanks: ['kesha','Нашёлся! Сидел под папоротником и ел ягоды. Карр!'] },
+  { e: '🐬', t: 'Дельфин на мели', s: 'Отлив оставил дельфина на мелководье. Скорее, ему нужна помощь!', thanks: ['kesha','Дельфин уплыл и сделал сальто на прощание!'] }
+];
+const MARATHON = [
+  { n: 10, r: { e: 15 } }, { n: 25, r: { c: 25 } }, { n: 50, r: { s: 2 } }, { n: 100, r: { s: 4, c: 50 } }
 ];
 
-// ---------- state ----------
-const store = {
-  get() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; } },
-  set(v) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(v)); } catch (e) {} },
-  clear() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
-};
+// ================= STATE / SAVE =================
 const rnd = n => Math.floor(Math.random() * n);
 const pick = a => a[rnd(a.length)];
 const idx = (r, c) => r * COLS + c;
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const local = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
 
 function newState() {
   const board = Array(N).fill(null), locked = Array(N).fill(false);
@@ -292,18 +447,73 @@ function newState() {
   }
   board[idx(7, 3)] = { gift: 1 };
   return {
-    board, locked, energy: MAX_E, eTs: Date.now(), coins: 10, stars: 0,
-    task: 0, chains: ['egg', 'fruit'], who: ['pip', 'kora'], orders: [], oid: 1,
-    found: { 'egg:1': 1, 'fruit:1': 1 }, introDone: false, hintStar: false, sel: -1
+    v: 2, ts: Date.now(), board, locked, energy: MAX_E, eTs: Date.now(), coins: 10, stars: 0,
+    task: 0, seenLoc: [], chains: ['egg', 'fruit'], who: ['pip', 'kora'], orders: [], oid: 1,
+    found: { 'egg:1': 1, 'fruit:1': 1 }, sel: -1, xp: 0, lvl: 1,
+    profile: { name: 'Путник', ava: '🦕' }, settings: { sound: true, vibe: true },
+    stats: { merges: 0, orders: 0, rescues: 0 },
+    ev: { daily: '', mar: { day: '', n: 0, got: [] }, res: null, resNext: 0 }
   };
 }
-let S = store.get();
-if (!S || !S.board || S.board.length !== N) S = newState();
-const save = () => store.set(S);
+function normalize(s) {
+  const d = newState();
+  for (const k in d) if (s[k] === undefined) s[k] = d[k];
+  for (const k in d.ev) if (s.ev[k] === undefined) s.ev[k] = d.ev[k];
+  for (const k in d.stats) if (s.stats[k] === undefined) s.stats[k] = 0;
+  return s;
+}
+function migrateOld(o) {
+  const s = newState();
+  if (o.board && o.board.length === N) { s.board = o.board; s.locked = o.locked; }
+  ['energy', 'eTs', 'coins', 'found', 'chains'].forEach(k => { if (o[k] !== undefined) s[k] = o[k]; });
+  const oldCosts = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6];
+  s.stars = (o.stars || 0) + oldCosts.slice(0, o.task || 0).reduce((a, b) => a + b, 0);
+  s.chains = s.chains.filter(c => c === 'egg' || c === 'fruit');
+  s.board = s.board.map(b => b && b.g && !s.chains.includes(b.g) ? null : b && b.c && !s.chains.includes(b.c) ? { c: 'egg', l: Math.min(b.l, 7) } : b);
+  return s;
+}
+let S = local.get(SAVE_KEY);
+if (S && S.board && S.board.length === N) S = normalize(S);
+else { const old = local.get(OLD_KEY); S = old && old.board ? migrateOld(old) : newState(); }
 
-// ---------- helpers ----------
+// Cloud save (claude.ai account) when available; localStorage otherwise.
+let cloud = null, cloudBusy = false, cloudDirty = false, cloudT = 0;
+function save() {
+  S.ts = Date.now(); local.set(SAVE_KEY, S);
+  if (cloud) { cloudDirty = true; clearTimeout(cloudT); cloudT = setTimeout(flushCloud, 2500); }
+}
+async function flushCloud() {
+  if (!cloud || cloudBusy || !cloudDirty) return;
+  cloudBusy = true; cloudDirty = false;
+  try { await cloud.set({ json: JSON.stringify(S), ts: S.ts }); }
+  catch (e) { if (e && e.code === 'invalid_argument') cloud = null; }
+  cloudBusy = false;
+  if (cloudDirty) cloudT = setTimeout(flushCloud, 2500);
+}
+async function initCloud() {
+  try {
+    if (!window.claude || !window.claude.use) return;
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if (!db || !user) return;
+    const uid = await user.id(); if (!uid) return;
+    const ref = db.doc('data/users/' + uid + '/save');
+    const snap = await ref.get();
+    cloud = ref;
+    if (snap.exists) {
+      const d = snap.data();
+      if (d && d.ts > (S.ts || 0) && typeof d.json === 'string') {
+        const r = JSON.parse(d.json);
+        if (r && r.board && r.board.length === N) { S = normalize(r); local.set(SAVE_KEY, S); fillOrders(); renderAll(); maybeStory(); }
+      } else if (!d || d.ts < S.ts) { cloudDirty = true; flushCloud(); }
+    } else { cloudDirty = true; flushCloud(); }
+  } catch (e) { cloud = null; }
+}
+
+// ================= HELPERS =================
 const item = (c, l) => CHAINS[c].items[l - 1];
 const maxL = c => CHAINS[c].items.length;
+const curLoc = () => Math.min(LOCS.length - 1, Math.floor(S.task / 4));
+const xpNeed = l => 30 + (l - 1) * 20;
 function neighbors(i) {
   const r = Math.floor(i / COLS), c = i % COLS, out = [];
   if (r > 0) out.push(i - COLS); if (r < ROWS - 1) out.push(i + COLS);
@@ -319,18 +529,19 @@ function nearestEmpty(from) {
   return best;
 }
 let toastT = 0;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = 0, 1800); }
-const bump = id => { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); };
-const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = 0, 2000); }
+const bump = id => { const e = $(id); if (!e) return; e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); };
+const buzz = ms => { if (!S.settings.vibe) return; try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmtTime = ms => { const s = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(s / 60); return m >= 60 ? Math.floor(m / 60) + 'ч ' + (m % 60) + 'м' : m + ':' + String(s % 60).padStart(2, '0'); };
 
-// sound
 let ac = null;
 function tone(f, d = .1, type = 'sine', v = .07, delay = 0) {
-  if (!ac) return; const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  if (!ac || !S.settings.sound) return; const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
 }
-document.addEventListener('pointerdown', () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } else if (ac.state === 'suspended') ac.resume(); }, { once: false });
+document.addEventListener('pointerdown', () => { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } else if (ac.state === 'suspended') ac.resume(); });
 const sfx = {
   spawn: () => tone(520, .08, 'triangle'),
   merge: l => { tone(400 + l * 80, .1, 'triangle', .08); tone(600 + l * 100, .14, 'triangle', .08, .07); },
@@ -339,7 +550,23 @@ const sfx = {
   no: () => tone(180, .15, 'sawtooth', .05)
 };
 
-// ---------- energy ----------
+function giveXp(n) {
+  S.xp += n;
+  while (S.xp >= xpNeed(S.lvl)) {
+    S.xp -= xpNeed(S.lvl); S.lvl++; S.energy += 25;
+    setTimeout(() => { toast(`Новый уровень ${S.lvl}! +25 ⚡`); sfx.build(); bump('topAva'); }, 300);
+  }
+}
+function reward(r) {
+  const parts = [];
+  if (r.c) { S.coins += r.c; parts.push(`+${r.c} 💰`); }
+  if (r.s) { S.stars += r.s; parts.push(`+${r.s} ⭐`); }
+  if (r.e) { S.energy += r.e; parts.push(`+${r.e} ⚡`); }
+  if (r.x) giveXp(r.x);
+  return parts.join(' ');
+}
+
+// ================= ENERGY =================
 function tickEnergy() {
   const now = Date.now();
   if (S.energy >= MAX_E) { S.eTs = now; return; }
@@ -348,25 +575,26 @@ function tickEnergy() {
 }
 function useEnergy() {
   tickEnergy();
-  if (S.energy <= 0) { sfx.no(); toast('Нет энергии! Подожди или купи ⚡'); openShop(); return false; }
+  if (S.energy <= 0) { sfx.no(); openShop(); return false; }
   if (S.energy >= MAX_E) S.eTs = Date.now();
   S.energy--; return true;
 }
 
-// ---------- orders ----------
-function makeOrder() {
-  const prog = S.task;
-  const count = prog >= 2 && Math.random() < 0.45 ? 2 : 1;
+// ================= ORDERS =================
+function levelCap(c, extra = 0) { return Math.min(maxL(c), 2 + Math.floor(S.task / 3) + extra); }
+function makeNeed(count, extra) {
   const need = [];
   for (let k = 0; k < count; k++) {
-    const c = pick(S.chains);
-    const cap = Math.min(maxL(c), 2 + Math.floor(prog * 0.5) + (Math.random() < 0.3 ? 1 : 0));
-    const lo = Math.max(1, cap - 2);
+    const c = pick(S.chains), cap = levelCap(c, extra + (Math.random() < 0.3 ? 1 : 0)), lo = Math.max(1, cap - 2);
     need.push({ c, l: lo + rnd(cap - lo + 1) });
   }
+  return need;
+}
+function makeOrder() {
+  const need = makeNeed(S.task >= 3 && Math.random() < 0.45 ? 2 : 1, 0);
   const top = Math.max(...need.map(n => n.l));
   const coins = need.reduce((s, n) => s + 2 * Math.pow(2, n.l - 1), 0);
-  return { id: S.oid++, who: pick(S.who), need, coins, stars: top >= 5 ? 2 : 1 };
+  return { id: S.oid++, who: pick(S.who), need, coins, stars: 1 + (top >= 4 ? 1 : 0) + (top >= 6 ? 1 : 0) };
 }
 function fillOrders() { while (S.orders.length < 3) S.orders.push(makeOrder()); }
 function availableCounts() {
@@ -374,33 +602,121 @@ function availableCounts() {
   S.board.forEach((b, i) => { if (b && b.c && !S.locked[i]) { const k = b.c + ':' + b.l; m[k] = (m[k] || 0) + 1; } });
   return m;
 }
-function orderReady(o, counts) {
+function needReady(need, counts) {
   const m = Object.assign({}, counts);
-  return o.need.every(n => { const k = n.c + ':' + n.l; if (m[k] > 0) { m[k]--; return true; } return false; });
+  return need.every(n => { const k = n.c + ':' + n.l; if (m[k] > 0) { m[k]--; return true; } return false; });
+}
+function takeItems(need) { need.forEach(n => { const i = S.board.findIndex((b, j) => b && b.c === n.c && b.l === n.l && !S.locked[j]); if (i >= 0) S.board[i] = null; }); }
+function needHtml(need, counts) {
+  const m = Object.assign({}, counts);
+  return need.map(n => { const k = n.c + ':' + n.l, have = m[k] > 0; if (have) m[k]--; return `<div class="need ${have ? 'have' : ''}" title="${item(n.c, n.l)[1]}">${item(n.c, n.l)[0]}</div>`; }).join('');
 }
 function deliver(id) {
-  const o = S.orders.find(x => x.id === id); if (!o || !orderReady(o, availableCounts())) return;
-  o.need.forEach(n => { const i = S.board.findIndex((b, j) => b && b.c === n.c && b.l === n.l && !S.locked[j]); if (i >= 0) S.board[i] = null; });
-  S.coins += o.coins; S.stars += o.stars; S.sel = -1;
+  const o = S.orders.find(x => x.id === id); if (!o || !needReady(o.need, availableCounts())) return;
+  takeItems(o.need); S.sel = -1; S.stats.orders++;
+  const txt = reward({ c: o.coins, s: o.stars, x: 5 });
   S.orders = S.orders.filter(x => x.id !== id);
   sfx.deliver(); buzz(20); bump('coinPill'); bump('starPill');
-  toast(`${WHO[o.who].n}: спасибо! +${o.coins} 💰 +${o.stars} ⭐`);
-  fillOrders(); save(); render();
-  if (!S.hintStar && S.task === 0 && S.stars >= TASKS[0].cost) {
-    S.hintStar = true; save();
-    setTimeout(() => say([['pip','У тебя есть звезда! Открой вкладку «Остров» внизу и начни восстанавливать пляж.']]), 500);
-  }
+  toast(`${WHO[o.who].n}: спасибо! ${txt}`);
+  fillOrders(); save(); renderAll();
 }
 
-// ---------- board actions ----------
+// ================= EVENTS =================
+function tickEvents() {
+  const now = Date.now(), E = S.ev; let changed = false;
+  if (E.mar.day !== today()) { E.mar = { day: today(), n: 0, got: [] }; changed = true; }
+  if (E.res && now > E.res.ends) {
+    E.res = null; E.resNext = now + 2 * 60000; changed = true;
+    toast('Время спасения вышло… Скоро будет новое!');
+  }
+  if (!E.res && S.introSeen && now >= E.resNext) {
+    const k = rnd(RESCUES.length);
+    E.res = { k, need: makeNeed(S.task >= 8 ? 3 : 2, 1), ends: now + 20 * 60000, r: { s: 3 + Math.floor(S.task / 6), c: 30, e: 20, x: 15 } };
+    changed = true;
+  }
+  if (changed) save();
+  return changed;
+}
+function marathonReady() { return MARATHON.some((m, k) => S.ev.mar.n >= m.n && !S.ev.mar.got.includes(k)); }
+function rewardText(r) { return [r.c ? `${r.c} 💰` : '', r.s ? `${r.s} ⭐` : '', r.e ? `${r.e} ⚡` : ''].filter(Boolean).join(' + '); }
+function renderEvents() {
+  if (screen !== 'board') return;
+  const E = S.ev, counts = availableCounts(), now = Date.now(); let h = '';
+  // rescue
+  if (E.res) {
+    const R = RESCUES[E.res.k], ok = needReady(E.res.need, counts), left = E.res.ends - now;
+    h += `<button class="ev ${ok ? 'hot' : ''}" data-ev="res" aria-label="Спасение"><span class="e">${R.e}</span><span class="l">${fmtTime(left)}</span><span class="bar"><i style="width:${Math.max(0, left / (20 * 600))}%"></i></span>${ok ? '<span class="badge">!</span>' : '<span class="badge">SOS</span>'}</button>`;
+  } else h += `<button class="ev off" data-ev="res" aria-label="Спасение"><span class="e">🆘</span><span class="l">${S.introSeen ? fmtTime(E.resNext - now) : '…'}</span></button>`;
+  // marathon
+  const nextM = MARATHON.find(m => E.mar.n < m.n) || MARATHON[MARATHON.length - 1];
+  const mr = marathonReady();
+  h += `<button class="ev ${mr ? 'hot' : ''}" data-ev="mar" aria-label="Марафон слияний"><span class="e">🏃</span><span class="l">${E.mar.n}/${nextM.n}</span><span class="bar"><i style="width:${Math.min(100, E.mar.n / nextM.n * 100)}%"></i></span>${mr ? '<span class="badge">!</span>' : ''}</button>`;
+  // daily
+  const dOk = E.daily !== today();
+  h += `<button class="ev ${dOk ? 'hot' : 'off'}" data-ev="day" aria-label="Подарок дня"><span class="e">🎁</span><span class="l">${dOk ? 'Забрать' : 'Завтра'}</span>${dOk ? '<span class="badge">1</span>' : ''}</button>`;
+  // story shortcut
+  const t = TASKS[S.task];
+  h += `<button class="ev" data-ev="story" aria-label="История"><span class="e">📖</span><span class="l">${t ? (S.stars >= t.cost ? 'Готово!' : `⭐${S.stars}/${t.cost}`) : 'Конец'}</span>${t && S.stars >= t.cost ? '<span class="badge">!</span>' : ''}</button>`;
+  $('events').innerHTML = h;
+}
+$('events').addEventListener('click', e => {
+  const b = e.target.closest('[data-ev]'); if (!b) return;
+  const k = b.dataset.ev;
+  if (k === 'res') openRescue(); else if (k === 'mar') openMarathon(); else if (k === 'day') openDaily(); else openLoc(curLoc());
+});
+function openRescue() {
+  const E = S.ev;
+  if (!E.res) return openSheet(`<h2><span class="e">🆘</span>Спасение<button class="x" data-close>✕</button></h2><p>Сейчас никому не нужна помощь. Новое спасение появится через ${fmtTime(E.resNext - Date.now())}.</p><p class="note">Спасено жителей: ${S.stats.rescues}</p>`);
+  const R = RESCUES[E.res.k], counts = availableCounts(), ok = needReady(E.res.need, counts);
+  openSheet(`<h2><span class="e">${R.e}</span>${R.t}<button class="x" data-close>✕</button></h2>
+    <p>${R.s}</p>
+    <h4>НУЖНО ПРИНЕСТИ</h4><div class="row">${needHtml(E.res.need, counts)}</div>
+    <p class="note">Осталось времени: ${fmtTime(E.res.ends - Date.now())} · Награда: ${rewardText(E.res.r)}</p>
+    <button class="btn green" id="rescueGo" ${ok ? '' : 'disabled'}>${ok ? 'Спасти!' : 'Собери предметы на поле'}</button>`);
+  const g = $('rescueGo'); if (g) g.onclick = () => {
+    const res = S.ev.res; if (!res || !needReady(res.need, availableCounts())) return;
+    takeItems(res.need); const txt = reward(res.r); S.stats.rescues++;
+    S.ev.res = null; S.ev.resNext = Date.now() + 90000;
+    sfx.build(); buzz(40); closeSheet(); save(); renderAll();
+    say([RESCUES[res.k].thanks, ['pip', `Награда за спасение: ${txt}`]]);
+  };
+}
+function openMarathon() {
+  const M = S.ev.mar;
+  openSheet(`<h2><span class="e">🏃</span>Марафон слияний<button class="x" data-close>✕</button></h2>
+    <p>Каждое соединение предметов сегодня приносит очко. Набирай очки и забирай награды. Завтра марафон начнётся заново.</p>
+    <div class="progress"><i style="width:${Math.min(100, M.n / 100 * 100)}%"></i></div>
+    <div class="milestones">${MARATHON.map((m, k) => {
+      const got = M.got.includes(k), can = M.n >= m.n && !got;
+      return `<div class="ms ${got ? 'ok' : ''}"><span>${m.n} слияний → ${rewardText(m.r)}</span>${got ? '<span>✓</span>' : can ? `<button class="btn sm" data-ms="${k}">Забрать</button>` : `<span class="note">${M.n}/${m.n}</span>`}</div>`;
+    }).join('')}</div>`);
+  $('sheet').querySelectorAll('[data-ms]').forEach(b => b.onclick = () => {
+    const k = +b.dataset.ms; if (S.ev.mar.got.includes(k) || S.ev.mar.n < MARATHON[k].n) return;
+    S.ev.mar.got.push(k); toast('Награда: ' + reward(MARATHON[k].r)); sfx.deliver(); save(); renderAll(); openMarathon();
+  });
+}
+function openDaily() {
+  const ok = S.ev.daily !== today();
+  openSheet(`<h2><span class="e">🎁</span>Подарок дня<button class="x" data-close>✕</button></h2>
+    <p>Каждый день жители острова оставляют тебе подарок: энергию, монеты и сюрприз на поле.</p>
+    <button class="btn green" id="dailyGo" ${ok ? '' : 'disabled'}>${ok ? 'Забрать: 20 ⚡ + 15 💰 + 🎁' : 'Уже получено. Приходи завтра!'}</button>`);
+  const g = $('dailyGo'); if (g) g.onclick = () => {
+    if (S.ev.daily === today()) return;
+    S.ev.daily = today(); const txt = reward({ e: 20, c: 15 });
+    const p = nearestEmpty(idx(4, 3)); if (p >= 0) S.board[p] = { gift: 1 };
+    sfx.deliver(); toast('Подарок: ' + txt + (p >= 0 ? ' и 🎁 на поле' : '')); closeSheet(); save(); renderAll();
+  };
+}
+
+// ================= BOARD ACTIONS =================
 let flash = {};
 function produce(i) {
   const g = S.board[i].g, to = nearestEmpty(i);
-  if (to < 0) { sfx.no(); toast('Поле заполнено! Соедини или продай предметы.'); flash[i] = 'shake'; render(); return; }
-  if (!useEnergy()) { render(); return; }
+  if (to < 0) { sfx.no(); toast('Поле заполнено! Соедини или продай предметы.'); flash[i] = 'shake'; renderBoardScreen(); return; }
+  if (!useEnergy()) { renderAll(); return; }
   const l = Math.random() < 0.15 ? 2 : 1;
   S.board[to] = { c: g, l }; discover(g, l);
-  flash[to] = 'pop'; sfx.spawn(); save(); render();
+  flash[to] = 'pop'; sfx.spawn(); save(); renderAll();
 }
 function openGift(i) {
   S.board[i] = null; let made = 0;
@@ -409,9 +725,8 @@ function openGift(i) {
     const c = pick(S.chains), l = 1 + rnd(3);
     S.board[to] = { c, l }; discover(c, l); flash[to] = 'pop'; made++;
   }
-  if (!made) { S.board[i] = { gift: 1 }; toast('Освободи место, чтобы открыть подарок'); return render(); }
-  S.energy = Math.min(MAX_E + 50, S.energy + 10);
-  sfx.merge(3); toast('Подарок! +10 ⚡ и предметы'); save(); render();
+  if (!made) { S.board[i] = { gift: 1 }; toast('Освободи место, чтобы открыть подарок'); return renderAll(); }
+  S.energy += 10; sfx.merge(3); toast('Подарок! +10 ⚡ и предметы'); save(); renderAll();
 }
 function discover(c, l) {
   const k = c + ':' + l; if (S.found[k]) return;
@@ -419,10 +734,11 @@ function discover(c, l) {
   if (l > 1) { const bonus = l * 2; S.coins += bonus; const [e, n] = item(c, l); setTimeout(() => toast(`Новое: ${e} ${n}! +${bonus} 💰`), 50); }
 }
 function drop(from, to) {
-  if (from === to || to < 0) return;
+  if (from === to || to < 0) return renderAll();
   const A = S.board[from], B = S.board[to];
   if (S.locked[to]) {
-    if (B && A.c && B.c === A.c && B.l === A.l && A.l < maxL(A.c)) { S.locked[to] = false; } else { flash[to] = 'shake'; sfx.no(); return render(); }
+    if (B && A.c && B.c === A.c && B.l === A.l && A.l < maxL(A.c)) S.locked[to] = false;
+    else { flash[to] = 'shake'; sfx.no(); return renderAll(); }
   }
   if (!B) { S.board[to] = A; S.board[from] = null; S.sel = to; }
   else if (A.c && B.c === A.c && B.l === A.l && A.l < maxL(A.c)) {
@@ -430,40 +746,231 @@ function drop(from, to) {
     S.board[to] = { c: A.c, l: nl }; S.board[from] = null; S.sel = to;
     neighbors(to).forEach(n => { if (S.locked[n]) { S.locked[n] = false; flash[n] = 'pop'; } });
     discover(A.c, nl); flash[to] = 'pop'; sfx.merge(nl); buzz(12);
-  } else if (A.c && B.c === A.c && B.l === A.l) { toast('Это уже максимальный уровень!'); return; }
+    S.stats.merges++; giveXp(1);
+    if (S.ev.mar.day !== today()) S.ev.mar = { day: today(), n: 0, got: [] };
+    S.ev.mar.n++;
+  } else if (A.c && B.c === A.c && B.l === A.l) { toast('Это уже максимальный уровень!'); return renderAll(); }
   else { S.board[to] = A; S.board[from] = B; S.sel = to; }
-  save(); render();
+  save(); renderAll();
 }
 function sellSel() {
   const b = S.board[S.sel]; if (!b || !b.c) return;
   const price = b.l; S.coins += price; S.board[S.sel] = null; S.sel = -1;
-  toast(`Продано за ${price} 💰`); bump('coinPill'); save(); render();
+  toast(`Продано за ${price} 💰`); bump('coinPill'); save(); renderAll();
 }
 
-// ---------- rendering ----------
-let tab = 'merge';
-function render() {
+// ================= STORY / MAP =================
+function maybeStory() {
+  // Location intros play exactly once each (the first one is the greeting).
+  const L = curLoc();
+  if (S.task < TASKS.length && !S.seenLoc.includes(L) && $('dialog').hidden) {
+    S.seenLoc.push(L); if (L === 0) S.introSeen = true;
+    LOCS[L].who.forEach(w => { if (!S.who.includes(w)) S.who.push(w); });
+    save();
+    say(LOCS[L].intro, renderAll, LOCS[L].name);
+  }
+  if (!S.introSeen && S.seenLoc.includes(0)) S.introSeen = true;
+}
+function build() {
+  const t = TASKS[S.task]; if (!t || S.stars < t.cost) return;
+  S.stars -= t.cost; S.task++; giveXp(10);
+  if (t.unlock && !S.chains.includes(t.unlock)) {
+    S.chains.push(t.unlock);
+    let p = nearestEmpty(idx(0, 3)); if (p < 0) p = S.board.findIndex((b, i) => b && b.c && !S.locked[i]);
+    if (p >= 0) S.board[p] = { g: t.unlock };
+  }
+  const g = nearestEmpty(idx(4, 3)); if (g >= 0) S.board[g] = { gift: 1 };
+  justBuilt = S.task - 1;
+  sfx.build(); buzz(40); save(); closeSheet(); renderAll();
+  const lines = t.after.slice();
+  lines.push(['pip', 'Я положил тебе на поле подарок 🎁!']);
+  if (S.task === TASKS.length) lines.push(...ENDING);
+  say(lines, () => { renderAll(); maybeStory(); }, LOCS[t.loc].name);
+}
+let justBuilt = -1;
+const MAP_SVG = `<svg viewBox="0 0 360 480" preserveAspectRatio="none" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg" cx="50%" cy="50%" r="70%"><stop offset="0" stop-color="#3fbccb"/><stop offset="1" stop-color="#127083"/></radialGradient>
+    <path id="isl" d="M180 34 C 262 34, 334 104, 336 196 C 340 292, 322 382, 262 440 C 204 474, 118 466, 66 414 C 22 366, 20 276, 34 202 C 50 118, 104 34, 180 34 Z"/>
+  </defs>
+  <rect width="360" height="480" fill="url(#sg)"/>
+  <g fill="none" stroke="#bff3f6" stroke-opacity=".35" stroke-width="2" stroke-linecap="round">
+    <path d="M14 60 q10 -6 20 0 t20 0"/><path d="M300 470 q10 -6 20 0 t20 0"/><path d="M8 452 q10 -6 20 0 t20 0"/><path d="M318 28 q10 -6 20 0 t20 0"/>
+  </g>
+  <use href="#isl" fill="#f6e2ae" stroke="#8fe3e8" stroke-width="16"/>
+  <use href="#isl" fill="#7bd389" transform="translate(180 250) scale(.84) translate(-180 -250)"/>
+  <ellipse cx="34" cy="232" rx="44" ry="44" fill="#2aa7b5" stroke="#f6e2ae" stroke-width="8"/>
+  <g fill="#2f7d3c"><circle cx="58" cy="198" r="6"/><circle cx="66" cy="268" r="7"/><circle cx="76" cy="214" r="5"/></g>
+  <path d="M206 120 C 190 170, 120 190, 70 226" fill="none" stroke="#5cc4d0" stroke-width="7" stroke-linecap="round"/>
+  <g fill="#2f8a3e"><circle cx="160" cy="236" r="16"/><circle cx="188" cy="226" r="18"/><circle cx="214" cy="242" r="15"/><circle cx="174" cy="270" r="14"/><circle cx="206" cy="274" r="13"/><circle cx="142" cy="262" r="11"/></g>
+  <g fill="#3f9e4f"><circle cx="168" cy="230" r="9"/><circle cx="196" cy="220" r="10"/><circle cx="214" cy="236" r="8"/></g>
+  <polygon points="146,138 204,44 236,44 300,138" fill="#8b5a3c"/>
+  <polygon points="190,138 204,44 236,44 256,138" fill="#a0674a"/>
+  <ellipse cx="220" cy="45" rx="17" ry="6" fill="#ff6a1f"/>
+  <path d="M214 46 q-6 22 -2 40 M226 46 q8 18 4 34" stroke="#ff8a3c" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <g fill="#ffffff" fill-opacity=".5"><circle cx="224" cy="26" r="8"/><circle cx="234" cy="14" r="10"/><circle cx="214" cy="12" r="6"/></g>
+  <g fill="#e9c97f"><ellipse cx="262" cy="420" rx="40" ry="14"/></g>
+  <path id="route" d="" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="2 9" stroke-linecap="round" stroke-opacity=".9"/>
+</svg>`;
+function renderMap() {
+  const done = S.task, cl = curLoc();
+  let pts = LOCS.map(L => `${L.x * 3.6},${L.y * 4.8}`);
+  let h = MAP_SVG.replace('d=""', `d="M${pts.join(' L')}"`);
+  LOCS.forEach((L, li) => {
+    const n = L.tasks.length, k0 = li * 4, doneN = Math.max(0, Math.min(n, done - k0));
+    const st = doneN === n ? 'done' : li === cl ? 'cur' : li < cl ? 'done' : 'lock';
+    const offs = [[-11, -6], [11, -6], [-12, 7], [12, 7]];
+    L.tasks.forEach((t, ti) => { if (ti < doneN) h += `<div class="deco ${k0 + ti === justBuilt ? 'new' : ''}" style="left:${L.x + offs[ti][0]}%;top:${L.y + offs[ti][1]}%">${t.icon}</div>`; });
+    const ready = st === 'cur' && TASKS[S.task] && S.stars >= TASKS[S.task].cost;
+    h += `<button class="pin ${st}" data-loc="${li}" style="left:${L.x}%;top:${L.y}%"><span class="ic">${st === 'lock' ? '🔒' : L.icon}</span><span class="lb">${L.name}</span>${st === 'lock' ? '' : `<span class="pr">${doneN}/${n}</span>`}${ready ? '<span class="badge">!</span>' : ''}</button>`;
+  });
+  $('map').innerHTML = h;
+  justBuilt = -1;
+  const t = TASKS[S.task];
+  if (t) {
+    const ok = S.stars >= t.cost;
+    $('goal').innerHTML = `<span class="e">${t.icon}</span><span class="t"><b>${esc(t.t)}</b><span>${LOCS[t.loc].name} · нужно ${t.cost} ⭐</span></span>${ok ? `<button class="btn sm" id="goalGo">Сделать</button>` : `<span class="note">⭐ ${S.stars}/${t.cost}</span>`}`;
+    const g = $('goalGo'); if (g) g.onclick = build;
+  } else $('goal').innerHTML = `<span class="e">🎆</span><span class="t"><b>Остров восстановлен!</b><span>Выполняй заказы и спасай жителей</span></span>`;
+}
+$('map').addEventListener('click', e => { const p = e.target.closest('[data-loc]'); if (p) openLoc(+p.dataset.loc); });
+function openLoc(li) {
+  const L = LOCS[li], cl = curLoc(), k0 = li * 4;
+  if (li > cl && S.task < TASKS.length) { toast(`Сначала заверши «${LOCS[cl].name}»`); return; }
+  const rows = L.tasks.map((t, ti) => {
+    const k = k0 + ti, st = k < S.task ? 'done' : k === S.task ? 'cur' : 'lock';
+    return `<div class="task ${st}"><span class="e">${st === 'lock' ? '❔' : t.icon}</span><span class="t">${esc(t.t)}</span>${st === 'done' ? '<span class="s">✓ Готово</span>' : st === 'cur' ? (S.stars >= t.cost ? `<button class="btn sm" id="buildBtn">${t.cost} ⭐</button>` : `<span class="s">⭐ ${S.stars}/${t.cost}</span>`) : `<span class="s">${t.cost} ⭐</span>`}</div>`;
+  }).join('');
+  const clues = L.tasks.filter((t, ti) => t.clue && k0 + ti < S.task).map(t => `<li><span class="e">${t.clue[0]}</span><span>${esc(t.clue[1])}</span></li>`).join('');
+  const isCur = TASKS[S.task] && TASKS[S.task].loc === li;
+  openSheet(`<h2><span class="e">${L.icon}</span>${L.name}<button class="x" data-close>✕</button></h2>
+    <p>${esc(L.desc)}</p>
+    <div class="tasks">${rows}</div>
+    ${isCur && S.stars < TASKS[S.task].cost ? `<p class="note">Звёзды ⭐ дают за заказы и спасения на поле.</p><button class="btn green" id="toBoard">▶ Играть на поле</button>` : ''}
+    <h4>🔍 УЛИКИ</h4><ul class="clues">${clues || '<li><span class="e">❔</span><span>Пока ничего. Восстанавливай это место, чтобы найти улики.</span></li>'}</ul>
+    <button class="btn ghost" id="replay">📖 Перечитать историю места</button>`);
+  const b = $('buildBtn'); if (b) b.onclick = build;
+  const tb = $('toBoard'); if (tb) tb.onclick = () => { closeSheet(); setScreen('board'); };
+  $('replay').onclick = () => { closeSheet(); const lines = L.intro.slice(); L.tasks.forEach((t, ti) => { if (k0 + ti < S.task) lines.push(...t.after); }); say(lines, null, L.name); };
+}
+
+// ================= ACCOUNT / SETTINGS =================
+function openAccount() {
+  const P = S.profile, need = xpNeed(S.lvl);
+  openSheet(`<h2><span class="e">${P.ava}</span>Аккаунт<button class="x" data-close>✕</button></h2>
+    <label class="note" for="nameInput">Имя</label>
+    <input class="field" id="nameInput" maxlength="16" value="${esc(P.name)}" autocomplete="off">
+    <h4>АВАТАР</h4>
+    <div class="avas">${AVATARS.map(a => `<button data-ava="${a}" class="${a === P.ava ? 'on' : ''}">${a}</button>`).join('')}</div>
+    <h4>УРОВЕНЬ ${S.lvl}</h4>
+    <div class="progress"><i style="width:${S.xp / need * 100}%"></i></div>
+    <p class="note">${S.xp} / ${need} опыта. Опыт дают слияния, заказы, спасения и постройки. За новый уровень +25 ⚡.</p>
+    <div class="stats">
+      <div><b>${S.stats.merges}</b><span>слияний</span></div>
+      <div><b>${S.stats.orders}</b><span>заказов</span></div>
+      <div><b>${S.stats.rescues}</b><span>спасено жителей</span></div>
+      <div><b>${S.task}/${TASKS.length}</b><span>построек</span></div>
+    </div>
+    <h4>НАСТРОЙКИ</h4>
+    <label class="toggle" for="sndT">Звук<input type="checkbox" id="sndT" ${S.settings.sound ? 'checked' : ''}></label>
+    <label class="toggle" for="vibT">Вибрация<input type="checkbox" id="vibT" ${S.settings.vibe ? 'checked' : ''}></label>
+    <button class="btn" id="journalBtn">📖 Дневник истории</button>
+    <p class="note">${cloud ? '☁️ Прогресс сохраняется в твоём аккаунте и доступен на других устройствах.' : '💾 Прогресс сохраняется на этом устройстве.'}</p>
+    <button class="btn ghost" id="resetBtn">Начать игру заново</button>`);
+  const ni = $('nameInput');
+  ni.oninput = () => { S.profile.name = ni.value.trim() || 'Путник'; renderTop(); };
+  ni.onchange = () => save();
+  $('sheet').querySelectorAll('[data-ava]').forEach(b => b.onclick = () => { S.profile.ava = b.dataset.ava; save(); renderTop(); openAccount(); });
+  $('sndT').onchange = e => { S.settings.sound = e.target.checked; save(); };
+  $('vibT').onchange = e => { S.settings.vibe = e.target.checked; save(); };
+  $('journalBtn').onclick = openJournal;
+  let armed = false;
+  $('resetBtn').onclick = () => {
+    if (!armed) { armed = true; $('resetBtn').textContent = 'Точно? Нажми ещё раз, и весь прогресс удалится'; return; }
+    const keep = { profile: S.profile, settings: S.settings };
+    S = Object.assign(newState(), keep); fillOrders(); save(); closeSheet(); setScreen('map'); maybeStory();
+  };
+}
+function openJournal() {
+  let h = '';
+  LOCS.forEach((L, li) => {
+    if (!S.seenLoc.includes(li)) return;
+    const lines = L.intro.slice(); L.tasks.forEach((t, ti) => { if (li * 4 + ti < S.task) lines.push(...t.after); });
+    h += `<h5>${L.icon} ${L.name}</h5>` + lines.map(([w, t]) => `<div class="jl"><span class="e">${WHO[w].e}</span><span><b>${WHO[w].n}:</b> ${esc(t)}</span></div>`).join('');
+  });
+  openSheet(`<h2><span class="e">📖</span>Дневник истории<button class="x" data-close>✕</button></h2><div class="journal">${h || '<p>История ещё не началась.</p>'}</div><button class="btn ghost" id="jBack">← Назад к аккаунту</button>`);
+  $('jBack').onclick = openAccount;
+}
+$('acctBtn').onclick = openAccount;
+
+// ================= SHEET / DIALOG / SHOP =================
+function openSheet(html) { $('sheet').innerHTML = html; $('sheetOv').hidden = false; $('sheet').scrollTop = 0; }
+function closeSheet() { $('sheetOv').hidden = true; }
+$('sheetOv').addEventListener('click', e => { if (e.target.id === 'sheetOv' || e.target.closest('[data-close]')) closeSheet(); });
+let dq = [], dDone = null, dTotal = 0;
+function say(lines, cb, title) { dq = lines.slice(); dTotal = dq.length; dDone = cb || null; nextLine(); }
+function endDialog() { dq = []; $('dialog').hidden = true; const f = dDone; dDone = null; f && f(); }
+function nextLine() {
+  if (!dq.length) return endDialog();
+  const [w, txt] = dq.shift(); $('dAv').textContent = WHO[w].e; $('dWho').textContent = WHO[w].n; $('dSay').textContent = txt;
+  $('dCount').textContent = dTotal > 1 ? `${dTotal - dq.length}/${dTotal}` : '';
+  $('dNext').textContent = dq.length ? 'Дальше' : 'Понятно!'; $('dSkip').hidden = dq.length === 0; $('dialog').hidden = false;
+}
+$('dNext').onclick = nextLine;
+$('dSkip').onclick = endDialog;
+function openShop() {
+  openSheet(`<h2><span class="e">⚡</span>Энергия<button class="x" data-close>✕</button></h2>
+    <p>Энергия тратится на корзинку, дерево и другие генераторы. Она восстанавливается сама: +1 каждые 12 секунд. Ещё её дают новые уровни, подарки и события.</p>
+    <button class="btn" id="buyEnergy">+25 ⚡ за 20 💰</button>`);
+  $('buyEnergy').onclick = () => {
+    if (S.coins < 20) { sfx.no(); toast('Не хватает монет. Продавай предметы и выполняй заказы.'); return; }
+    S.coins -= 20; S.energy += 25; sfx.deliver(); bump('energyPill'); save(); renderAll(); closeSheet();
+  };
+}
+$('energyPill').onclick = openShop;
+
+// ================= RENDER =================
+let screen = 'map';
+function setScreen(s) {
+  screen = s;
+  $('mapScreen').hidden = s !== 'map'; $('boardScreen').hidden = s !== 'board';
+  $('acctBtn').hidden = s !== 'map'; $('backBtn').hidden = s !== 'board';
+  renderAll(); if (s === 'board') sizeBoard(); else sizeMap();
+}
+$('playBtn').onclick = () => setScreen('board');
+$('backBtn').onclick = () => setScreen('map');
+function renderTop() {
   tickEnergy();
   $('energy').textContent = S.energy; $('coins').textContent = S.coins; $('stars').textContent = S.stars;
-  $('chapter').innerHTML = S.task < TASKS.length ? `Глава ${S.task + 1}/${TASKS.length}<br>${TASKS[S.task].t}` : 'Остров<br>восстановлен!';
+  $('topAva').firstChild.nodeValue = S.profile.ava; $('topLvl').textContent = S.lvl;
+  $('topName').textContent = S.profile.name; $('topXp').style.width = (S.xp / xpNeed(S.lvl) * 100) + '%';
+  const canBuild = TASKS[S.task] && S.stars >= TASKS[S.task].cost;
+  $('badgeMap').hidden = !canBuild;
+}
+function renderAll() {
+  tickEvents(); renderTop();
+  if (screen === 'map') {
+    renderMap();
+    const readyN = S.orders.filter(o => needReady(o.need, availableCounts())).length;
+    $('badgePlay').hidden = !readyN; $('badgePlay').textContent = readyN;
+  } else renderBoardScreen();
+}
+function renderBoardScreen() {
   const counts = availableCounts();
-  const readyN = S.orders.filter(o => orderReady(o, counts)).length;
-  $('badgeMerge').hidden = !readyN; $('badgeMerge').textContent = readyN;
-  $('badgeIsland').hidden = !(S.task < TASKS.length && S.stars >= TASKS[S.task].cost);
-  if (tab === 'merge') { renderOrders(counts); renderBoard(counts); renderInfo(); } else renderIsland();
-  flash = {};
+  renderOrders(counts); renderBoard(); renderInfo(); renderEvents(); flash = {};
 }
 function renderOrders(counts) {
   $('orders').innerHTML = S.orders.map(o => {
-    const ready = orderReady(o, counts), m = Object.assign({}, counts);
-    const needs = o.need.map(n => { const k = n.c + ':' + n.l, have = m[k] > 0; if (have) m[k]--; return `<div class="need ${have ? 'have' : ''}" title="${item(n.c, n.l)[1]}">${item(n.c, n.l)[0]}</div>`; }).join('');
-    return `<div class="order ${ready ? 'ready' : ''}"><div class="who" title="${WHO[o.who].n}">${WHO[o.who].e}</div><div class="needs">${needs}</div>
+    const ready = needReady(o.need, counts);
+    return `<div class="order ${ready ? 'ready' : ''}"><div class="who" title="${WHO[o.who].n}">${WHO[o.who].e}</div><div class="needs">${needHtml(o.need, counts)}</div>
       <div class="reward">💰${o.coins} ⭐${o.stars}</div>${ready ? `<button class="go" data-o="${o.id}">Сдать</button>` : ''}</div>`;
   }).join('');
 }
-function renderBoard(counts) {
+$('orders').addEventListener('click', e => { const b = e.target.closest('[data-o]'); if (b) deliver(+b.dataset.o); });
+function renderBoard() {
   const wanted = {};
   S.orders.forEach(o => o.need.forEach(n => wanted[n.c + ':' + n.l] = 1));
+  if (S.ev.res) S.ev.res.need.forEach(n => wanted[n.c + ':' + n.l] = 1);
   let h = '';
   for (let i = 0; i < N; i++) {
     const b = S.board[i], cls = ['cell']; let inner = '';
@@ -484,83 +991,24 @@ function chainRow(c, cur) {
 }
 function renderInfo() {
   const b = S.board[S.sel]; let h;
-  if (!b) h = `<div class="big">🦕</div><div class="txt"><div class="name">Нажми на предмет</div><div class="desc">Соединяй два одинаковых, чтобы улучшить</div></div>`;
+  if (!b) h = `<div class="big">${S.profile.ava}</div><div class="txt"><div class="name">Нажми на предмет</div><div class="desc">Соединяй два одинаковых, чтобы улучшить</div></div>`;
   else if (b.g) h = `<div class="big">${CHAINS[b.g].gen}</div><div class="txt"><div class="name">${CHAINS[b.g].genName}</div><div class="desc">Нажми: −1 ⚡ → ${chainRow(b.g, 0)}</div></div>`;
   else if (b.gift) h = `<div class="big">🎁</div><div class="txt"><div class="name">Подарок</div><div class="desc">Нажми, чтобы открыть</div></div>`;
   else {
     const [e, n] = item(b.c, b.l), mx = maxL(b.c);
-    const lockedTxt = S.locked[S.sel] ? 'В зарослях: положи сверху такой же предмет' : (b.l < mx ? `Ур. ${b.l}/${mx} · ` + chainRow(b.c, b.l) : 'Максимальный уровень! ' + chainRow(b.c, b.l));
-    h = `<div class="big">${e}</div><div class="txt"><div class="name">${n}</div><div class="desc">${lockedTxt}</div></div>${S.locked[S.sel] ? '' : `<button id="sellBtn">Продать ${b.l}💰</button>`}`;
+    const d = S.locked[S.sel] ? 'В зарослях: положи сверху такой же предмет' : (b.l < mx ? `Ур. ${b.l}/${mx} · ` + chainRow(b.c, b.l) : 'Максимальный уровень! ' + chainRow(b.c, b.l));
+    h = `<div class="big">${e}</div><div class="txt"><div class="name">${n}</div><div class="desc">${d}</div></div>${S.locked[S.sel] ? '' : `<button id="sellBtn">Продать ${b.l}💰</button>`}`;
   }
   $('info').innerHTML = h;
   const sb = $('sellBtn'); if (sb) sb.onclick = sellSel;
 }
-function renderIsland() {
-  $('scene').innerHTML = TASKS.map((t, k) => `<div class="spot ${k < S.task ? '' : 'off'} ${k === S.task ? 'next' : ''}" style="left:${t.x}%;top:${t.y}%">${k < S.task || k === S.task ? t.icon : '❔'}</div>`).join('')
-    + `<div class="spot" style="left:50%;top:14%;font-size:clamp(30px,10vw,48px)">🌋</div>`;
-  const tc = $('taskCard');
-  if (S.task < TASKS.length) {
-    const t = TASKS[S.task], ok = S.stars >= t.cost;
-    tc.innerHTML = `<h3>${t.icon} ${t.t}</h3><p>Глава ${S.task + 1} из ${TASKS.length}. Нужно звёзд: ${t.cost} ⭐ (у тебя ${S.stars}).</p>
-      <div class="progress"><i style="width:${Math.min(100, S.stars / t.cost * 100)}%"></i></div>
-      <button class="btn" id="buildBtn" ${ok ? '' : 'disabled'}>${ok ? `Сделать за ${t.cost} ⭐` : 'Выполняй заказы на поле'}</button>`;
-    $('buildBtn').onclick = build;
-  } else tc.innerHTML = `<h3>🎆 Остров восстановлен!</h3><p>Тайна раскрыта, все яйца в тепле. Выполняй заказы дальше и собирай самые редкие предметы.</p>`;
-  const found = TASKS.slice(0, S.task).map(t => `<li><span class="e">${t.clue[0]}</span><span>${t.clue[1]}</span></li>`);
-  $('clues').innerHTML = found.length ? found.join('') : '<li><span class="e">❔</span><span>Пока улик нет. Восстанавливай остров, чтобы их найти.</span></li>';
-}
-function build() {
-  const t = TASKS[S.task]; if (!t || S.stars < t.cost) return;
-  S.stars -= t.cost; S.task++;
-  if (t.unlock && !S.chains.includes(t.unlock)) {
-    S.chains.push(t.unlock);
-    let p = nearestEmpty(idx(0, 3)); if (p < 0) p = S.board.findIndex((b, i) => b && b.c && !S.locked[i]);
-    if (p >= 0) S.board[p] = { g: t.unlock };
-  }
-  if (t.newWho && !S.who.includes(t.newWho)) S.who.push(t.newWho);
-  const g = nearestEmpty(idx(4, 3)); if (g >= 0) S.board[g] = { gift: 1 };
-  sfx.build(); buzz(40); save(); render();
-  say(t.after.concat(t.unlock ? [['pip', `На поле появился ${CHAINS[t.unlock].gen} ${CHAINS[t.unlock].genName}! И я положил тебе подарок 🎁.`]] : [['pip','Я положил тебе на поле подарок 🎁!']]));
-}
 
-// ---------- dialog ----------
-let dq = [], dDone = null;
-function say(lines, cb) { dq = lines.slice(); dDone = cb || null; nextLine(); }
-function nextLine() {
-  if (!dq.length) { $('dialog').hidden = true; const f = dDone; dDone = null; f && f(); return; }
-  const [w, txt] = dq.shift(); $('dAv').textContent = WHO[w].e; $('dWho').textContent = WHO[w].n; $('dSay').textContent = txt;
-  $('dNext').textContent = dq.length ? 'Дальше' : 'Понятно!'; $('dialog').hidden = false;
-}
-$('dNext').onclick = nextLine;
-
-// ---------- shop / tabs / reset ----------
-function openShop() { $('shop').hidden = false; }
-$('energyPill').onclick = openShop;
-$('closeShop').onclick = () => $('shop').hidden = true;
-$('buyEnergy').onclick = () => {
-  if (S.coins < 20) { sfx.no(); toast('Не хватает монет. Продавай предметы и выполняй заказы.'); return; }
-  S.coins -= 20; S.energy += 25; sfx.deliver(); bump('energyPill'); save(); render(); $('shop').hidden = true;
-};
-function setTab(t) {
-  tab = t; $('tabMerge').classList.toggle('on', t === 'merge'); $('tabIsland').classList.toggle('on', t === 'island');
-  $('mergeView').style.display = t === 'merge' ? 'contents' : 'none'; $('islandView').hidden = t !== 'island';
-  render(); if (t === 'merge') sizeBoard();
-}
-$('tabMerge').onclick = () => setTab('merge');
-$('tabIsland').onclick = () => setTab('island');
-let resetArmed = false;
-$('resetBtn').onclick = () => {
-  if (!resetArmed) { resetArmed = true; $('resetBtn').textContent = 'Точно? Нажми ещё раз — прогресс удалится'; setTimeout(() => { resetArmed = false; $('resetBtn').textContent = 'Начать игру заново'; }, 3000); return; }
-  store.clear(); S = newState(); fillOrders(); save(); setTab('merge'); say(INTRO, () => { S.introDone = true; save(); });
-};
-$('orders').addEventListener('click', e => { const b = e.target.closest('[data-o]'); if (b) deliver(+b.dataset.o); });
-
-// ---------- input on board ----------
+// ================= BOARD INPUT =================
 const ghost = $('ghost'); let drag = null;
 $('board').addEventListener('pointerdown', e => {
   const cell = e.target.closest('.cell'); if (!cell) return;
   const i = +cell.dataset.i, b = S.board[i];
-  if (!b) { S.sel = -1; render(); return; }
+  if (!b) { S.sel = -1; renderInfo(); renderBoard(); return; }
   drag = { i, x0: e.clientX, y0: e.clientY, on: false, hover: -1 };
   e.preventDefault();
 });
@@ -570,7 +1018,7 @@ window.addEventListener('pointermove', e => {
     if (S.locked[drag.i]) { drag = null; return; }
     drag.on = true; const b = S.board[drag.i];
     ghost.textContent = b.g ? CHAINS[b.g].gen : b.gift ? '🎁' : item(b.c, b.l)[0];
-    ghost.style.fontSize = getComputedStyle(document.documentElement).getPropertyValue('--cell').trim().replace('px', '') * 0.62 + 'px';
+    ghost.style.fontSize = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell')) * 0.62) + 'px';
     ghost.hidden = false;
     const src = $('board').children[drag.i]; src && src.classList.add('drag-src');
   }
@@ -581,38 +1029,44 @@ window.addEventListener('pointermove', e => {
     if (h !== drag.hover) { const kids = $('board').children; if (drag.hover >= 0 && kids[drag.hover]) kids[drag.hover].classList.remove('hover'); if (h >= 0 && h !== drag.i) kids[h].classList.add('hover'); drag.hover = h; }
   }
 });
-function endDrag(e) {
+window.addEventListener('pointerup', e => {
   if (!drag) return; const d = drag; drag = null; ghost.hidden = true;
-  if (d.on) { const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest('.cell'); if (c) drop(d.i, +c.dataset.i); else render(); return; }
+  if (d.on) { const el = document.elementFromPoint(e.clientX, e.clientY), c = el && el.closest('.cell'); drop(d.i, c ? +c.dataset.i : -1); return; }
   const b = S.board[d.i]; S.sel = d.i;
-  if (S.locked[d.i]) { toast('Заросли! Соедини предметы рядом, чтобы расчистить'); return render(); }
-  if (b.g) produce(d.i); else if (b.gift) openGift(d.i); else render();
-}
-window.addEventListener('pointerup', endDrag);
-window.addEventListener('pointercancel', () => { if (drag) { drag = null; ghost.hidden = true; render(); } });
+  if (S.locked[d.i]) { toast('Заросли! Соедини предметы рядом, чтобы расчистить'); return renderBoardScreen(); }
+  if (b.g) produce(d.i); else if (b.gift) openGift(d.i); else renderBoardScreen();
+});
+window.addEventListener('pointercancel', () => { if (drag) { drag = null; ghost.hidden = true; renderBoardScreen(); } });
 
-// ---------- sizing ----------
+// ================= SIZING =================
 function sizeBoard() {
   const wrap = $('boardWrap'); if (!wrap.clientHeight) return;
-  const w = wrap.clientWidth - 12 - 18, h = wrap.clientHeight - 12 - 24;
-  const cell = Math.max(30, Math.floor(Math.min(w / COLS, h / ROWS, 64)));
+  const w = wrap.clientWidth - 10 - 18, h = wrap.clientHeight - 10 - 24;
+  const cell = Math.max(30, Math.floor(Math.min(w / COLS, h / ROWS, 62)));
   document.documentElement.style.setProperty('--cell', cell + 'px');
 }
-window.addEventListener('resize', sizeBoard);
+function sizeMap() {
+  const wrap = $('mapWrap'); if (!wrap.clientHeight) return;
+  const w = Math.min(wrap.clientWidth, wrap.clientHeight * 0.75);
+  $('map').style.width = w + 'px'; $('map').style.height = (w / 0.75) + 'px';
+}
+window.addEventListener('resize', () => { sizeBoard(); sizeMap(); });
 
-// energy timer
+// timers: energy + events
 setInterval(() => {
   const before = S.energy; tickEnergy();
   if (S.energy !== before) { $('energy').textContent = S.energy; save(); }
   const t = $('energyTimer');
-  if (S.energy < MAX_E) { const s = Math.ceil((E_REGEN_MS - (Date.now() - S.eTs)) / 1000); t.textContent = '+1 через 0:' + String(Math.max(0, s)).padStart(2, '0'); }
-  else t.textContent = 'полно';
-}, 500);
+  t.textContent = S.energy < MAX_E ? '+1 ' + fmtTime(E_REGEN_MS - (Date.now() - S.eTs)) : 'полно';
+  if (tickEvents()) renderAll(); else if (screen === 'board' && !drag) renderEvents();
+}, 1000);
 
-// boot
-fillOrders(); save(); render(); sizeBoard();
-requestAnimationFrame(sizeBoard);
-if (!S.introDone) setTimeout(() => say(INTRO, () => { S.introDone = true; save(); }), 300);
+// ================= BOOT =================
+fillOrders(); save();
+setScreen('map');
+requestAnimationFrame(() => { sizeMap(); sizeBoard(); });
+setTimeout(maybeStory, 300);
+initCloud();
 })();
 </script>
 <!--GAME-END-->
