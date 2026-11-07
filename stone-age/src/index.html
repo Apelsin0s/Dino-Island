@@ -19,8 +19,11 @@
   <main id="main">
     <section id="left">
       <div id="sceneBox">
-        <canvas id="scene" width="320" height="180" aria-label="Settlement"></canvas>
+        <div id="labels"></div>
         <div id="floaters"></div>
+        <div id="selPop" hidden></div>
+        <div id="placeHint" hidden></div>
+        <div id="camBtns"><button data-cam="l" aria-label="Rotate left">⟲</button><button data-cam="r" aria-label="Rotate right">⟳</button><button data-cam="in" aria-label="Zoom in">+</button><button data-cam="out" aria-label="Zoom out">−</button></div>
       </div>
       <div id="gather"></div>
       <div id="diaryLine"></div>
@@ -36,6 +39,8 @@
 <script src="data.js"></script>
 <script src="i18n.js"></script>
 <script src="engine.js"></script>
+<script src="vendor/three.min.js"></script>
+<script src="scene3d.js"></script>
 <script src="art.js"></script>
 <script src="game.js"></script>
 <!--PAGE-END-->

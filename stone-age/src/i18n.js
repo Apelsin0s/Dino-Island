@@ -6,7 +6,7 @@ window.I18N = {
     tabBuild: 'Build', tabIdeas: 'Ideas', tabMachine: 'Machine', tabJournal: 'Journal', tabMore: 'More',
     perSec: '/s', each: 'each', owned: 'owned', buy: 'Buy', max: 'Max',
     gatherFood: 'Pick berries', gatherWood: 'Chop wood', gatherStone: 'Break rocks', gatherIdeas: 'Study the machine',
-    clickHint: 'Click the bush, the rocks, the trees and the time machine.',
+    clickHint: 'Click the berry bushes, the rocks, the forest and the time machine.',
     researched: 'Researched', nothingToResearch: 'Nothing new to research right now. Keep gathering ideas.',
     lockedBehind: 'Needs research', nextPart: 'Next repair', repairs: 'Repairs', done: 'Done', build: 'Repair',
     launch: 'LAUNCH', machineLocked: 'Invent the Wheel to start repairing the time machine.',
@@ -22,6 +22,11 @@ window.I18N = {
     awayFor: 'The tribe kept working for', newLoop: 'Start the next loop',
     achUnlocked: 'Achievement unlocked', saved: 'Saved',
     tribeNeeds: 'Ready to unlock',
+    no3d: '3D graphics could not start on this computer. Updating the graphics driver usually helps. You can still play with the buttons below.',
+    placeHint: '— pick a spot. Click to place, R rotates, right-click or Esc places it automatically.',
+    move: 'Move', rotate: 'Rotate', cantRotate: 'No room to rotate here. Try moving it.',
+    gfx: 'Graphics', gfx_low: 'Low', gfx_medium: 'Medium', gfx_high: 'High',
+    ctrlHint: 'Camera: drag to move, right-drag or Q/E to rotate, wheel to zoom, WASD to pan. Click a building to move it.',
     h: 'h', m: 'm', s: 's'
   },
   ru: {
@@ -29,7 +34,7 @@ window.I18N = {
     tabBuild: 'Стройка', tabIdeas: 'Идеи', tabMachine: 'Машина', tabJournal: 'Дневник', tabMore: 'Ещё',
     perSec: '/с', each: 'каждое', owned: 'есть', buy: 'Купить', max: 'Макс',
     gatherFood: 'Собрать ягоды', gatherWood: 'Рубить дерево', gatherStone: 'Колоть камни', gatherIdeas: 'Изучать машину',
-    clickHint: 'Кликай по кусту, камням, деревьям и машине времени.',
+    clickHint: 'Кликай по кустам с ягодами, камням, лесу и машине времени.',
     researched: 'Изучено', nothingToResearch: 'Пока нечего изучать. Копи идеи.',
     lockedBehind: 'Нужно изучить', nextPart: 'Следующий ремонт', repairs: 'Ремонт', done: 'Готово', build: 'Починить',
     launch: 'ЗАПУСК', machineLocked: 'Изобрети Колесо, чтобы начать ремонт машины времени.',
@@ -45,6 +50,11 @@ window.I18N = {
     awayFor: 'Племя работало без тебя', newLoop: 'Начать следующую петлю',
     achUnlocked: 'Новое достижение', saved: 'Сохранено',
     tribeNeeds: 'Можно открыть',
+    no3d: 'На этом компьютере не запустилась 3D-графика. Обычно помогает обновление драйвера видеокарты. Играть можно кнопками ниже.',
+    placeHint: '— выбери место. Клик — поставить, R — повернуть, правая кнопка или Esc — поставить автоматически.',
+    move: 'Переместить', rotate: 'Повернуть', cantRotate: 'Здесь не хватает места, чтобы повернуть. Попробуй переместить.',
+    gfx: 'Графика', gfx_low: 'Низкая', gfx_medium: 'Средняя', gfx_high: 'Высокая',
+    ctrlHint: 'Камера: тяни мышкой — двигать, правая кнопка или Q/E — вращать, колесо — масштаб, WASD — перемещение. Кликни по зданию, чтобы его переместить.',
     h: 'ч', m: 'м', s: 'с'
   }
 };

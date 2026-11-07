@@ -70,33 +70,85 @@
     no: () => blip(160, 0.12, 'sawtooth', 0.03)
   };
 
-  // ---------- scene ----------
-  const cvs = $('scene'), ctx = cvs.getContext('2d');
+  // ---------- 3D scene ----------
   const fx = { food: 0, wood: 0, stone: 0, ideas: 0 };
-  function gatherAt(resId, px, py) {
-    const g = E.click(S, resId); fx[resId] = 0.25; sfx.click();
+  const sceneBox = $('sceneBox'), BNAME = id => L(E.B[id].name);
+  let selected = null; const placeQueue = [];
+  function floatAt(resId, g, x, y) {
     const f = document.createElement('div'); f.className = 'floater';
-    f.style.left = (px / A.W * 100) + '%'; f.style.top = (py / A.H * 100) + '%';
+    f.style.left = x + 'px'; f.style.top = y + 'px';
     f.innerHTML = `+${fmt(g)} <img src="${A.icon(resId)}" alt="">`;
     $('floaters').appendChild(f); setTimeout(() => f.remove(), 950);
   }
-  cvs.addEventListener('pointerdown', e => {
-    const rc = cvs.getBoundingClientRect();
-    const x = (e.clientX - rc.left) / rc.width * A.W, y = (e.clientY - rc.top) / rc.height * A.H;
-    const hit = A.HITS.find(h => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
-    if (hit) gatherAt(hit.id, x, y);
+  function gatherAt(resId, cx, cy) {
+    const g = E.click(S, resId); fx[resId] = 0.25; sfx.click();
+    const r = sceneBox.getBoundingClientRect();
+    if (cx == null) { const p = (has3d && Scene3D.screenOf(resId)) || { x: r.width / 2, y: r.height / 2 }; floatAt(resId, g, p.x, p.y); }
+    else floatAt(resId, g, cx - r.left, cy - r.top);
+  }
+  function nextPlacement() {
+    if (Scene3D.isPlacing()) return;
+    const id = placeQueue.shift();
+    if (!id) { $('placeHint').hidden = true; return; }
+    selected = null; Scene3D.startPlacement(id, false); showPlaceHint(id);
+  }
+  function showPlaceHint(id) {
+    $('placeHint').hidden = false;
+    $('placeHint').innerHTML = `<b>${esc(BNAME(id))}</b> ${tr('placeHint')}`;
+  }
+  function queuePlacement(id) { if (!has3d) { autoPlaceMissing(); return; } if (!placeQueue.includes(id) && Scene3D.isPlacing() !== id) placeQueue.push(id); nextPlacement(); }
+  function autoPlaceMissing() {
+    if (!has3d) return;
+    for (const id in Scene3D.FOOT) if ((S.b[id] || 0) > 0 && !S.layout[id]) { const sp = Scene3D.findFreeSpot(S, id); if (sp) S.layout[id] = sp; }
+  }
+  let has3d = true;
+  try { Scene3D.init({
+    container: sceneBox, labelBox: $('labels'), quality: S.settings.gfx,
+    onGather: gatherAt,
+    onSelect: id => { selected = id; renderSel(); },
+    onPlace: (id, spot) => { S.layout[id] = spot; selected = id; sfx.buy(); save(); $('placeHint').hidden = true; renderSel(); nextPlacement(); },
+    onCancelPlace: (id, moving) => {
+      if (!moving && !S.layout[id]) { const sp = Scene3D.findFreeSpot(S, id); if (sp) S.layout[id] = sp; }
+      $('placeHint').hidden = true; save(); nextPlacement();
+    }
+  }); } catch (err) {
+    has3d = false;
+    sceneBox.insertAdjacentHTML('afterbegin', `<div id="no3d">${tr('no3d')}</div>`);
+    $('camBtns').hidden = true;
+  }
+  function renderSel() {
+    const box = $('selPop');
+    if (!selected || !S.layout[selected] || !(S.b[selected] > 0)) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = `<b>${esc(BNAME(selected))}</b><span>×${S.b[selected]}</span>
+      <button class="btn sm" data-sel="move">${tr('move')}</button><button class="btn sm ghost" data-sel="rot">${tr('rotate')}</button><button class="btn sm ghost" data-sel="x" aria-label="${tr('close')}">✕</button>`;
+  }
+  $('selPop').addEventListener('click', e => {
+    const b = e.target.closest('[data-sel]'); if (!b) return;
+    const id = selected; if (!id) return;
+    if (b.dataset.sel === 'x') { selected = null; return renderSel(); }
+    if (b.dataset.sel === 'move') { selected = null; renderSel(); Scene3D.startPlacement(id, true); showPlaceHint(id); return; }
+    if (b.dataset.sel === 'rot') {
+      const Lr = S.layout[id], rot = ((Lr.rot || 0) + 1) % 4;
+      if (Scene3D.fits(S, id, Lr.x, Lr.z, rot, id)) { S.layout[id] = { x: Lr.x, z: Lr.z, rot }; save(); }
+      else toast(tr('cantRotate'));
+    }
   });
-  cvs.addEventListener('pointermove', e => {
-    const rc = cvs.getBoundingClientRect();
-    const x = (e.clientX - rc.left) / rc.width * A.W, y = (e.clientY - rc.top) / rc.height * A.H;
-    cvs.style.cursor = A.HITS.some(h => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) ? 'pointer' : 'default';
+  function positionSel() {
+    const box = $('selPop'); if (box.hidden || !selected) return;
+    const p = Scene3D.screenOf(selected); if (!p) return;
+    box.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px) translate(-50%, -130%)`;
+  }
+  $('camBtns').addEventListener('click', e => {
+    const b = e.target.closest('[data-cam]'); if (!b) return;
+    const k = b.dataset.cam;
+    if (k === 'l') Scene3D.rotateView(-1); else if (k === 'r') Scene3D.rotateView(1); else if (k === 'in') Scene3D.zoomBy(1.2); else Scene3D.zoomBy(1 / 1.2);
   });
-  const GATHER_POS = { food: [89, 120], wood: [26, 104], stone: [66, 124], ideas: [294, 104] };
   function renderGather() {
     $('gather').innerHTML = [['food', 'gatherFood'], ['wood', 'gatherWood'], ['stone', 'gatherStone'], ['ideas', 'gatherIdeas']]
       .map(([r, k]) => `<button class="gbtn" data-g="${r}">${icon(r)}<span>${tr(k)}</span><small>+${fmt(E.clickGain(S, r))}</small></button>`).join('');
   }
-  $('gather').addEventListener('click', e => { const b = e.target.closest('[data-g]'); if (b) { gatherAt(b.dataset.g, ...GATHER_POS[b.dataset.g]); } });
+  $('gather').addEventListener('click', e => { const b = e.target.closest('[data-g]'); if (b) gatherAt(b.dataset.g); });
 
   // ---------- header ----------
   function renderRes() {
@@ -185,6 +237,8 @@
       <h3 class="sub">${tr('settings')}</h3>
       <div class="row"><span>${tr('language')}</span><div class="seg"><button data-lang="en" class="${lang() === 'en' ? 'on' : ''}">English</button><button data-lang="ru" class="${lang() === 'ru' ? 'on' : ''}">Русский</button></div></div>
       <div class="row"><span>${tr('sound')}</span><div class="seg"><button data-snd="1" class="${S.settings.sound ? 'on' : ''}">${tr('on')}</button><button data-snd="0" class="${S.settings.sound ? '' : 'on'}">${tr('off')}</button></div></div>
+      <div class="row"><span>${tr('gfx')}</span><div class="seg">${['low', 'medium', 'high'].map(q => `<button data-gfx="${q}" class="${(S.settings.gfx || 'medium') === q ? 'on' : ''}">${tr('gfx_' + q)}</button>`).join('')}</div></div>
+      <p class="note">${tr('ctrlHint')}</p>
       <div class="row"><button class="btn ghost" id="expBtn">${tr('exportSave')}</button><button class="btn ghost" id="impBtn">${tr('importSave')}</button></div>
       <textarea id="saveBox" placeholder="${esc(tr('importPlaceholder'))}"></textarea>
       <button class="btn danger" id="resetBtn">${resetArmed ? tr('resetConfirm') : tr('reset')}</button>`;
@@ -192,7 +246,7 @@
   $('tabBody').addEventListener('click', e => {
     const t = e.target;
     const bm = t.closest('[data-mode]'); if (bm) { const v = bm.dataset.mode; S.settings.buyMode = v === 'max' ? 'max' : +v; return refreshUI(true); }
-    const bb = t.closest('[data-b]'); if (bb) { if (E.buyBuilding(S, bb.dataset.b, S.settings.buyMode)) { sfx.buy(); afterAction(); } else sfx.no(); return; }
+    const bb = t.closest('[data-b]'); if (bb) { const id = bb.dataset.b; if (E.buyBuilding(S, id, S.settings.buyMode)) { sfx.buy(); if (!S.layout[id]) queuePlacement(id); afterAction(); } else sfx.no(); return; }
     const bt = t.closest('[data-t]'); if (bt) { if (E.research(S, bt.dataset.t)) { sfx.tech(); toast(L(E.T[bt.dataset.t].name)); afterAction(); } else sfx.no(); return; }
     const bp = t.closest('[data-p]'); if (bp) {
       const id = bp.dataset.p;
@@ -201,13 +255,14 @@
     }
     const bl = t.closest('[data-lang]'); if (bl) { S.settings.lang = bl.dataset.lang; applyLang(); save(); return; }
     const bs = t.closest('[data-snd]'); if (bs) { S.settings.sound = bs.dataset.snd === '1'; save(); return refreshUI(true); }
+    const bg = t.closest('[data-gfx]'); if (bg) { S.settings.gfx = bg.dataset.gfx; Scene3D.setQuality(S.settings.gfx); save(); return refreshUI(true); }
     if (t.id === 'expBtn') {
       const code = encode(S); $('saveBox').value = code;
       (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(() => toast(tr('copied')), () => { $('saveBox').select(); toast(tr('copyFail')); });
       return;
     }
     if (t.id === 'impBtn') {
-      try { S = hydrate(decode($('saveBox').value)); save(); toast(tr('importOk')); applyLang(); } catch (err) { toast(tr('importBad')); }
+      try { S = hydrate(decode($('saveBox').value)); autoPlaceMissing(); selected = null; save(); toast(tr('importOk')); applyLang(); } catch (err) { toast(tr('importBad')); }
       return;
     }
     if (t.id === 'resetBtn') {
@@ -279,7 +334,7 @@
     E.tick(S, dt);
     S.last = Date.now();
     for (const k in fx) if (fx[k] > 0) fx[k] = Math.max(0, fx[k] - dt);
-    A.draw(ctx, S, now / 1000, fx);
+    if (has3d) { Scene3D.update(S, now / 1000, dt, fx, selected); positionSel(); }
     uiT += dt; saveT += dt; gatherT += dt;
     if (uiT > 0.25) { uiT = 0; refreshUI(false); checkEvents(); }
     if (gatherT > 2) { gatherT = 0; renderGather(); }
@@ -300,6 +355,7 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else { welcomeBack(); lastT = performance.now(); pump(); } });
   window.addEventListener('beforeunload', save);
 
+  autoPlaceMissing();
   welcomeBack();
   applyLang();
   checkEvents();

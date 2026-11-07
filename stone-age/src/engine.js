@@ -12,9 +12,9 @@
   function newState(keep) {
     const s = {
       v: 1, res: {}, total: {}, b: {}, tech: {}, parts: {},
-      clicks: 0, built: 0, echoes: 0, loops: 0, story: {}, ach: {},
+      clicks: 0, built: 0, echoes: 0, loops: 0, story: {}, ach: {}, layout: {},
       playTime: 0, loopTime: 0, last: Date.now(),
-      settings: { lang: null, sound: true, buyMode: 1 }
+      settings: { lang: null, sound: true, buyMode: 1, gfx: 'medium' }
     };
     RES.forEach(r => { s.res[r.id] = 0; s.total[r.id] = 0; });
     if (keep) Object.assign(s, keep);
@@ -120,10 +120,10 @@
     const gained = echoesFromLoop(s);
     const keep = {
       echoes: s.echoes + gained, loops: s.loops + 1, story: s.story, ach: s.ach,
-      settings: s.settings, playTime: s.playTime, clicks: s.clicks, built: 0
+      settings: s.settings, playTime: s.playTime, clicks: s.clicks, built: 0, layout: s.layout
     };
     const ns = newState(keep);
-    ns.story = Object.assign({}, s.story); ns.ach = Object.assign({}, s.ach);
+    ns.story = Object.assign({}, s.story); ns.ach = Object.assign({}, s.ach); ns.layout = Object.assign({}, s.layout);
     return { state: ns, gained };
   }
 

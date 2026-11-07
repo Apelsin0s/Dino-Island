@@ -2,6 +2,11 @@
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 
+// Old or blocklisted GPUs: still allow WebGL, falling back to software rendering.
+// The game renders at low resolution, so the software path stays playable.
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280, height: 760, minWidth: 960, minHeight: 600,
