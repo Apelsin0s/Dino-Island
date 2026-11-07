@@ -69,6 +69,43 @@
     g.strokeStyle = '#8a0a0a'; g.beginPath(); g.arc(180, 60, 34, 0, 7); g.moveTo(180, 94); g.lineTo(180, 180); g.moveTo(130, 120); g.lineTo(230, 110); g.stroke();
     g.fillStyle = '#000'; g.fillRect(166, 52, 8, 8); g.fillRect(188, 52, 8, 8); g.font = '20px serif'; g.fillStyle = '#8a0a0a'; g.fillText('MAMA', 150, 30);
   });
+  // full-screen face for the jumpscare: cracked porcelain, empty sockets, a mouth split to the ears
+  function horrorFace(blood) {
+    const cv = document.createElement('canvas'); cv.width = 768; cv.height = 768; const g = cv.getContext('2d'), W = 768, C = 384;
+    const vg = g.createRadialGradient(C, C, 120, C, C, 384); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,1)');
+    const sk = g.createRadialGradient(C - 40, C - 80, 40, C, C, 330); sk.addColorStop(0, '#efe6da'); sk.addColorStop(0.55, '#c9b9a6'); sk.addColorStop(1, '#5a4c40');
+    g.fillStyle = '#000'; g.fillRect(0, 0, W, W); g.fillStyle = sk; g.beginPath(); g.ellipse(C, C + 20, 300, 360, 0, 0, 7); g.fill();
+    // grime
+    for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${40 + Math.random() * 40},${25 + Math.random() * 20},20,${Math.random() * 0.12})`; g.fillRect(Math.random() * W, Math.random() * W, 2 + Math.random() * 5, 2 + Math.random() * 5); }
+    // sunken sockets, wet edges, a pin-prick of light deep inside
+    [[C - 120, C - 40, -0.15], [C + 120, C - 30, 0.2]].forEach(([x, y, r]) => {
+      const sg = g.createRadialGradient(x, y, 10, x, y, 105); sg.addColorStop(0, '#000'); sg.addColorStop(0.6, '#0a0303'); sg.addColorStop(1, 'rgba(60,20,15,0)');
+      g.fillStyle = sg; g.beginPath(); g.ellipse(x, y, 105, 80, r, 0, 7); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.ellipse(x, y, 66, 52, r, 0, 7); g.fill();
+      g.fillStyle = '#ff2a10'; g.shadowColor = '#ff2010'; g.shadowBlur = 25; g.beginPath(); g.arc(x + 6, y + 4, 6, 0, 7); g.fill(); g.shadowBlur = 0;
+    });
+    // mouth torn ear to ear, stitches, too many teeth
+    g.fillStyle = '#0b0202'; g.beginPath(); g.moveTo(C - 230, C + 120); g.quadraticCurveTo(C, C + 360, C + 230, C + 110); g.quadraticCurveTo(C, C + 170, C - 230, C + 120); g.fill();
+    g.fillStyle = '#2a0505'; g.beginPath(); g.ellipse(C, C + 210, 120, 60, 0, 0, 7); g.fill();
+    for (let i = 0; i < 26; i++) { const k = i / 25, x = C - 210 + k * 420, yTop = C + 125 + Math.sin(k * Math.PI) * 55, yBot = C + 118 + Math.sin(k * Math.PI) * 225;
+      g.fillStyle = `rgb(${200 + Math.random() * 30},${185 + Math.random() * 30},${150 + Math.random() * 30})`;
+      g.beginPath(); g.moveTo(x - 9, yTop); g.lineTo(x + 9, yTop); g.lineTo(x + rnd(-3, 3), yTop + rnd(22, 46)); g.fill();
+      g.beginPath(); g.moveTo(x - 8, yBot); g.lineTo(x + 8, yBot); g.lineTo(x + rnd(-3, 3), yBot - rnd(18, 40)); g.fill(); }
+    g.strokeStyle = '#1a0a08'; g.lineWidth = 3; for (let i = 0; i < 9; i++) { const x = C - 250 + i * 8, y = C + 115 - i * 3; g.beginPath(); g.moveTo(x, y - 12); g.lineTo(x + 6, y + 12); g.stroke(); g.beginPath(); g.moveTo(W - x, y - 12); g.lineTo(W - x - 6, y + 12); g.stroke(); }
+    // cracks
+    g.strokeStyle = 'rgba(25,15,12,.9)'; g.lineWidth = 3;
+    const crack = (x, y, n, dx) => { g.beginPath(); g.moveTo(x, y); for (let i = 0; i < n; i++) { x += rnd(-30, 30) + dx; y += rnd(10, 40); g.lineTo(x, y); if (Math.random() < 0.3) { g.moveTo(x, y); } } g.stroke(); };
+    crack(C + 60, 40, 12, 3); crack(C - 160, 90, 8, -4); crack(C + 200, C - 60, 7, 2); crack(C - 240, C + 40, 6, 0);
+    if (blood) {
+      g.fillStyle = 'rgba(110,0,0,.95)';
+      // tears of blood: wavering runs that thin out and end in a bead
+      const run = (x, y, len, w0) => { let px = x, py = y; for (let k = 0; k < len; k += 4) { const w = w0 * (1 - k / len * 0.6); px += rnd(-1.2, 1.2); g.beginPath(); g.ellipse(px, py + k, w, 3.5, 0, 0, 7); g.fill(); } g.beginPath(); g.ellipse(px, y + len, w0 * 0.9, w0 * 1.3, 0, 0, 7); g.fill(); };
+      [[C - 120, C + 5], [C + 120, C + 15]].forEach(([x, y]) => { for (let j = 0; j < 3; j++) run(x + rnd(-30, 30), y, rnd(150, 330), rnd(4, 8)); });
+      for (let i = 0; i < 40; i++) { g.globalAlpha = Math.random() * 0.8; g.beginPath(); g.arc(C + rnd(-250, 250), C + rnd(100, 380), rnd(2, 14), 0, 7); g.fill(); } g.globalAlpha = 1;
+      run(C - 60, C + 250, 180, 6); run(C + 40, C + 240, 140, 5);
+    }
+    g.fillStyle = vg; g.fillRect(0, 0, W, W);
+    return cv;
+  }
   function writingTex(text, blood) {
     return canvasTex(1024, 256, (g, w, h) => {
       g.clearRect(0, 0, w, h); g.font = 'bold 120px "Wet Paint", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -274,17 +311,50 @@
 
   // ---------- Mother ----------
   function buildMother() {
-    mother = new THREE.Group();
+    // mother (position + facing) → rig (pose: standing, crawling on the ceiling, on the wall, hanging, on the floor)
+    mother = new THREE.Group(); const rig = new THREE.Group(); mother.add(rig);
     const porcelain = std('#e2d8cc', 0.35), dress = std('#ffffff', 0.9, { map: dressTex(settings.blood) }), stock = std('#151012', 0.8), hair = std('#0c0a0a', 0.7);
     M.face = std('#ffffff', 0.35, { map: faceTex(settings.blood), transparent: true, alphaTest: 0.05 }); M.porcelain = porcelain;
-    [-0.1, 0.1].forEach(x => mother.add(mk(new THREE.CylinderGeometry(0.06, 0.05, 0.75, 8), stock, x, 0.38, 0)));
-    const skirt = mk(new THREE.CylinderGeometry(0.2, 0.52, 0.85, 14, 3, true), dress, 0, 1.0, 0); skirt.material.side = THREE.DoubleSide; mother.add(skirt);
-    mother.add(mk(new THREE.CylinderGeometry(0.17, 0.2, 0.5, 12), dress, 0, 1.6, 0), mk(new THREE.CylinderGeometry(0.045, 0.05, 0.14, 8), porcelain, 0, 1.9, 0));
-    motherHead = makeHead(porcelain, hair, 0.16); motherHead.position.set(0, 2.08, 0); mother.add(motherHead);
-    const arm = sd => { const g = new THREE.Group(); g.position.set(sd * 0.22, 1.8, 0); g.add(mk(new THREE.CylinderGeometry(0.045, 0.035, 0.9, 8), dress, 0, -0.45, 0)); g.add(mk(new THREE.BoxGeometry(0.07, 0.16, 0.04), settings.blood ? std('#7a1010', 0.3) : porcelain, 0, -0.95, 0)); for (let i = 0; i < 4; i++) g.add(mk(new THREE.CylinderGeometry(0.008, 0.006, 0.16, 4), porcelain, -0.025 + i * 0.017, -1.1, 0)); mother.add(g); return g; };
-    mother.userData.arms = [arm(-1), arm(1)];
+    const legs = [-0.1, 0.1].map(x => { const g = new THREE.Group(); g.position.set(x, 0.78, 0); g.add(mk(new THREE.CylinderGeometry(0.06, 0.05, 0.75, 8), stock, 0, -0.39, 0)); g.add(mk(new THREE.BoxGeometry(0.08, 0.05, 0.16), stock, 0, -0.76, 0.04)); rig.add(g); return g; });
+    const skirt = mk(new THREE.CylinderGeometry(0.2, 0.44, 0.85, 14, 3, true), dress, 0, 1.0, 0); skirt.material.side = THREE.DoubleSide; rig.add(skirt);
+    rig.add(mk(new THREE.CylinderGeometry(0.17, 0.2, 0.5, 12), dress, 0, 1.6, 0), mk(new THREE.CylinderGeometry(0.045, 0.05, 0.14, 8), porcelain, 0, 1.9, 0));
+    motherHead = makeHead(porcelain, hair, 0.16); motherHead.position.set(0, 2.08, 0); rig.add(motherHead);
+    const arm = sd => { const g = new THREE.Group(); g.position.set(sd * 0.22, 1.8, 0); g.add(mk(new THREE.CylinderGeometry(0.045, 0.035, 0.9, 8), dress, 0, -0.45, 0)); g.add(mk(new THREE.BoxGeometry(0.07, 0.16, 0.04), settings.blood ? std('#7a1010', 0.3) : porcelain, 0, -0.95, 0)); for (let i = 0; i < 4; i++) g.add(mk(new THREE.CylinderGeometry(0.008, 0.006, 0.2, 4), porcelain, -0.025 + i * 0.017, -1.12, 0)); rig.add(g); return g; };
+    mother.userData = { rig, arms: [arm(-1), arm(1)], legs, mode: 'stand', unseen: 0, twitch: 0 };
     mother.traverse(o => { if (o.isMesh) o.castShadow = true; });
     scene.add(mother);
+  }
+  // where her body is for a pose (relative to her sim position), and how the rig is turned
+  const MODES = {
+    stand:   { y: () => 0, rot: [0, 0, 0], off: 0 },
+    ceiling: { y: x => roofY(x) - 0.3, rot: [Math.PI / 2, Math.PI, 0], off: -1.0 },   // belly to the roof, face up, head twisted to look down
+    wall:    { y: x => roofY(x) - 0.35, rot: [Math.PI / 2, Math.PI, 0], off: -1.0 },
+    hang:    { y: x => roofY(x) - 0.05, rot: [0, 0, Math.PI], off: 0 },                // feet on the beam, head down
+    floor:   { y: () => 0.32, rot: [Math.PI / 2, 0, 0], off: -1.0 }                     // face down on all fours, head up
+  };
+  function motherPose(mode, t, dt, moving, sees) {
+    const U = mother.userData, rig = U.rig, m = MODES[mode] || MODES.stand, [l, r] = U.arms;
+    if (mode === 'wall') mother.position.x = (Math.sign(mother.position.x) || 1) * 6.3;
+    if (mode === 'ceiling') mother.position.x = Math.max(-3.5, Math.min(3.5, mother.position.x));
+    mother.position.y = m.y(mother.position.x) - (mode === 'wall' ? 0.15 : 0);
+    rig.rotation.set(m.rot[0], m.rot[1], m.rot[2]); rig.position.set(0, 0, m.off);
+    if (moving) U.ph = (U.ph || 0) + dt * 9;   // limbs move only while she moves (and she moves only while unseen)
+    const ph = U.ph || 0;
+    if (mode === 'ceiling' || mode === 'wall' || mode === 'floor') {
+      // spider-splayed: limbs out to the sides, bent toward the surface she clings to
+      l.rotation.set(-0.8, 0, -(1.25 + Math.sin(ph) * 0.45)); r.rotation.set(-0.8, 0, 1.25 - Math.sin(ph) * 0.45);
+      U.legs[0].rotation.set(-0.7, 0, -(0.95 + Math.cos(ph) * 0.4)); U.legs[1].rotation.set(-0.7, 0, 0.95 - Math.cos(ph) * 0.4);
+      if (mode === 'floor') motherHead.rotation.set(-1.1, 0, Math.sin(ph * 0.5) * 0.3);
+      else motherHead.rotation.set(0, Math.PI, Math.sin(ph * 0.5) * 0.4);   // head twisted all the way round to look down at you
+    } else if (mode === 'hang') {
+      l.rotation.set(0, 0, 0.25 + Math.sin(t * 0.7) * 0.05); r.rotation.set(0, 0, -0.25); U.legs.forEach(g => g.rotation.set(0, 0, 0));
+      motherHead.rotation.set(0.3, 0, Math.sin(t * 0.5) * 0.15);
+    } else { U.legs.forEach(g => g.rotation.set(0, 0, 0)); if (U.headBase) motherHead.rotation.copy(U.headBase); }
+    // watched, she cannot move, but she twitches: a jerk of the head that cracks like a knuckle
+    if (sees) {
+      U.twitch -= dt; if (U.twitch <= 0) { U.twitch = 0.9 + Math.random() * 2.2; U.jerk = { a: rnd(-0.9, 0.9), b: rnd(-0.4, 0.4), t: 0 }; U.didTwitch = true; }
+    }
+    if (U.jerk) { U.jerk.t += dt; const k = Math.max(0, 1 - U.jerk.t * 3); motherHead.rotation.z += U.jerk.a * k; motherHead.rotation.x += U.jerk.b * k; if (k <= 0) U.jerk = null; }
   }
   function makeHead(porcelain, hair, r) {
     const h = new THREE.Group();
@@ -298,7 +368,7 @@
   function newPose() {
     const [l, r] = mother.userData.arms;
     l.rotation.set(rnd(-1.2, 0.2), 0, rnd(-0.1, 0.5)); r.rotation.set(rnd(-1.2, 0.2), 0, rnd(-0.5, 0.1));
-    motherHead.rotation.set(rnd(-0.2, 0.35), rnd(-0.4, 0.4), rnd(-0.6, 0.6)); mother.rotation.x = rnd(-0.05, 0.12);
+    motherHead.rotation.set(rnd(-0.2, 0.35), rnd(-0.4, 0.4), rnd(-0.6, 0.6)); mother.userData.headBase = motherHead.rotation.clone();
   }
 
   // ---------- scare visuals ----------
@@ -368,7 +438,12 @@
       FX.writing.position.copy(hit.point).addScaledVector(n, 0.02); FX.writing.lookAt(hit.point.clone().add(n)); FX.writing.visible = true; FX.writing.material.opacity = 0; FX.writeT = 0; return true;
     },
     writingOff() { FX.writing.visible = false; FX.writeT = null; },
-    forceDark(sec) { FX.dark = sec; }
+    forceDark(sec) { FX.dark = sec; },
+    bloodLens() { if (!settings.blood) return; FX.bloodEl.style.transition = 'none'; FX.bloodEl.style.opacity = 0.75; FX.bloodEl.style.backgroundPosition = `${rnd(0, 100)}% ${rnd(0, 100)}%`; requestAnimationFrame(() => requestAnimationFrame(() => { FX.bloodEl.style.transition = 'opacity 8s ease-in'; FX.bloodEl.style.opacity = 0; })); },
+    // Mother right behind you / over you, for the director
+    motherAt(x, z, mode) { const W = FX.world.watcher; W.x = x; W.z = z; mother.userData.mode = mode || 'stand'; mother.userData.unseen = -8; if (mode === 'stand') newPose(); },
+    motherMode() { return mother.userData.mode; },
+    motherHead() { return mother.userData.headPos ? mother.userData.headPos.clone() : null; }
   };
 
   // ---------- post-processing ----------
@@ -435,6 +510,8 @@
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
     host.prepend(renderer.domElement); renderer.domElement.id = 'view';
+    FX.faceEl = horrorFace(settings.blood); FX.faceEl.id = 'scareFace'; host.appendChild(FX.faceEl);
+    FX.bloodEl = document.createElement('div'); FX.bloodEl.id = 'bloodScreen'; host.appendChild(FX.bloodEl);
     scene = new THREE.Scene(); scene.background = new THREE.Color('#020203'); scene.fog = new THREE.FogExp2('#040406', 0.06);
     camera = new THREE.PerspectiveCamera(72, 1, 0.05, 90); camera.rotation.order = 'YXZ'; scene.add(camera);
     hemi = new THREE.HemisphereLight('#4a5470', '#1a120c', 0.3); scene.add(hemi);
@@ -443,7 +520,7 @@
     flash = new THREE.SpotLight('#eef2ff', 40, 18, 0.46, 0.55, 2); flash.castShadow = true; flash.shadow.camera.near = 0.2; flash.shadow.bias = -0.0005;
     flashTarget = new THREE.Object3D(); camera.add(flash, flashTarget); flash.position.set(0.18, -0.15, 0.05); flashTarget.position.set(0, 0, -5); flash.target = flashTarget;
     const P = Sim.PILE_POS;
-    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, x = P.x + Math.cos(a) * 7.6, z = P.z + Math.sin(a) * 7.6; const pl = new THREE.PointLight('#ffb050', 0, 5, 2); pl.position.set(x, 0.5, z); const c = mk(new THREE.CylinderGeometry(0.04, 0.045, 0.22, 8), std('#e8dcc0', 0.6), x, 0.11, z); const fl = mk(new THREE.ConeGeometry(0.025, 0.06, 6), new THREE.MeshBasicMaterial({ color: '#ffd080' }), x, 0.26, z, false, false); c.visible = fl.visible = false; scene.add(pl, c, fl); candleLights.push({ pl, c, fl, x, z }); }
+    for (let i = 0; i < 8; i++) { const a = (i / 8 + 0.25) * Math.PI * 2, x = P.x + Math.cos(a) * 7.6, z = P.z + Math.sin(a) * 7.6; const pl = new THREE.PointLight('#ffb050', 0, 5, 2); pl.position.set(x, 0.5, z); const c = mk(new THREE.CylinderGeometry(0.04, 0.045, 0.22, 8), std('#e8dcc0', 0.6), x, 0.11, z); const fl = mk(new THREE.ConeGeometry(0.025, 0.06, 6), new THREE.MeshBasicMaterial({ color: '#ffd080' }), x, 0.26, z, false, false); c.visible = fl.visible = false; scene.add(pl, c, fl); candleLights.push({ pl, c, fl, x, z }); }
     lantern = new THREE.PointLight('#ffc070', 0, 13, 1.6); lantern.position.set(P.x, 4.9, P.z); scene.add(lantern);
     const lamp = mk(new THREE.CylinderGeometry(0.1, 0.13, 0.28, 10), std('#4a3a20', 0.4, { metalness: 0.6 }), P.x, 4.95, P.z); lamp.visible = false; scene.add(lamp); lantern.userData.mesh = lamp;
     [[0, 21], [0, -13.5], [0, -24.5]].forEach(([x, z]) => { const l = new THREE.PointLight('#ffc890', 0, 11, 1.6); l.position.set(x, 3.2, z); scene.add(l); roomLights.push({ l, x, z }); });
@@ -454,7 +531,7 @@
   }
   function setSettings(s) {
     const bloodChanged = s.blood !== settings.blood; Object.assign(settings, s);
-    if (bloodChanged) { M.face.map = faceTex(settings.blood); M.face.needsUpdate = true; bloodPool.forEach(b => b.visible = settings.blood && b.visible); }
+    if (bloodChanged) { const nf = horrorFace(settings.blood); nf.id = 'scareFace'; FX.faceEl.replaceWith(nf); FX.faceEl = nf; M.face.map = faceTex(settings.blood); M.face.needsUpdate = true; bloodPool.forEach(b => b.visible = settings.blood && b.visible); }
   }
 
   function update(world, player, t, dt) {
@@ -466,7 +543,7 @@
     // gates follow the keys
     gates.forEach((g, i) => { if (world.keys > i && !g.userData.open) openGate(i, world.time < 1); if (g.userData.fall != null) { g.userData.fall += dt; g.children.forEach((c, k) => { c.position.y -= dt * (2 + k); c.rotation.z += dt * (k % 2 ? 2 : -2); }); if (g.userData.fall > 1.2) { g.visible = false; g.userData.fall = null; } } });
     const f = Sim.remaining(world) / Sim.PILE; if ((Math.abs(f - lastPileF) > 0.002 || lastPileF < 0) && !lookAtPlayer) { layoutPile(f); lastPileF = f; }
-    const nc = Math.min(8, Math.ceil(Sim.lv(world, 'candles') * 0.8));
+    const nc = Math.max(1, Math.min(8, Math.ceil(Sim.lv(world, 'candles') * 0.8)));   // one stub candle burns from the start
     candleLights.forEach((c, i) => { const on = i < nc && !dark; c.c.visible = i < nc; c.fl.visible = on; c.pl.intensity = on ? 2.4 * (0.85 + Math.sin(t * 13 + i * 3) * 0.1 + Math.random() * 0.05) : 0; c.fl.scale.y = 0.9 + Math.sin(t * 17 + i) * 0.2; });
     const hasLantern = Sim.lv(world, 'lantern') > 0; lantern.intensity = hasLantern && !dark ? 10 * (0.95 + Math.sin(t * 2.3) * 0.05) : 0; lantern.userData.mesh.visible = hasLantern;
     const nr = st.rooms; roomLights.forEach((r, i) => { r.l.intensity = i < nr && !dark ? 7 * (0.9 + Math.sin(t * 3 + i) * 0.05) : 0; });
@@ -479,13 +556,25 @@
       if (roomLights.some((r, i) => i < nr && Math.hypot(x - r.x, z - r.z) < 7)) return true;
       return FX.moonPatches.some(m => Math.hypot(x - m.x, z - m.z) < m.r);
     } };
-    // Mother
-    const W = world.watcher, moved = Math.hypot(mother.position.x - W.x, mother.position.z - W.z) > 0.01;
+    // Mother: she goes where the sim says, but how she gets there is up to her: across the roof, down the wall, on all fours
+    const W = world.watcher, U = mother.userData, moved = Math.hypot(U.sx - W.x, U.sz - W.z) > 0.01; U.sx = W.x; U.sz = W.z;
+    const dist0 = Math.hypot(W.x - player.x, W.z - player.z);
+    if (!U.lastSees) {
+      U.unseen += dt;
+      let want = U.mode;
+      if (W.moving) want = dist0 < 2.2 ? 'stand' : dist0 < 4.5 ? 'floor' : Math.abs(W.x) > 5.5 ? 'wall' : 'ceiling';
+      else if (U.unseen > 2.5) { want = ['stand', 'ceiling', 'wall', 'hang', 'floor', 'ceiling', 'hang'][Math.floor(Math.random() * 7)]; U.unseen = -4 - Math.random() * 6; }
+      if (want !== U.mode) { U.mode = want; U.changed = true; if (want === 'stand') newPose(); }
+    } else U.unseen = 0;
     mother.position.set(W.x, 0, W.z);
-    if (moved) { poseT += dt; if (poseT > 0.35) { newPose(); poseT = 0; } }
-    mother.rotation.y = Math.atan2(player.x - W.x, player.z - W.z);
-    const mpts = [new THREE.Vector3(W.x, 1.95, W.z), new THREE.Vector3(W.x, 1.2, W.z), new THREE.Vector3(W.x, 0.5, W.z)];
-    const sees = inView(mpts, 22) && litAt(mpts[1], player);
+    if (moved && U.mode === 'stand') { poseT += dt; if (poseT > 0.35) { newPose(); poseT = 0; } }
+    mother.rotation.set(0, Math.atan2(player.x - W.x, player.z - W.z), 0);
+    motherPose(U.mode, t, dt, W.moving, U.lastSees);
+    mother.updateMatrixWorld(true);
+    const hp = motherHead.getWorldPosition(new THREE.Vector3()), bp = U.rig.localToWorld(new THREE.Vector3(0, 1.2, 0)), fp = U.rig.localToWorld(new THREE.Vector3(0, 0.4, 0));
+    const mpts = [hp, bp, fp];
+    const sees = inView(mpts, 22) && (litAt(bp, player) || litAt(hp, player));
+    U.lastSees = sees; U.headPos = hp;
     // ambient props
     fliers.forEach(fl => { if (!fl.on) return; fl.t += dt * 1.6; const k = Math.min(1, fl.t); fl.g.position.lerpVectors(fl.from, fl.to, k); fl.g.position.y += Math.sin(k * Math.PI) * 1.6; fl.g.rotation.x += fl.spin.x * dt; fl.g.rotation.y += fl.spin.y * dt; if (k >= 1) { fl.on = false; fl.g.visible = false; addDiscard(); } });
     const pos = dust.geometry.attributes.position; for (let i = 0; i < pos.count; i += 9) pos.setY(i, pos.getY(i) + Math.sin(t * 0.3 + i) * 0.0008); pos.needsUpdate = true;
@@ -522,13 +611,16 @@
       jump.t += dt; const k = jump.t;
       if (jump.scare) {
         const head = jump.head; head.visible = k < 1.0;
-        camera.updateMatrixWorld(); const d = Math.max(0.42, 1.6 - k * 3.2);
+        camera.updateMatrixWorld(); const d = Math.max(0.3, 1.4 - k * 4.5);
         head.position.copy(camera.localToWorld(new THREE.Vector3((Math.random() - 0.5) * 0.04 * k * 4, -0.04, -d))); head.quaternion.copy(camera.quaternion); head.rotateZ(Math.sin(k * 40) * 0.08);
-        camera.rotation.z = (Math.random() - 0.5) * 0.08 * Math.min(1, k * 3);
+        const shake = Math.max(0, 1 - k * 0.8); camera.rotation.z = (Math.random() - 0.5) * 0.22 * shake; camera.rotation.x += (Math.random() - 0.5) * 0.12 * shake; camera.rotation.y += (Math.random() - 0.5) * 0.12 * shake;
+        const faceOn = k < 0.1 || (k > 0.42 && k < 0.47) || (k > 0.7 && k < 0.73) || (jump.fatal && k > 0.95 && k < 1.25);
+        FX.faceEl.style.opacity = faceOn ? 1 : 0; FX.faceEl.style.transform = `translate(-50%,-50%) scale(${(1.1 + k * 0.9) * (faceOn ? 1 + Math.random() * 0.06 : 1)}) rotate(${(Math.random() - 0.5) * 6}deg)`;
+        if (settings.blood && k > 0.05 && !jump.bled) { jump.bled = true; FX.bloodEl.style.transition = 'none'; FX.bloodEl.style.opacity = 1; FX.bloodEl.style.backgroundPosition = `${rnd(0, 100)}% ${rnd(0, 100)}%`; }
         hurt = Math.min(1, k * 2) * jump.hurt; fl = settings.flashes && k < 0.12 ? 0.6 : 0; glitch = Math.max(glitch, k < 0.8 ? 1 : 0);
         black = jump.fatal && k > 0.9 ? Math.min(1, (k - 0.9) * 2.5) : 0;
       } else black = jump.fatal ? Math.min(1, k * 1.5) : Math.sin(Math.min(1, k) * Math.PI) * 0.6;
-      if (k > (jump.fatal ? 2.2 : 1.1)) { if (jump.head) scene.remove(jump.head); const cb = jump.done; jump = null; cb && cb(); }
+      if (k > (jump.fatal ? 2.2 : 1.1)) { if (jump.head) scene.remove(jump.head); FX.faceEl.style.opacity = 0; if (jump.bled) { FX.bloodEl.style.transition = 'opacity 6s ease-in'; FX.bloodEl.style.opacity = 0; } const cb = jump.done; jump = null; cb && cb(); }
     }
     const dist = Math.hypot(W.x - player.x, W.z - player.z);
     const fear = Math.min(1, (W.active ? Math.max(0, 1 - dist / 10) * 0.8 + W.wake * 0.35 : 0) + (FX.crawl || FX.handT != null || FX.eyes.visible ? 0.25 : 0));
@@ -538,7 +630,7 @@
     camera.getWorldDirection(_a); ray.set(camera.position, _a); ray.far = 3.6;
     const hit = ray.intersectObjects([pileMass, door], true)[0];
     let target = null; if (hit) { let o = hit.object; while (o && !o.userData.pile && !o.userData.door) o = o.parent; if (o) target = o.userData.pile ? 'pile' : 'door'; }
-    return { sees, litAtWatcher: lightsRef.litAt(W.x, W.z), target, fear, dist, bellDir: Math.atan2(W.x - player.x, W.z - player.z) - player.yaw, dripSplash: FX.drip && FX.drip.splash ? (FX.drip.splash = false, true) : false, landed: FX.landed ? (FX.landed = false, true) : false };
+    return { sees, litAtWatcher: lightsRef.litAt(W.x, W.z), target, fear, dist, bellDir: Math.atan2(W.x - player.x, W.z - player.z) - player.yaw, dripSplash: FX.drip && FX.drip.splash ? (FX.drip.splash = false, true) : false, landed: FX.landed ? (FX.landed = false, true) : false, motherMode: U.mode, motherY: hp.y, twitched: U.didTwitch ? (U.didTwitch = false, true) : false, modeChanged: U.changed ? (U.changed = false, true) : false };
   }
   // kind: 'mother' | 'doll' | 'crawler'; fatal = Mother caught you
   function jumpscare(scare, done, kind, fatal) {

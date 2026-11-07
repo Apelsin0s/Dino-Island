@@ -25,21 +25,21 @@
     LOOT.forEach(l => { w.cur[l.id] = 0; w.total[l.id] = 0; });
     return w;
   }
-  function newPlayer(id) { return { id: id || 'p1', x: SPAWN.x, z: SPAWN.z, yaw: 0, pitch: 0, light: true, battery: 1, digging: false, stun: 0, daze: 0 }; }
+  function newPlayer(id) { return { id: id || 'p1', x: SPAWN.x, z: SPAWN.z, yaw: 0, pitch: 0, light: false, battery: 1, digging: false, stun: 0, daze: 0 }; }
   function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
   // ---------- stats ----------
   const lv = (w, id) => w.lvl[id] || 0;
   function stats(w) {
     const s = { pullSpeed: 1.5, perPull: 1, perPullMult: 1, finds: 1, rare: 1, auto: 0, autoMult: 1, threat: 1, battery: 1, calm: 0, salt: 0,
-      mirror: 0, bell: 0, chain: 0, whisper: 0, magnet: 0, light: 0, wide: 0, gloves: 0, nerves: 0, burn: 1, music: 0, coffin: 0, rooms: 0 };
+      mirror: 0, bell: 0, chain: 0, whisper: 0, magnet: 0, light: 0, wide: 0, gloves: 0, nerves: 0, burn: 1, music: 0, coffin: 0, rooms: 0, torch: 0 };
     for (const id in w.lvl) {
       const n = N[id], L = w.lvl[id]; if (!n || !L) continue; const e = n.effect;
       if (e.pullSpeed) s.pullSpeed *= 1 + e.pullSpeed * L;
       if (e.perPull) s.perPull += e.perPull * L;
       if (e.perPullMult) s.perPullMult *= Math.pow(e.perPullMult, L);
       if (e.autoMult) s.autoMult += e.autoMult * L;
-      ['finds', 'rare', 'auto', 'threat', 'battery', 'calm', 'salt', 'mirror', 'bell', 'chain', 'whisper', 'magnet', 'light', 'wide', 'gloves', 'nerves', 'burn', 'music', 'coffin', 'rooms']
+      ['finds', 'rare', 'auto', 'threat', 'battery', 'calm', 'salt', 'mirror', 'bell', 'chain', 'whisper', 'magnet', 'light', 'wide', 'gloves', 'nerves', 'burn', 'music', 'coffin', 'rooms', 'torch']
         .forEach(k => { if (e[k] && k !== 'autoMult') s[k] += e[k] * L; });
     }
     s.calm = Math.min(0.85, s.calm); s.salt = Math.min(0.85, s.salt); s.nerves = Math.min(0.75, s.nerves);
@@ -100,8 +100,11 @@
   function stepWatcher(w, players, watched, dt, litAtWatcher) {
     const W = w.watcher, s = stats(w);
     if (!W.active) { if (w.removed >= PILE * 0.002) { W.active = true; W.wake = 0; } else return null; }
+    if (W.held) { W.moving = false; return null; }   // a scare has her somewhere else for a moment
     if (w.time < w.musicUntil) { W.moving = false; W.wake = Math.max(0, W.wake - dt * 0.3); return null; }
-    const seen = watched.some(Boolean);
+    // she needs a moment to freeze: you catch her mid-crawl before she goes still
+    W.seenT = watched.some(Boolean) ? (W.seenT || 0) + dt : 0;
+    const seen = W.seenT > 0.3 || (W.seenT > 0 && !W.moving);
     W.wake = Math.min(1, W.wake + (seen ? -0.15 : 0.12 * (1 + depth(w) * 2) * s.threat * (1 - s.salt)) * dt);
     if (W.wake < 0) W.wake = 0;
     const alive = players.filter(p => p.stun <= 0);
@@ -135,7 +138,8 @@
 
   // ---------- flashlight ----------
   function stepBattery(w, p, dt) {
-    const cap = 60 * stats(w).battery;
+    const st = stats(w); if (!st.torch) { p.light = false; return; }
+    const cap = 60 * st.battery;
     if (p.light) { p.battery -= dt / cap; if (p.battery <= 0) { p.battery = 0; p.light = false; } }
     else p.battery = Math.min(1, p.battery + dt / (cap * 0.6));
   }

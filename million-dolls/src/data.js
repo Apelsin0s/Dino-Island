@@ -27,7 +27,7 @@
   // Upgrade tree. pos = [column, row]. Each level costs cost × growth^level. key = how many keys you need before it shows.
   // effects: pullSpeed, perPull, perPullMult, finds, rare, auto, autoMult, threat, battery, calm, salt, mirror, bell, chain,
   // whisper, magnet, light, wide (flashlight angle), gloves (no grabs), nerves (shorter scares), burn (reward for burning eyes),
-  // music (Mother sleeps), coffin (she restarts further away), rooms (more candles).
+  // torch (the flashlight itself), music (Mother sleeps), coffin (she restarts further away), rooms (more candles).
   const NODES = [
     // --- hands ---
     { id: 'quickHands', pos: [0, 4], max: 20, cost: { buttons: 8 }, growth: 1.62, effect: { pullSpeed: 0.12 },
@@ -62,7 +62,9 @@
     { id: 'heartPump', pos: [10, 2], req: ['automaton'], key: 2, max: 8, cost: { hearts: 1050 }, growth: 2.85, effect: { autoMult: 0.25 },
       name: { en: 'Heart pump', ru: 'Сердечный насос' }, desc: { en: 'Feed the hearts to the machines. Helpers +25%.', ru: 'Скормить сердца механизмам. Помощники +25%.' } },
     // --- light ---
-    { id: 'battery', pos: [1, 7], req: ['quickHands'], max: 10, cost: { wax: 6 }, growth: 1.5, effect: { battery: 0.35 },
+    { id: 'torch', pos: [0, 7], max: 1, cost: { buttons: 45 }, growth: 1, effect: { torch: 1 },
+      name: { en: 'Flashlight', ru: 'Фонарик' }, desc: { en: 'An old flashlight from the pile. F to switch it on. You can finally see her. She can see you too.', ru: 'Старый фонарик из кучи. F — включить. Теперь ты её видишь. Она тебя тоже.' } },
+    { id: 'battery', pos: [1, 7], req: ['torch'], max: 10, cost: { wax: 6 }, growth: 1.5, effect: { battery: 0.35 },
       name: { en: 'Batteries', ru: 'Батарейки' }, desc: { en: 'Flashlight lasts 35% longer.', ru: 'Фонарик работает на 35% дольше.' } },
     { id: 'lens', pos: [2, 9], req: ['battery'], max: 5, cost: { eyes: 40, wax: 30 }, growth: 1.9, effect: { wide: 0.06 },
       name: { en: 'Wide lens', ru: 'Широкая линза' }, desc: { en: 'Wider flashlight beam: easier to keep her lit.', ru: 'Шире луч фонарика: её легче держать в свете.' } },
