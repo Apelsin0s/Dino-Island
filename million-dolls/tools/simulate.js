@@ -12,7 +12,8 @@ const fmt = t => `${Math.floor(t / 3600)}h${String(Math.floor(t / 60) % 60).padS
 const log = (t, m) => { if (!QUIET) console.log(fmt(t).padStart(7), m); };
 let t = 0, nextMark = 0.05, nextDeath = DEATH_MIN * 60;
 const frac = c => Math.max(...Object.keys(c).map(r => c[r] / Math.max(1e-9, w.cur[r])));
-while (t < 60 * 3600 && !w.keyFound) {
+while (t < 80 * 3600 && w.keys < 3) {
+  if (t % 45 === 0 && w.watcher.active) S.bounty(w, 40);   // scares dealt with now and then
   p.digging = (t % 100) < ACTIVE * 100;
   S.step(w, [p], 1, { watched: [true] });
   // buy: cheapest affordable node
@@ -23,8 +24,9 @@ while (t < 60 * 3600 && !w.keyFound) {
     if (S.lv(w, best) === 1) log(t, 'node ' + best);
   }
   if (w.watcher.active && t >= nextDeath) { S.killed(w, p); nextDeath = t + DEATH_MIN * 60; }
+  let kk = 0; if (w.keys > kk) { kk = w.keys; }
   if (S.depth(w) >= nextMark) { log(t, `${Math.round(S.depth(w) * 100)}% dug | dig ${S.digRate(w).toFixed(0)}/s auto ${S.autoRate(w).toFixed(0)}/s`); nextMark += 0.05; }
   t++;
 }
-console.log(`time ${fmt(t)} | key ${w.keyFound ? 'FOUND' : 'not found'} at ${(w.keyAt / S.PILE * 100).toFixed(1)}% | dug ${(S.depth(w) * 100).toFixed(1)}%`);
-if (!w.keyFound) process.exitCode = 1;
+console.log(`time ${fmt(t)} | keys ${w.keys}/3 at ${w.keyAt.map(k => (k / S.PILE * 100).toFixed(0) + '%').join(', ')} | dug ${(S.depth(w) * 100).toFixed(1)}%`);
+if (w.keys < 3) process.exitCode = 1;

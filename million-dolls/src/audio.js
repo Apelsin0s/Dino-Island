@@ -49,6 +49,11 @@
     bell(pan = 0) { if (!ac) return; [1320, 1980, 2640].forEach((f, i) => tone(f, 1.4, { type: 'sine', gain: 0.05 / (i + 1), pan })); },
     scream() { if (!ac) return; const c = ctx(); noise(1.4, { f: 3000, q: 0.5, gain: 0.9, type: 'highpass', attack: 0.005 }); tone(880, 1.2, { type: 'sawtooth', gain: 0.5, slide: -600 }); tone(1240, 1.1, { type: 'square', gain: 0.25, slide: -900 }); tone(60, 1.5, { type: 'sawtooth', gain: 0.6 }); void c; },
     sting() { if (!ac) return; tone(110, 2.5, { type: 'sawtooth', gain: 0.12, slide: -40 }); noise(2, { f: 200, q: 1, gain: 0.1, type: 'lowpass', attack: 0.3 }); },
+    giggle(pan = 0) { if (!ac) return; [0, 0.12, 0.22, 0.34, 0.43].forEach((d, i) => tone(1100 + i * 60 + Math.random() * 80, 0.09, { type: 'triangle', gain: 0.05, pan, delay: d, slide: -200 })); },
+    screech(pan = 0) { if (!ac) return; tone(2200, 0.7, { type: 'sawtooth', gain: 0.12, slide: -1600, pan }); noise(0.6, { f: 4000, q: 2, gain: 0.15, pan }); },
+    drip() { if (!ac) return; tone(1400 + Math.random() * 300, 0.08, { type: 'sine', gain: 0.06, slide: -900 }); },
+    thud() { if (!ac) return; tone(70, 0.3, { type: 'sine', gain: 0.4, slide: -30 }); noise(0.2, { f: 300, q: 1, gain: 0.25, type: 'lowpass' }); },
+    lullaby() { if (!ac) return; [659, 587, 523, 587, 659, 659, 659, 587, 587, 587, 659, 784, 784].forEach((f, i) => tone(f * 2, 0.5, { type: 'sine', gain: 0.05, delay: i * 0.38 })); },
     door(open) { if (!ac) return; noise(open ? 2.2 : 0.4, { f: open ? 260 : 900, q: open ? 20 : 3, gain: 0.15, attack: 0.05 }); if (!open) tone(220, 0.1, { type: 'square', gain: 0.05 }); }
   };
   root.Sfx = api;
