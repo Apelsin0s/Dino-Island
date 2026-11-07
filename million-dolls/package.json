@@ -1,0 +1,29 @@
+{
+  "name": "million-dolls",
+  "productName": "Million Dolls",
+  "version": "0.1.0",
+  "description": "First-person horror incremental: find one key in an attic full of a million dolls. Do not look away.",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never",
+    "simulate": "node tools/simulate.js",
+    "vendor": "esbuild tools/three-entry.js --bundle --format=iife --minify --legal-comments=eof --outfile=src/vendor/three.min.js"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.17.0",
+    "esbuild": "0.28.2",
+    "three": "0.186.1"
+  },
+  "build": {
+    "appId": "com.milliondolls.game",
+    "productName": "Million Dolls",
+    "files": ["electron/**", "src/**"],
+    "directories": { "output": "dist" },
+    "win": { "target": ["zip"] },
+    "linux": { "target": ["tar.gz"], "category": "Game" },
+    "mac": { "target": ["zip"], "category": "public.app-category.games", "identity": null }
+  }
+}

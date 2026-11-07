@@ -1,0 +1,41 @@
+name: Million Dolls desktop builds
+
+on:
+  push:
+    paths:
+      - 'million-dolls/**'
+      - '.github/workflows/million-dolls-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: million-dolls
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: million-dolls/package-lock.json
+      - run: npm ci
+      - name: Balance check (bot must find the key)
+        run: node tools/simulate.js --quiet
+      - name: Package
+        run: npx electron-builder --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: million-dolls-${{ runner.os }}
+          path: |
+            million-dolls/dist/*.zip
+            million-dolls/dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
