@@ -4,7 +4,8 @@
 globalThis.window = globalThis;
 require('../src/data.js');
 const S = require('../src/sim.js');
-const ACTIVE = parseFloat(process.argv[2] || '0.6'), DEATH_MIN = parseFloat(process.argv[3] || '6');
+const ARGS = process.argv.slice(2).filter(a => !a.startsWith('--'));
+const ACTIVE = parseFloat(ARGS[0] || '0.6'), DEATH_MIN = parseFloat(ARGS[1] || '6');
 const QUIET = process.argv.includes('--quiet');
 const w = S.newWorld(42), p = S.newPlayer();
 const fmt = t => `${Math.floor(t / 3600)}h${String(Math.floor(t / 60) % 60).padStart(2, '0')}m`;
