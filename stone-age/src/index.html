@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'">
+<!--PAGE-START-->
+<title>Stuck in the Stone Age</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="style.css">
+<!--HEAD-END-->
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <h1 id="gameTitle">Stuck in the Stone Age</h1>
+    <div id="resbar" aria-live="off"></div>
+  </header>
+  <main id="main">
+    <section id="left">
+      <div id="sceneBox">
+        <canvas id="scene" width="320" height="180" aria-label="Settlement"></canvas>
+        <div id="floaters"></div>
+      </div>
+      <div id="gather"></div>
+      <div id="diaryLine"></div>
+    </section>
+    <aside id="panel">
+      <nav id="tabs" role="tablist"></nav>
+      <div id="tabBody"></div>
+    </aside>
+  </main>
+</div>
+<div id="modal" class="overlay" hidden><div class="pbox" id="modalBox"></div></div>
+<div id="toasts"></div>
+<script src="data.js"></script>
+<script src="i18n.js"></script>
+<script src="engine.js"></script>
+<script src="art.js"></script>
+<script src="game.js"></script>
+<!--PAGE-END-->
+</body>
+</html>

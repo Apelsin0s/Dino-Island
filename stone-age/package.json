@@ -1,0 +1,26 @@
+{
+  "name": "stuck-in-the-stone-age",
+  "productName": "Stuck in the Stone Age",
+  "version": "0.1.0",
+  "description": "Pixel idle game: a time traveller stuck in 10,000 BC builds a settlement to fix the time machine.",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never",
+    "simulate": "node tools/simulate.js"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "com.stoneage.stuck",
+    "productName": "Stuck in the Stone Age",
+    "files": ["electron/**", "src/**", "!src/**/*.map"],
+    "directories": { "output": "dist" },
+    "win": { "target": ["zip"] },
+    "linux": { "target": ["tar.gz"], "category": "Game" },
+    "mac": { "target": ["zip"], "category": "public.app-category.games", "identity": null }
+  }
+}

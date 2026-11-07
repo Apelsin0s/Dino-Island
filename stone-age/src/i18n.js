@@ -1,0 +1,50 @@
+// Interface strings. Content strings live in data.js.
+'use strict';
+window.I18N = {
+  en: {
+    title: 'Stuck in the Stone Age',
+    tabBuild: 'Build', tabIdeas: 'Ideas', tabMachine: 'Machine', tabJournal: 'Journal', tabMore: 'More',
+    perSec: '/s', each: 'each', owned: 'owned', buy: 'Buy', max: 'Max',
+    gatherFood: 'Pick berries', gatherWood: 'Chop wood', gatherStone: 'Break rocks', gatherIdeas: 'Study the machine',
+    clickHint: 'Click the bush, the rocks, the trees and the time machine.',
+    researched: 'Researched', nothingToResearch: 'Nothing new to research right now. Keep gathering ideas.',
+    lockedBehind: 'Needs research', nextPart: 'Next repair', repairs: 'Repairs', done: 'Done', build: 'Repair',
+    launch: 'LAUNCH', machineLocked: 'Invent the Wheel to start repairing the time machine.',
+    echo: 'Time echoes', echoInfo: 'Each echo gives +10% to all production and clicks, forever.',
+    echoGain: 'Launching now gives', journalEmpty: 'Nothing written yet.',
+    statsTitle: 'Stats', playTime: 'Time played', clicks: 'Clicks', buildings: 'Buildings now', loops: 'Time loops',
+    achievements: 'Achievements', settings: 'Settings', language: 'Language', sound: 'Sound', on: 'On', off: 'Off',
+    exportSave: 'Copy save code', importSave: 'Load save code', importPlaceholder: 'Paste a save code here',
+    importOk: 'Save loaded.', importBad: 'This code is not a valid save.', copied: 'Save code copied.',
+    copyFail: 'Copy the code from the box below.',
+    reset: 'Erase all progress', resetConfirm: 'Click again to erase everything. This cannot be undone.',
+    next: 'Next', close: 'Close', diary: 'Diary', welcomeBack: 'While you were away',
+    awayFor: 'The tribe kept working for', newLoop: 'Start the next loop',
+    achUnlocked: 'Achievement unlocked', saved: 'Saved',
+    tribeNeeds: 'Ready to unlock',
+    h: 'h', m: 'm', s: 's'
+  },
+  ru: {
+    title: 'Застрял в каменном веке',
+    tabBuild: 'Стройка', tabIdeas: 'Идеи', tabMachine: 'Машина', tabJournal: 'Дневник', tabMore: 'Ещё',
+    perSec: '/с', each: 'каждое', owned: 'есть', buy: 'Купить', max: 'Макс',
+    gatherFood: 'Собрать ягоды', gatherWood: 'Рубить дерево', gatherStone: 'Колоть камни', gatherIdeas: 'Изучать машину',
+    clickHint: 'Кликай по кусту, камням, деревьям и машине времени.',
+    researched: 'Изучено', nothingToResearch: 'Пока нечего изучать. Копи идеи.',
+    lockedBehind: 'Нужно изучить', nextPart: 'Следующий ремонт', repairs: 'Ремонт', done: 'Готово', build: 'Починить',
+    launch: 'ЗАПУСК', machineLocked: 'Изобрети Колесо, чтобы начать ремонт машины времени.',
+    echo: 'Эхо времени', echoInfo: 'Каждое эхо навсегда даёт +10% ко всей добыче и кликам.',
+    echoGain: 'Запуск сейчас даст', journalEmpty: 'Пока ничего не записано.',
+    statsTitle: 'Статистика', playTime: 'Время в игре', clicks: 'Клики', buildings: 'Зданий сейчас', loops: 'Временные петли',
+    achievements: 'Достижения', settings: 'Настройки', language: 'Язык', sound: 'Звук', on: 'Вкл', off: 'Выкл',
+    exportSave: 'Скопировать код сохранения', importSave: 'Загрузить код сохранения', importPlaceholder: 'Вставь сюда код сохранения',
+    importOk: 'Сохранение загружено.', importBad: 'Это не похоже на код сохранения.', copied: 'Код сохранения скопирован.',
+    copyFail: 'Скопируй код из поля ниже.',
+    reset: 'Стереть весь прогресс', resetConfirm: 'Нажми ещё раз, чтобы стереть всё. Это нельзя отменить.',
+    next: 'Дальше', close: 'Закрыть', diary: 'Дневник', welcomeBack: 'Пока тебя не было',
+    awayFor: 'Племя работало без тебя', newLoop: 'Начать следующую петлю',
+    achUnlocked: 'Новое достижение', saved: 'Сохранено',
+    tribeNeeds: 'Можно открыть',
+    h: 'ч', m: 'м', s: 'с'
+  }
+};
