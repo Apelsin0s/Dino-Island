@@ -18,31 +18,31 @@
     const w = {
       v: 2, removed: 0, cur: {}, total: {}, lvl: {}, notes: [], wrongKeys: 0,
       keyAt: KEYS.map(k => Math.floor(PILE * (k.range[0] + rnd() * (k.range[1] - k.range[0])))), keys: 0, escaped: false,
-      watcher: { x: HOMES[0].x, z: HOMES[0].z, active: false, wake: 0, moving: false, kills: 0, chainLeft: 0 },
-      musicUntil: 0, musicReady: 0, digAcc: 0, autoAcc: 0, time: 0, last: Date.now(), seed: seed || 0, loops: 0, scares: 0,
+      watcher: { x: HOMES[0].x, z: HOMES[0].z, active: false, wake: 0, moving: false, kills: 0, chainLeft: 0, stun: 0, recoil: 0, chase: false, wp: null, wpT: 0 },
+      musicUntil: 0, musicReady: 0, leverReady: 0, digAcc: 0, autoAcc: 0, time: 0, last: Date.now(), seed: seed || 0, loops: 0, scares: 0,
       settings: { lang: null, scares: true, blood: true, flashes: true, sens: 1, volume: 0.8, warned: false, quality: 'medium' }
     };
     LOOT.forEach(l => { w.cur[l.id] = 0; w.total[l.id] = 0; });
     return w;
   }
-  function newPlayer(id) { return { id: id || 'p1', x: SPAWN.x, z: SPAWN.z, yaw: 0, pitch: 0, light: false, battery: 1, digging: false, stun: 0, daze: 0 }; }
+  function newPlayer(id) { return { id: id || 'p1', x: SPAWN.x, z: SPAWN.z, yaw: 0, pitch: 0, light: false, battery: 1, digging: false, stun: 0, daze: 0, hp: 1, energy: 1 }; }
   function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
   // ---------- stats ----------
   const lv = (w, id) => w.lvl[id] || 0;
   function stats(w) {
     const s = { pullSpeed: 1.5, perPull: 1, perPullMult: 1, finds: 1, rare: 1, auto: 0, autoMult: 1, threat: 1, battery: 1, calm: 0, salt: 0,
-      mirror: 0, bell: 0, chain: 0, whisper: 0, magnet: 0, light: 0, wide: 0, gloves: 0, nerves: 0, burn: 1, music: 0, coffin: 0, rooms: 0, torch: 0 };
+      mirror: 0, bell: 0, chain: 0, whisper: 0, magnet: 0, light: 0, wide: 0, gloves: 0, nerves: 0, burn: 1, music: 0, coffin: 0, rooms: 0, torch: 0, stamina: 1, armor: 0 };
     for (const id in w.lvl) {
       const n = N[id], L = w.lvl[id]; if (!n || !L) continue; const e = n.effect;
       if (e.pullSpeed) s.pullSpeed *= 1 + e.pullSpeed * L;
       if (e.perPull) s.perPull += e.perPull * L;
       if (e.perPullMult) s.perPullMult *= Math.pow(e.perPullMult, L);
       if (e.autoMult) s.autoMult += e.autoMult * L;
-      ['finds', 'rare', 'auto', 'threat', 'battery', 'calm', 'salt', 'mirror', 'bell', 'chain', 'whisper', 'magnet', 'light', 'wide', 'gloves', 'nerves', 'burn', 'music', 'coffin', 'rooms', 'torch']
+      ['finds', 'rare', 'auto', 'threat', 'battery', 'calm', 'salt', 'mirror', 'bell', 'chain', 'whisper', 'magnet', 'light', 'wide', 'gloves', 'nerves', 'burn', 'music', 'coffin', 'rooms', 'torch', 'stamina', 'armor']
         .forEach(k => { if (e[k] && k !== 'autoMult') s[k] += e[k] * L; });
     }
-    s.calm = Math.min(0.85, s.calm); s.salt = Math.min(0.85, s.salt); s.nerves = Math.min(0.75, s.nerves);
+    s.calm = Math.min(0.85, s.calm); s.salt = Math.min(0.85, s.salt); s.nerves = Math.min(0.75, s.nerves); s.armor = Math.min(0.6, s.armor);
     return s;
   }
   const depth = w => w.removed / PILE;
@@ -96,40 +96,80 @@
   }
 
   // ---------- the watcher ("Mother") ----------
+  // She never stops: she crawls around the open part of the attic, and when she notices you she comes for you.
+  // Touching her costs health and strength. Light slows her; the lever's flood of light stuns her.
+  const WALLS = [14, -8, -19];   // partitions with a doorway at |x| < 1.3
+  const LEVER = { x: -4.2, z: 27.6 };
   function home(w) { const s = stats(w); return HOMES[Math.min(HOMES.length - 1, w.keys + (s.coffin ? 1 : 0))]; }
-  function stepWatcher(w, players, watched, dt, litAtWatcher) {
-    const W = w.watcher, s = stats(w);
-    if (!W.active) { if (w.removed >= PILE * 0.002) { W.active = true; W.wake = 0; } else return null; }
-    if (W.held) { W.moving = false; return null; }   // a scare has her somewhere else for a moment
-    if (w.time < w.musicUntil) { W.moving = false; W.wake = Math.max(0, W.wake - dt * 0.3); return null; }
-    // she needs a moment to freeze: you catch her mid-crawl before she goes still
-    W.seenT = watched.some(Boolean) ? (W.seenT || 0) + dt : 0;
-    const seen = W.seenT > 0.3 || (W.seenT > 0 && !W.moving);
-    W.wake = Math.min(1, W.wake + (seen ? -0.15 : 0.12 * (1 + depth(w) * 2) * s.threat * (1 - s.salt)) * dt);
-    if (W.wake < 0) W.wake = 0;
-    const alive = players.filter(p => p.stun <= 0);
-    if (seen || !alive.length || W.wake < 0.35) { W.moving = false; return null; }
-    let target = alive[0], bd = 1e9;
-    alive.forEach(p => { const d = Math.hypot(p.x - W.x, p.z - W.z); if (d < bd) { bd = d; target = p; } });
-    let speed = (0.9 + depth(w) * 2.2) * s.threat;
-    if (litAtWatcher) speed *= 1 - s.calm;
-    if (s.mirror && players.some(p => p.digging)) speed *= 0.5;
-    const dx = target.x - W.x, dz = target.z - W.z, d = Math.hypot(dx, dz);
-    W.moving = true;
-    if (d < 0.7) {
-      const H = home(w);
-      if (W.chainLeft > 0) { W.chainLeft--; W.x = H.x; W.z = H.z; W.wake = 0; return { chained: target.id }; }
-      return { kill: target.id };
+  function pileR(w) { return Math.max(0.5, 6.6 * Math.cbrt(Math.max(0.0005, remaining(w) / PILE))) + 0.6; }   // matches the 3D heap
+  function pickWaypoint(w, W) {
+    const B = bounds(w);
+    for (let i = 0; i < 20; i++) {
+      const x = B.minX + 0.8 + Math.random() * (B.maxX - B.minX - 1.6), z = B.minZ + 0.8 + Math.random() * (B.maxZ - B.minZ - 1.6);
+      if (Math.hypot(x - PILE_POS.x, z - PILE_POS.z) > pileR(w) + 0.8 && Math.hypot(x - W.x, z - W.z) > 5) return { x, z };
     }
-    const step = Math.min(d - 0.6, speed * dt); W.x += dx / d * step; W.z += dz / d * step;
-    return null;
+    return { x: 0, z: (B.minZ + B.maxZ) / 2 };
   }
-  function killed(w, player) {
-    const lost = {};
-    LOOT.forEach(l => { const amt = w.cur[l.id] * 0.15; w.cur[l.id] -= amt; if (amt > 0) lost[l.id] = amt; });
-    const H = home(w); w.watcher.kills++; w.watcher.x = H.x; w.watcher.z = H.z; w.watcher.wake = 0; w.watcher.chainLeft = stats(w).chain;
-    player.stun = 4; player.x = SPAWN.x; player.z = SPAWN.z; player.battery = Math.max(player.battery, 0.3);
-    return lost;
+  // one step toward (tx, tz): through doorways, around the pile
+  function steer(w, W, tx, tz, step) {
+    for (const z of WALLS) if ((W.z - z) * (tz - z) < 0) { const side = Math.sign(W.z - z); if (Math.abs(W.x) > 0.7 || Math.abs(W.z - z) > 1.2) { tx = 0; tz = z + side * 0.9; } else { tx = 0; tz = z - side * 1.2; } break; }
+    const R = pileR(w), px = PILE_POS.x, pz = PILE_POS.z;
+    let dx = tx - W.x, dz = tz - W.z; const d = Math.hypot(dx, dz) || 1;
+    // if the straight line clips the pile, aim for a tangent point instead
+    const t = Math.max(0, Math.min(1, ((px - W.x) * dx + (pz - W.z) * dz) / (d * d))), cx = W.x + dx * t, cz = W.z + dz * t;
+    if (Math.hypot(cx - px, cz - pz) < R && Math.hypot(tx - px, tz - pz) > R) {
+      const a = Math.atan2(W.z - pz, W.x - px), cross = (W.x - px) * dz - (W.z - pz) * dx, a2 = a + (cross > 0 ? -0.6 : 0.6);
+      dx = px + Math.cos(a2) * (R + 0.6) - W.x; dz = pz + Math.sin(a2) * (R + 0.6) - W.z;
+    }
+    const dd = Math.hypot(dx, dz) || 1, st = Math.min(step, dd);
+    W.x += dx / dd * st; W.z += dz / dd * st;
+    const pd = Math.hypot(W.x - px, W.z - pz); if (pd < R) { W.x = px + (W.x - px) / (pd || 1) * R; W.z = pz + (W.z - pz) / (pd || 1) * R; }
+    const B = bounds(w); W.x = Math.max(B.minX, Math.min(B.maxX, W.x)); W.z = Math.max(B.minZ, Math.min(B.maxZ, W.z));
+    W.heading = Math.atan2(dx, dz);
+  }
+  // env.inBeam[i]: player i's flashlight is on her; env.litAtWatcher: candles/lamps light where she is
+  function stepWatcher(w, players, dt, env) {
+    const W = w.watcher, s = stats(w), ev = [];
+    if (!W.active) { if (w.removed >= PILE * 0.002) { W.active = true; W.wake = 0; ev.push({ woke: true }); } else return ev; }
+    W.moving = false;
+    if (W.held) return ev;                                     // a scare has her somewhere else for a moment
+    if (w.time < w.musicUntil) return ev;
+    if (W.stun > 0) { W.stun -= dt; return ev; }
+    if (W.recoil > 0) { W.recoil -= dt; return ev; }
+    const alive = players.filter(p => p.stun <= 0 && p.hp > 0);
+    let target = null, bd = 1e9; alive.forEach(p => { const d = Math.hypot(p.x - W.x, p.z - W.z); if (d < bd) { bd = d; target = p; } });
+    const notice = (5.5 + depth(w) * 6) * (1 - s.salt) * (target && target.digging ? 1.3 : 1);
+    if (target && !W.chase && bd < notice) { W.chase = true; ev.push({ noticed: target.id }); }
+    if (W.chase && (!target || bd > notice * 2)) { W.chase = false; W.wp = null; }
+    let speed = (W.chase ? 1.45 + depth(w) * 1.6 : 0.8 + depth(w) * 0.6) * s.threat;
+    if ((env.inBeam || []).some(Boolean)) speed *= Math.max(0.15, 0.35 - s.wide);
+    if (env.litAtWatcher) speed *= 1 - s.calm;
+    if (s.mirror && players.some(p => p.digging)) speed *= 0.6;
+    W.moving = true;
+    if (W.chase && target) steer(w, W, target.x, target.z, speed * dt);
+    else {
+      W.wpT -= dt; if (!W.wp || W.wpT <= 0 || Math.hypot(W.wp.x - W.x, W.wp.z - W.z) < 0.6) { W.wp = pickWaypoint(w, W); W.wpT = 25; }
+      steer(w, W, W.wp.x, W.wp.z, speed * dt);
+    }
+    // touch
+    players.forEach(p => {
+      if (p.stun > 0 || p.hp <= 0 || Math.hypot(p.x - W.x, p.z - W.z) > 0.85) return;
+      W.recoil = 2.6; W.chase = false; W.wp = null;
+      const H = s.coffin ? home(w) : null; if (H) { W.x = H.x; W.z = H.z; }
+      if (W.chainLeft > 0) { W.chainLeft--; ev.push({ chained: p.id }); return; }
+      const dmg = 0.34 * (1 - s.armor) * (1 + depth(w) * 0.3);
+      p.hp = Math.max(0, p.hp - dmg); p.energy = Math.max(0, p.energy - 0.3 * (1 - s.armor));
+      W.kills++;
+      ev.push(p.hp <= 0 ? { kill: p.id } : { hit: p.id, dmg });
+    });
+    return ev;
+  }
+  // the lever by the door: save point, strength back, and a second of light everywhere that stuns her
+  function pullLever(w, p) {
+    const s = stats(w); p.hp = 1; p.energy = 1; w.watcher.chainLeft = s.chain;
+    if (w.time < w.leverReady) return { stunned: false, wait: Math.ceil(w.leverReady - w.time) };
+    w.watcher.stun = 20 + depth(w) * 10; w.watcher.chase = false; w.watcher.wp = null; w.leverReady = w.time + 60;
+    return { stunned: true };
   }
   function playMusic(w) {
     const L = stats(w).music; if (!L || w.time < w.musicReady) return false;
@@ -149,12 +189,11 @@
     w.time += dt; const out = { pulled: 0, loot: {}, notes: [], keys: [], events: [] };
     const merge = r => { out.pulled += r.pulled; for (const k in r.loot) out.loot[k] = (out.loot[k] || 0) + r.loot[k]; out.notes.push(...r.notes); out.keys.push(...r.keys); };
     const dr = digRate(w);
-    players.forEach(p => { if (p.digging && p.stun <= 0 && p.daze <= 0) w.digAcc += dr * dt; p.stun = Math.max(0, p.stun - dt); p.daze = Math.max(0, p.daze - dt); stepBattery(w, p, dt); });
+    players.forEach(p => { if (p.digging && p.energy <= 0) p.digging = false; if (p.digging && p.stun <= 0 && p.daze <= 0) { w.digAcc += dr * dt; p.energy = Math.max(0, p.energy - dt / (100 * stats(w).stamina)); } p.stun = Math.max(0, p.stun - dt); p.daze = Math.max(0, p.daze - dt); stepBattery(w, p, dt); });
     w.autoAcc += autoRate(w) * dt;
     const n = Math.floor(w.digAcc) + Math.floor(w.autoAcc); w.digAcc -= Math.floor(w.digAcc); w.autoAcc -= Math.floor(w.autoAcc);
     if (n > 0) merge(pull(w, n));
-    const ev = stepWatcher(w, players, env.watched || players.map(() => false), dt, !!env.litAtWatcher);
-    if (ev) out.events.push(ev);
+    out.events.push(...stepWatcher(w, players, dt, env || {}));
     return out;
   }
   function offline(w, now) {
@@ -170,7 +209,7 @@
   }
 
   const api = { PILE, ATTIC, ROOMS, PILE_POS, SPAWN, HOMES, N, newWorld, newPlayer, stats, depth, remaining, digRate, autoRate, roomsOpen, bounds,
-    nodeCost, nodeVisible, canAfford, buy, pull, bounty, step, killed, playMusic, offline, keyHint, lv };
+    nodeCost, nodeVisible, canAfford, buy, pull, bounty, step, pullLever, LEVER, playMusic, offline, keyHint, lv };
   root.Sim = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

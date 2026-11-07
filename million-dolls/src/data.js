@@ -27,7 +27,7 @@
   // Upgrade tree. pos = [column, row]. Each level costs cost × growth^level. key = how many keys you need before it shows.
   // effects: pullSpeed, perPull, perPullMult, finds, rare, auto, autoMult, threat, battery, calm, salt, mirror, bell, chain,
   // whisper, magnet, light, wide (flashlight angle), gloves (no grabs), nerves (shorter scares), burn (reward for burning eyes),
-  // torch (the flashlight itself), music (Mother sleeps), coffin (she restarts further away), rooms (more candles).
+  // torch (the flashlight itself), stamina (energy lasts longer), armor (her hits hurt less), music (Mother sleeps), coffin (she restarts further away), rooms (more candles).
   const NODES = [
     // --- hands ---
     { id: 'quickHands', pos: [0, 4], max: 20, cost: { buttons: 8 }, growth: 1.62, effect: { pullSpeed: 0.12 },
@@ -64,10 +64,14 @@
     // --- light ---
     { id: 'torch', pos: [0, 7], max: 1, cost: { buttons: 45 }, growth: 1, effect: { torch: 1 },
       name: { en: 'Flashlight', ru: 'Фонарик' }, desc: { en: 'An old flashlight from the pile. F to switch it on. You can finally see her. She can see you too.', ru: 'Старый фонарик из кучи. F — включить. Теперь ты её видишь. Она тебя тоже.' } },
+    { id: 'stamina', pos: [1, 6], req: ['quickHands'], max: 10, cost: { wax: 10 }, growth: 1.6, effect: { stamina: 0.3 },
+      name: { en: 'Smelling salts', ru: 'Нюхательная соль' }, desc: { en: 'Your strength lasts 30% longer between trips to the lever.', ru: 'Сил хватает на 30% дольше между походами к рычагу.' } },
+    { id: 'armor', pos: [0, 9], req: ['nerves'], max: 5, cost: { porcelain: 60, buttons: 500 }, growth: 2.1, effect: { armor: 0.1 },
+      name: { en: 'Porcelain skin', ru: 'Фарфоровая кожа' }, desc: { en: 'Her touch takes 10% less health and strength.', ru: 'Её касание отнимает на 10% меньше здоровья и сил.' } },
     { id: 'battery', pos: [1, 7], req: ['torch'], max: 10, cost: { wax: 6 }, growth: 1.5, effect: { battery: 0.35 },
       name: { en: 'Batteries', ru: 'Батарейки' }, desc: { en: 'Flashlight lasts 35% longer.', ru: 'Фонарик работает на 35% дольше.' } },
     { id: 'lens', pos: [2, 9], req: ['battery'], max: 5, cost: { eyes: 40, wax: 30 }, growth: 1.9, effect: { wide: 0.06 },
-      name: { en: 'Wide lens', ru: 'Широкая линза' }, desc: { en: 'Wider flashlight beam: easier to keep her lit.', ru: 'Шире луч фонарика: её легче держать в свете.' } },
+      name: { en: 'Wide lens', ru: 'Широкая линза' }, desc: { en: 'Wider flashlight beam. In the beam she crawls at a third of her speed.', ru: 'Шире луч фонарика. В луче она ползёт втрое медленнее.' } },
     { id: 'candles', pos: [2, 7], req: ['battery'], max: 10, cost: { wax: 25 }, growth: 1.55, effect: { calm: 0.07 },
       name: { en: 'Candles', ru: 'Свечи' }, desc: { en: 'Candles around the pile. In their light she moves 7% slower.', ru: 'Свечи вокруг кучи. В их свете она на 7% медленнее.' } },
     { id: 'lantern', pos: [3, 7], req: ['candles'], max: 1, cost: { wax: 600, porcelain: 60 }, growth: 1, effect: { calm: 0.2, light: 1 },
@@ -78,19 +82,19 @@
       name: { en: 'UV lamp', ru: 'Ультрафиолетовая лампа' }, desc: { en: 'Shows the blood. And what is hidden in it: +30% finds.', ru: 'Показывает кровь. И то, что в ней спрятано: +30% находок.' } },
     // --- wards ---
     { id: 'salt', pos: [2, 8], req: ['battery'], max: 10, cost: { eyes: 20 }, growth: 1.6, effect: { salt: 0.06 },
-      name: { en: 'Salt line', ru: 'Соляная черта' }, desc: { en: 'She wakes up 6% slower.', ru: 'Она просыпается на 6% медленнее.' } },
+      name: { en: 'Salt line', ru: 'Соляная черта' }, desc: { en: 'She notices you from 6% closer.', ru: 'Она замечает тебя с расстояния на 6% меньше.' } },
     { id: 'bell', pos: [3, 8], req: ['salt'], max: 1, cost: { buttons: 800, eyes: 60 }, growth: 1, effect: { bell: 1 },
       name: { en: 'Bell on a string', ru: 'Колокольчик на нитке' }, desc: { en: 'Rings when she moves. Shows where she is.', ru: 'Звенит, когда она двигается. Показывает, где она.' } },
     { id: 'mirror', pos: [4, 8], req: ['bell'], max: 1, cost: { eyes: 200, porcelain: 50 }, growth: 1, effect: { mirror: 1 },
       name: { en: 'Old mirror', ru: 'Старое зеркало' }, desc: { en: 'While you dig, the mirror half-watches her: she moves at half speed.', ru: 'Пока копаешь, зеркало наполовину следит за ней: она вдвое медленнее.' } },
     { id: 'chain', pos: [5, 8], req: ['mirror'], max: 3, cost: { porcelain: 300, teeth: 40 }, growth: 2.2, effect: { chain: 1 },
-      name: { en: 'Chain', ru: 'Цепь' }, desc: { en: 'Once per encounter the chain holds her back. +1 save per level.', ru: 'Один раз за встречу цепь её удерживает. +1 спасение за уровень.' } },
+      name: { en: 'Chain', ru: 'Цепь' }, desc: { en: 'The chain takes her blow instead of you. +1 per level, restored at the lever.', ru: 'Цепь принимает её удар вместо тебя. +1 за уровень, восстанавливается у рычага.' } },
     { id: 'holyWater', pos: [6, 8], req: ['chain'], key: 1, max: 8, cost: { thread: 320, wax: 8000 }, growth: 2.05, effect: { salt: 0.05 },
-      name: { en: 'Holy water', ru: 'Святая вода' }, desc: { en: 'From a church that burned down. She wakes 5% slower.', ru: 'Из сгоревшей церкви. Она просыпается на 5% медленнее.' } },
+      name: { en: 'Holy water', ru: 'Святая вода' }, desc: { en: 'From a church that burned down. She notices you from 5% closer.', ru: 'Из сгоревшей церкви. Она замечает тебя с расстояния на 5% меньше.' } },
     { id: 'musicBox', pos: [7, 8], req: ['holyWater'], key: 1, max: 3, cost: { thread: 2000, porcelain: 80000 }, growth: 2.65, effect: { music: 1 },
       name: { en: 'Music box', ru: 'Музыкальная шкатулка' }, desc: { en: 'Press M: her old lullaby. She stands still for 15 s per level. Recharges.', ru: 'Нажми M: её старая колыбельная. Она замирает на 15 с за уровень. Перезаряжается.' } },
     { id: 'coffins', pos: [9, 8], req: ['musicBox'], key: 2, max: 3, cost: { hearts: 420, teeth: 140000 }, growth: 2.65, effect: { coffin: 1 },
-      name: { en: 'Little coffins', ru: 'Маленькие гробики' }, desc: { en: 'After she gets you, she has to walk back from further away.', ru: 'После встречи ей приходится возвращаться издалека.' } },
+      name: { en: 'Little coffins', ru: 'Маленькие гробики' }, desc: { en: 'After she strikes, she has to crawl back from further away.', ru: 'После удара ей приходится ползти обратно издалека.' } },
     // --- nerves: answers to the scares ---
     { id: 'nerves', pos: [1, 9], req: ['quickHands'], max: 5, cost: { buttons: 300, wax: 20 }, growth: 2, effect: { nerves: 0.15 },
       name: { en: 'Steady nerves', ru: 'Крепкие нервы' }, desc: { en: 'Scares stop you for 15% less time.', ru: 'Страхи останавливают тебя на 15% меньше.' } },

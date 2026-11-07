@@ -3,7 +3,7 @@
 (() => {
   const D = window.DOLLS_DATA, S = window.Sim, V = window.World3D, A = window.Sfx;
   const $ = id => document.getElementById(id);
-  const SAVE_KEY = 'million-dolls-v2';
+  const SAVE_KEY = 'million-dolls-v3', SETTINGS_KEY = 'million-dolls-settings';
 
   const T = {
     en: { title: 'Million Dolls', tagline: 'one of them has the key', warnTitle: 'Warning', iUnderstand: 'I understand, continue',
@@ -15,8 +15,8 @@
       died: 'MOTHER FOUND YOU', diedText: 'You wake up by the door. Some of your finds are gone.', lost: 'Lost', getUp: 'Get up',
       keyFound: 'THE KEY', keyText: 'Cold. Heavy. It was in a doll\'s mouth. The door is behind you.', chained: 'The chain holds her back… for now.',
       whisper: 'The key is somewhere between doll {a} and {b}', away: 'While you were away the marionettes kept pulling', noPointer: 'Hold the right mouse button to look around',
-      statsDug: 'Dolls pulled', statsKills: 'Times she got you', statsTime: 'Time in the attic', statsKeys: 'Wrong keys found', again: 'Climb the stairs', keys: 'Keys', burned: 'Burned out. It left something behind', grabbed: 'It pulled your hand into the pile', escaped: 'You pulled away in time', music: 'The music box plays. She stands still and listens.', musicWait: 'The music box needs to rewind', chased: 'You drove it off. It dropped something', noTorch: 'You have no flashlight. Find buttons in the pile and buy it in the notebook [Tab].', firstHint: 'It is dark. Dig by the candle. Collect 45 buttons and buy a flashlight in the notebook [Tab].', didntTurn: 'You did not turn around. The breathing stopped. Something fell at your feet', stayedDown: 'You did not look up. It crawled away and dropped something',
-      controls: 'WASD — walk · Shift — run · Mouse — look · LMB — pull dolls · F — flashlight · M — music box · Tab — notebook · Esc — pause' },
+      statsDug: 'Dolls pulled', statsKills: 'Times she got you', statsTime: 'Time in the attic', statsKeys: 'Wrong keys found', again: 'Climb the stairs', keys: 'Keys', burned: 'Burned out. It left something behind', grabbed: 'It pulled your hand into the pile', escaped: 'You pulled away in time', music: 'The music box plays. She stands still and listens.', musicWait: 'The music box needs to rewind', chased: 'You drove it off. It dropped something', lever: 'E / click — pull the lever (save)', saved: 'Saved. Every bulb flares: she is blinded for a while', savedWait: 'Saved. The bulbs need {s} s to cool before they can blind her again', hit: 'She touched you. Health and strength drain away', noEnergy: 'No strength left to dig. Pull the lever by the door to recover', diedCp: 'You wake up at the lever. Everything since your last save is gone.', noticed: 'She has seen you', noTorch: 'You have no flashlight. Find buttons in the pile and buy it in the notebook [Tab].', firstHint: 'Dig by the candle. Buy a flashlight for 45 buttons [Tab]. Digging takes strength; the lever by the door saves, heals and blinds her. Keep away from her.', didntTurn: 'You did not turn around. The breathing stopped. Something fell at your feet', stayedDown: 'You did not look up. It crawled away and dropped something',
+      controls: 'WASD — walk · Shift — run · Mouse — look · LMB — pull dolls · E — lever / door · F — flashlight · M — music box · Tab — notebook · Esc — pause' },
     ru: { title: 'Миллион кукол', tagline: 'у одной из них ключ', warnTitle: 'Предупреждение', iUnderstand: 'Я понимаю, продолжить',
       cont: 'Продолжить', newGame: 'Новая игра', newSure: 'Нажми ещё раз: чердак опустеет… и снова наполнится.', coop: 'Кооператив', coopSoon: 'Появится с выходом в Steam: 2–4 игрока, один держит Маму взглядом, остальные копают.',
       settings: 'Настройки', quit: 'Выйти', back: 'Назад', resume: 'Продолжить', toMenu: 'Главное меню',
@@ -26,18 +26,27 @@
       died: 'МАМА НАШЛА ТЕБЯ', diedText: 'Ты приходишь в себя у двери. Часть находок пропала.', lost: 'Потеряно', getUp: 'Встать',
       keyFound: 'КЛЮЧ', keyText: 'Холодный. Тяжёлый. Он был у куклы во рту. Дверь у тебя за спиной.', chained: 'Цепь её удержала… пока что.',
       whisper: 'Ключ где-то между {a}-й и {b}-й куклой', away: 'Пока тебя не было, марионетки продолжали тянуть', noPointer: 'Зажми правую кнопку мыши, чтобы осматриваться',
-      statsDug: 'Вытащено кукол', statsKills: 'Сколько раз она тебя поймала', statsTime: 'Времени на чердаке', statsKeys: 'Найдено чужих ключей', again: 'Подняться по лестнице', keys: 'Ключи', burned: 'Глаза выжжены. Кукла что-то оставила', grabbed: 'Рука затянула тебя в кучу', escaped: 'Ты успел отдёрнуть руку', music: 'Играет шкатулка. Она замерла и слушает.', musicWait: 'Шкатулку нужно завести', chased: 'Ты его спугнул. Оно что-то уронило', noTorch: 'У тебя нет фонарика. Собери пуговицы в куче и купи его в блокноте [Tab].', firstHint: 'Темно. Копай у свечи. Собери 45 пуговиц и купи фонарик в блокноте [Tab].', didntTurn: 'Ты не обернулся. Дыхание стихло. У твоих ног что-то упало', stayedDown: 'Ты не поднял голову. Оно уползло и что-то уронило',
-      controls: 'WASD — идти · Shift — бежать · Мышь — смотреть · ЛКМ — тянуть кукол · F — фонарик · M — шкатулка · Tab — блокнот · Esc — пауза' }
+      statsDug: 'Вытащено кукол', statsKills: 'Сколько раз она тебя поймала', statsTime: 'Времени на чердаке', statsKeys: 'Найдено чужих ключей', again: 'Подняться по лестнице', keys: 'Ключи', burned: 'Глаза выжжены. Кукла что-то оставила', grabbed: 'Рука затянула тебя в кучу', escaped: 'Ты успел отдёрнуть руку', music: 'Играет шкатулка. Она замерла и слушает.', musicWait: 'Шкатулку нужно завести', chased: 'Ты его спугнул. Оно что-то уронило', lever: 'E / клик — дёрнуть рычаг (сохранение)', saved: 'Сохранено. Все лампы вспыхнули: она ослеплена на время', savedWait: 'Сохранено. Лампам нужно {s} с, чтобы снова ослепить её', hit: 'Она коснулась тебя. Уходят здоровье и силы', noEnergy: 'Нет сил копать. Дёрни рычаг у двери, чтобы восстановиться', diedCp: 'Ты приходишь в себя у рычага. Всё, что было после сохранения, пропало.', noticed: 'Она тебя увидела', noTorch: 'У тебя нет фонарика. Собери пуговицы в куче и купи его в блокноте [Tab].', firstHint: 'Копай у свечи. Фонарик — 45 пуговиц [Tab]. Копание тратит силы; рычаг у двери сохраняет, лечит и ослепляет её. Не подходи к ней.', didntTurn: 'Ты не обернулся. Дыхание стихло. У твоих ног что-то упало', stayedDown: 'Ты не поднял голову. Оно уползло и что-то уронило',
+      controls: 'WASD — идти · Shift — бежать · Мышь — смотреть · ЛКМ — тянуть кукол · E — рычаг / дверь · F — фонарик · M — шкатулка · Tab — блокнот · Esc — пауза' }
   };
 
   // ---------- state ----------
   const store = { get() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; } }, set(v) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(v)); } catch (e) {} } };
+  const setStore = { get() { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); } catch (e) { return null; } }, set(v) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(v)); } catch (e) {} } };
   let saved = store.get(), world, player;
   function fresh(keepSettings) { world = S.newWorld(Math.floor(Math.random() * 1e9)); if (keepSettings) world.settings = keepSettings; player = S.newPlayer('p1'); }
-  if (saved && saved.world && saved.world.v === 2) { world = Object.assign(S.newWorld(saved.world.seed), saved.world); world.settings = Object.assign(S.newWorld().settings, saved.world.settings); player = Object.assign(S.newPlayer(), saved.player || {}); if (world.removed > 0 && !world.lvl.torch) world.lvl.torch = 1; }
+  if (saved && saved.world && saved.world.v === 2 && saved.player && saved.player.hp != null) { world = Object.assign(S.newWorld(saved.world.seed), saved.world); world.settings = Object.assign(S.newWorld().settings, saved.world.settings); player = Object.assign(S.newPlayer(), saved.player || {}); if (world.removed > 0 && !world.lvl.torch) world.lvl.torch = 1; }
   else fresh();
   if (!world.settings.lang) world.settings.lang = (navigator.language || 'en').toLowerCase().startsWith('ru') ? 'ru' : 'en';
-  const save = () => { world.last = Date.now(); store.set({ world, player }); };
+  { const st = setStore.get(); if (st) world.settings = Object.assign(world.settings, st); }
+  // the attic is saved only at the lever (a checkpoint); settings are saved on their own whenever they change
+  const saveSettings = () => setStore.set(world.settings);
+  const checkpoint = () => { world.last = Date.now(); player.x = S.LEVER.x; player.z = S.LEVER.z - 1.2; store.set({ world, player }); saveSettings(); };
+  const save = saveSettings;
+  function loadCheckpoint() {
+    const cp = store.get(), st = world.settings; if (!cp) { fresh(st); return; }
+    world = Object.assign(S.newWorld(cp.world.seed), cp.world); world.settings = st; player = Object.assign(S.newPlayer(), cp.player);
+  }
   const tr = (k, v) => { let s = (T[world.settings.lang] || T.en)[k] || k; if (v) for (const x in v) s = s.replace('{' + x + '}', v[x]); return s; };
   const L = o => (o && (o[world.settings.lang] || o.en)) || '';
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -120,9 +129,8 @@
   }
   function deathScreen(lost) {
     mode = 'dead'; document.exitPointerLock && document.exitPointerLock();
-    show(`<div class="panel death"><h2>${tr('died')}</h2><p>${tr('diedText')}</p>
-      <p class="note">${tr('lost')}: ${Object.keys(lost).map(k => `${short(lost[k])} ${esc(L(LOOT[k].name))}`).join(' · ')}</p>
-      <button class="mbtn" data-a="play">${tr('getUp')}</button></div>`);
+    show(`<div class="panel death"><h2>${tr('died')}</h2><p>${tr('diedCp')}</p>
+      <button class="mbtn" data-a="respawn">${tr('getUp')}</button></div>`);
   }
   function endingScreen(i) {
     mode = 'ending'; document.exitPointerLock && document.exitPointerLock();
@@ -142,14 +150,15 @@
     const a = b.dataset.a;
     if (a === 'warned') { world.settings.warned = true; save(); return menuScreen(); }
     if (a === 'play') return startPlay();
-    if (a === 'new') { if (!newArmed) return menuScreen(true); const st = world.settings; fresh(st); save(); return startPlay(); }
+    if (a === 'respawn') { loadCheckpoint(); player.stun = 2; return startPlay(); }
+    if (a === 'new') { if (!newArmed) return menuScreen(true); const st = world.settings; fresh(st); store.set({ world, player }); return startPlay(); }
     if (a === 'settings') return settingsScreen('menu');
     if (a === 'settingsP') return settingsScreen('pause');
     if (a === 'back') return settingsFrom === 'pause' ? pauseScreen() : menuScreen();
     if (a === 'menu') return menuScreen();
     if (a === 'quit') { save(); window.close(); return; }
     if (a === 'endNext') return endingScreen(+b.dataset.i);
-    if (a === 'again') { const st = world.settings; fresh(st); save(); return startPlay(); }
+    if (a === 'again') { const st = world.settings; fresh(st); store.set({ world, player }); return startPlay(); }
   });
 
   // ---------- input ----------
@@ -161,7 +170,7 @@
   document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; if (!locked && mode === 'play' && !lockFailed) pauseScreen(); });
   canvas.addEventListener('click', () => { if (mode === 'play' && !locked && !lockFailed) startPlay(); });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
-  window.addEventListener('mousedown', e => { if (mode !== 'play') return; if (e.button === 0) mouseDown = true; if (e.button === 2) rmb = true; });
+  window.addEventListener('mousedown', e => { if (mode !== 'play') return; if (e.button === 0 && sense && sense.target === 'lever' && (locked || lockFailed)) return pull(); if (e.button === 0) mouseDown = true; if (e.button === 2) rmb = true; });
   window.addEventListener('mouseup', e => { if (e.button === 0) mouseDown = false; if (e.button === 2) rmb = false; });
   window.addEventListener('mousemove', e => {
     if (mode !== 'play' || player.stun > 0) return;
@@ -176,12 +185,18 @@
     if (e.code === 'KeyF') { if (!S.stats(world).torch) { toast(tr('noTorch')); return; } if (player.battery > 0.02) player.light = !player.light; A.dig(); }
     if (e.code === 'KeyM' && S.stats(world).music) { if (S.playMusic(world)) { toast(tr('music')); A.lullaby(); } else toast(tr('musicWait')); }
     if (e.code === 'KeyE' && sense && sense.target === 'door') tryDoor();
+    if (e.code === 'KeyE' && sense && sense.target === 'lever') pull();
   });
   window.addEventListener('keyup', e => { keys[e.code] = false; });
   window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; });
 
+  function pull() {
+    const r = S.pullLever(world, player); V.scare.flood(r.stunned ? 1.3 : 0.25); A.door(false); A.thud();
+    if (r.stunned) { setTimeout(() => { A.hiss(0, 0.25); A.moan(0, 0.12); }, 250); toast(tr('saved')); } else toast(tr('savedWait', { s: r.wait }));
+    endScare(); checkpoint();
+  }
   function tryDoor() {
-    if (world.keys >= 3) { A.door(true); world.escaped = true; save(); endingScreen(0); }
+    if (world.keys >= 3) { A.door(true); world.escaped = true; checkpoint(); endingScreen(0); }
     else { A.door(false); toast(tr('doorLocked')); }
   }
 
@@ -195,7 +210,8 @@
     $('countSub').textContent = `${tr('left')} · −${rate < 10 ? rate.toFixed(1) : Math.round(rate)}${tr('perSec')}`;
     $('loot').innerHTML = `<div>${world.keys}/3 <span>${tr('keys')}</span></div>` + D.LOOT.filter(l => world.total[l.id] > 0).map(l => `<div>${short(world.cur[l.id])} <span>${esc(L(l.name))}</span></div>`).join('');
     $('batFill').style.width = Math.round(player.battery * 100) + '%'; $('battery').style.visibility = S.stats(world).torch ? 'visible' : 'hidden';
-    const h = !sense ? '' : sense.target === 'pile' ? tr('holdDig') : sense.target === 'door' ? (world.keys >= 3 ? tr('openDoor') : tr('tryDoor')) : '';
+    $('hpFill').style.width = Math.round(player.hp * 100) + '%'; $('enFill').style.width = Math.round(player.energy * 100) + '%'; $('vitals').classList.toggle('low', player.hp < 0.35);
+    const h = !sense ? '' : sense.target === 'lever' ? tr('lever') : sense.target === 'pile' ? (player.energy <= 0.01 ? tr('noEnergy') : tr('holdDig')) : sense.target === 'door' ? (world.keys >= 3 ? tr('openDoor') : tr('tryDoor')) : '';
     $('hint').textContent = h;
     const kh = S.keyHint(world); $('whisper').hidden = !kh; if (kh) $('whisper').textContent = tr('whisper', { a: big(kh.from), b: big(kh.to) });
   }
@@ -286,7 +302,7 @@
   }
 
   // ---------- loop ----------
-  let last = performance.now(), saveT = 0, sense = null, bellT = 0, stepT = 0, visT = 0, prevMoving = false;
+  let warnedEnergy = false, last = performance.now(), saveT = 0, sense = null, bellT = 0, stepT = 0, visT = 0, prevMoving = false;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; const t = now / 1000;
     if (mode === 'play') {
@@ -300,26 +316,28 @@
       const moving = Math.abs(f) + Math.abs(r) > 0;
       player.bob = moving ? Math.sin(t * (run ? 13 : 8)) * (run ? 0.045 : 0.025) : 0;
       if (moving) { stepT -= dt; if (stepT <= 0) { A.step((Math.random() - 0.5) * 0.3, run ? 0.07 : 0.035); stepT = run ? 0.32 : 0.5; } }
-      player.digging = mouseDown && sense && sense.target === 'pile' && player.stun <= 0 && player.daze <= 0;
+      player.digging = mouseDown && sense && sense.target === 'pile' && player.stun <= 0 && player.daze <= 0 && player.energy > 0.01;
+      if (mouseDown && sense && sense.target === 'pile' && player.energy <= 0.01 && !warnedEnergy) { warnedEnergy = true; toast(tr('noEnergy')); } if (player.energy > 0.2) warnedEnergy = false;
     } else player.digging = false;
     // render + sense, then simulate
     sense = V.update(world, player, t, dt);
     const paused = mode === 'menu' || mode === 'warn' || mode === 'settings' && settingsFrom === 'menu' || mode === 'ending';
     if (!paused) {
-      const out = S.step(world, [player], dt, { watched: [sense.sees], litAtWatcher: sense.litAtWatcher });
+      const out = S.step(world, [player], dt, { inBeam: [sense.inBeam], litAtWatcher: sense.litAtWatcher });
       // visuals for pulled dolls
       if (out.pulled) { visT += Math.min(out.pulled, 6); while (visT >= 1) { V.launchDoll(); visT--; } if (player.digging) { A.dig(); if (Math.random() < 0.15) A.rip(); } }
       if (player.digging && out.pulled) { const k = Object.keys(out.loot); if (k.length && Math.random() < 0.35) { const id = k[Math.floor(Math.random() * k.length)]; floater(`+${short(out.loot[id])} ${L(LOOT[id].name)}`); } }
       out.notes.forEach(i => { toast(L(D.NOTES[i])); A.whisper(0); });
-      out.keys.forEach(k => { const K = D.KEYS[k]; toast(`${L(K.name)}. ${L(K.text)}`); A.find(true); A.sting(); setTimeout(() => A.creak(0, 0.2), 1500); save(); });
+      out.keys.forEach(k => { const K = D.KEYS[k]; toast(`${L(K.name)}. ${L(K.text)}`); A.find(true); A.sting(); setTimeout(() => A.creak(0, 0.2), 1500); });
       director(dt, out);
       out.events.forEach(ev => {
         if (ev.chained) { toast(tr('chained')); A.bell(0); }
+        if (ev.noticed) { toast(tr('noticed')); A.screech(Math.max(-1, Math.min(1, -Math.sin(sense.bellDir)))); }
+        if (ev.hit) { toast(tr('hit')); if (world.settings.blood) { V.addBlood(player.x, player.z, 0.6); V.scare.bloodLens(); } endScare(); nonFatal('mother', 1.2); }
         if (ev.kill) {
-          const lost = S.killed(world, player); save();
           if (world.settings.scares) A.scream(); else A.sting();
           mode = 'dying'; document.exitPointerLock && document.exitPointerLock();
-          endScare(); V.jumpscare(world.settings.scares, () => deathScreen(lost), 'mother', true);
+          endScare(); V.jumpscare(world.settings.scares, () => deathScreen(), 'mother', true);
         }
       });
       // Mother moving: footsteps/creaks behind you, bell if owned
@@ -328,27 +346,27 @@
       if (W.moving) {
         bellT -= dt;
         if (bellT <= 0) { const m = sense.motherMode, g = 0.05 + sense.fear * 0.12; if (m === 'stand') { A.creak(mpan, g); bellT = 0.9 + Math.random() * 0.6; } else { A.crawl(mpan, g * 1.3); bellT = 0.28 + Math.random() * 0.25; } if (S.stats(world).bell) A.bell(mpan); }
-        if (Math.random() < dt * 0.15) A.moan(mpan, 0.05 + sense.fear * 0.1);
-        if (Math.random() < dt * 0.4) A.crack(mpan, 0.08 + sense.fear * 0.1);
+        if (Math.random() < dt * (W.chase ? 0.18 : 0.05)) A.moan(mpan, 0.05 + sense.fear * 0.1);
+        if (Math.random() < dt * (W.chase ? 0.4 : 0.12)) A.crack(mpan, 0.08 + sense.fear * 0.1);
       } else if (W.active && !sense.sees && Math.random() < dt * 0.035) (Math.random() < 0.5 ? A.moan : A.crack)(mpan, 0.04);
-      if (sense.sees && prevMoving) A.hiss(mpan, 0.18);          // caught her mid-crawl
+      if (sense.inBeam && prevMoving) A.hiss(mpan, 0.18);        // caught her in the beam
       if (sense.twitched) A.crack(mpan, 0.22);
       if (sense.modeChanged && !sense.sees && W.active) A.thud();
-      prevMoving = W.moving && !sense.sees;
+      prevMoving = W.moving && !sense.inBeam;
       const bell = $('bell'); bell.hidden = !(S.stats(world).bell && world.watcher.moving && mode === 'play');
       if (!bell.hidden) { const a = -sense.bellDir; bell.style.transform = `translate(${Math.sin(a) * 110 - 11}px, ${-Math.cos(a) * 110 - 11}px)`; }
     }
     A.update(mode === 'play' ? sense.fear : 0, t);
     hudT += dt; if (hudT > 0.12 && mode === 'play') { hudT = 0; renderHud(); }
-    saveT += dt; if (saveT > 10 && !paused) { saveT = 0; save(); }
+    
     requestAnimationFrame(frame);
   }
 
   // ---------- boot ----------
   const off = S.offline(world, Date.now());
   if (off && off.pulled) setTimeout(() => toast(`${tr('away')}: −${big(off.pulled)}`), 1500);
-  window.addEventListener('beforeunload', save);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); if (mode === 'play') pauseScreen(); } });
+  window.addEventListener('beforeunload', saveSettings);
+  document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') pauseScreen(); });
   if (!world.settings.warned) warnScreen(); else menuScreen();
   requestAnimationFrame(frame);
   window.__dolls = { get world() { return world; }, get player() { return player; }, save, startPlay, bookScreen, force: k => startScare(k), endForce: () => endScare(), scareState: () => scare };

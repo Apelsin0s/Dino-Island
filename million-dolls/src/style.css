@@ -110,3 +110,13 @@ input[type=range] { width: 100%; accent-color: var(--blood-hi); }
     radial-gradient(ellipse 4% 40% at 12% 35%, rgba(110,0,0,.8), transparent 70%),
     radial-gradient(ellipse 3% 34% at 90% 45%, rgba(110,0,0,.75), transparent 70%);
   background-size: 120% 120%; }
+
+/* health and strength */
+#vitals { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); display: grid; gap: 6px; }
+#vitals .v { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+#vitals i { width: 160px; height: 8px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); }
+#vitals b { display: block; height: 100%; transition: width .25s; }
+#vitals .hp span { color: #c01818; } #vitals .hp b { background: #a01010; }
+#vitals .en span { color: #d8b060; } #vitals .en b { background: #b89040; }
+#vitals.low .hp b { animation: pulse .6s infinite alternate; }
+@keyframes pulse { to { background: #ff2a10; } }

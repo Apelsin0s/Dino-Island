@@ -157,6 +157,18 @@
     door.add(mk(new THREE.SphereGeometry(0.05, 10, 8), std('#8a7a5a', 0.3, { metalness: 0.8 }), 0.42, 1.0, -0.08));
     [0.6, 1.0, 1.4].forEach(y => door.add(mk(new THREE.BoxGeometry(0.1, 0.14, 0.04), std('#2a2a2a', 0.4, { metalness: 0.7 }), 0.42, y - 0.2, -0.07)));
     door.userData.door = true; scene.add(door);
+    // the save point: a breaker lever on a post by the door. It turns on every bulb in the attic for a second.
+    const LV = Sim.LEVER, lev = new THREE.Group(); lev.position.set(LV.x, 0, LV.z);
+    lev.add(mk(new THREE.BoxGeometry(0.14, 1.3, 0.14), M.wood, 0, 0.65, 0.05));
+    lev.add(mk(new THREE.BoxGeometry(0.42, 0.56, 0.12), std('#3c3a36', 0.5, { metalness: 0.6 }), 0, 1.35, -0.04));
+    const arm = new THREE.Group(); arm.position.set(0, 1.35, -0.12); arm.add(mk(new THREE.CylinderGeometry(0.022, 0.022, 0.34, 8), std('#7a7a70', 0.3, { metalness: 0.9 }), 0, 0.17, 0)); arm.add(mk(new THREE.SphereGeometry(0.05, 10, 8), std('#5a0a0a', 0.5), 0, 0.36, 0)); arm.rotation.x = -0.6; lev.add(arm);
+    const lamp = mk(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: '#30ff40' }), 0.14, 1.56, -0.11, false, false); lev.add(lamp);
+    lev.add(mk(new THREE.CylinderGeometry(0.012, 0.012, RIDGE - 1.6, 4), std('#111', 0.8), 0.12, 1.6 + (RIDGE - 1.6) / 2, 0.05, false));
+    const lb = new THREE.PointLight('#ffb070', 1.6, 3.2, 2); lb.position.set(0, 2.3, -0.5); lev.add(lb, mk(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffcf90' }), 0, 2.35, -0.3, false, false));
+    lev.userData = { lever: true, arm, lamp }; scene.add(lev); FX.lever = lev; colliders.push({ x: LV.x, z: LV.z, r: 0.45 });
+    FX.bulbs = []; const bulbMat = new THREE.MeshBasicMaterial({ color: '#2a2418' });
+    for (let z = A.minZ + 3; z < A.maxZ - 1; z += 6) { const b = mk(new THREE.SphereGeometry(0.07, 8, 6), bulbMat, 0, RIDGE - 0.75, z, false, false); scene.add(b, mk(new THREE.CylinderGeometry(0.006, 0.006, 0.6, 3), std('#111', 0.8), 0, RIDGE - 0.45, z, false, false)); FX.bulbs.push(b); }
+    FX.bulbMat = bulbMat;
     // posts
     [[-4.5, -5], [4.5, -5], [-4.5, 11.5], [4.5, 11.5], [-4.5, 22], [4.5, 22], [-4.5, -14], [4.5, -14], [-4.5, -25], [4.5, -25]].forEach(([x, z]) => { const p = mk(new THREE.BoxGeometry(0.28, 3.4, 0.28), M.wood, x, 1.7, z); scene.add(p); occluders.push(p); colliders.push({ x, z, r: 0.42 }); });
   }
@@ -439,6 +451,7 @@
     },
     writingOff() { FX.writing.visible = false; FX.writeT = null; },
     forceDark(sec) { FX.dark = sec; },
+    flood(sec) { FX.flood = sec; FX.floodMax = sec; if (FX.lever) FX.lever.userData.pull = 0; },
     bloodLens() { if (!settings.blood) return; FX.bloodEl.style.transition = 'none'; FX.bloodEl.style.opacity = 0.75; FX.bloodEl.style.backgroundPosition = `${rnd(0, 100)}% ${rnd(0, 100)}%`; requestAnimationFrame(() => requestAnimationFrame(() => { FX.bloodEl.style.transition = 'opacity 8s ease-in'; FX.bloodEl.style.opacity = 0; })); },
     // Mother right behind you / over you, for the director
     motherAt(x, z, mode) { const W = FX.world.watcher; W.x = x; W.z = z; mother.userData.mode = mode || 'stand'; mother.userData.unseen = -8; if (mode === 'stand') newPose(); },
@@ -497,7 +510,7 @@
   }
   function litAt(p, player) {
     const d = p.distanceTo(camera.position);
-    if (d < 2.0) return true;
+    if (d < 2.0 || FX.flood > 0) return true;
     if (player.light && flash.intensity > 1) { camera.getWorldDirection(_a); _b.copy(p).sub(camera.position).normalize(); if (_a.angleTo(_b) < 0.42 + flashWide && d < 16) return true; }
     return lightsRef ? lightsRef.litAt(p.x, p.z) : false;
   }
@@ -514,7 +527,7 @@
     FX.bloodEl = document.createElement('div'); FX.bloodEl.id = 'bloodScreen'; host.appendChild(FX.bloodEl);
     scene = new THREE.Scene(); scene.background = new THREE.Color('#020203'); scene.fog = new THREE.FogExp2('#040406', 0.06);
     camera = new THREE.PerspectiveCamera(72, 1, 0.05, 90); camera.rotation.order = 'YXZ'; scene.add(camera);
-    hemi = new THREE.HemisphereLight('#4a5470', '#1a120c', 0.3); scene.add(hemi);
+    hemi = new THREE.HemisphereLight('#4a5470', '#1a120c', 0.3); hemi.userData.base = 0.3; scene.add(hemi);
     const moon1 = new THREE.DirectionalLight('#8aa8e0', 0.5); moon1.position.set(0, 4.5, Sim.ATTIC.minZ - 3); moon1.target.position.set(0, 0, Sim.ATTIC.minZ + 6); scene.add(moon1, moon1.target);
     const moon2 = new THREE.SpotLight('#8aa8e0', 6, 9, 0.35, 0.7, 1.5); moon2.position.set(1.4, 5.8, 10); moon2.target.position.set(2.9, 0, 10); scene.add(moon2, moon2.target);
     flash = new THREE.SpotLight('#eef2ff', 40, 18, 0.46, 0.55, 2); flash.castShadow = true; flash.shadow.camera.near = 0.2; flash.shadow.bias = -0.0005;
@@ -539,6 +552,9 @@
     const st = Sim.stats(world); flashWide = st.wide;
     camera.position.set(player.x, EYE + (player.bob || 0), player.z); camera.rotation.set(player.pitch, player.yaw, 0);
     const dark = FX.dark > 0; if (dark) FX.dark -= dt;
+    const flood = FX.flood > 0 ? FX.flood / FX.floodMax : 0; if (FX.flood > 0) FX.flood -= dt;
+    hemi.intensity = hemi.userData.base + flood * 9; FX.bulbMat.color.set(flood > 0 ? '#fff6d8' : '#2a2418');
+    { const lv = FX.lever.userData; if (lv.pull != null) { lv.pull += dt; lv.arm.rotation.x = lv.pull < 0.15 ? -0.6 + lv.pull / 0.15 * 1.8 : 1.2 - Math.min(1, (lv.pull - 0.6) / 0.8) * 1.8 * (lv.pull > 0.6 ? 1 : 0); if (lv.pull > 1.4) { lv.pull = null; lv.arm.rotation.x = -0.6; } } lv.lamp.material.color.set(world.time < world.leverReady ? '#ff2a10' : '#30ff40'); }
     flash.visible = player.light && !dark; flash.angle = 0.46 + st.wide; flash.intensity = player.light && !dark ? 38 * (0.75 + 0.25 * Math.min(1, player.battery * 3)) * (player.battery < 0.15 ? (Math.random() < 0.15 ? 0.2 : 1) : 1) : 0;
     // gates follow the keys
     gates.forEach((g, i) => { if (world.keys > i && !g.userData.open) openGate(i, world.time < 1); if (g.userData.fall != null) { g.userData.fall += dt; g.children.forEach((c, k) => { c.position.y -= dt * (2 + k); c.rotation.z += dt * (k % 2 ? 2 : -2); }); if (g.userData.fall > 1.2) { g.visible = false; g.userData.fall = null; } } });
@@ -557,23 +573,29 @@
       return FX.moonPatches.some(m => Math.hypot(x - m.x, z - m.z) < m.r);
     } };
     // Mother: she goes where the sim says, but how she gets there is up to her: across the roof, down the wall, on all fours
-    const W = world.watcher, U = mother.userData, moved = Math.hypot(U.sx - W.x, U.sz - W.z) > 0.01; U.sx = W.x; U.sz = W.z;
+    const W = world.watcher, U = mother.userData;
     const dist0 = Math.hypot(W.x - player.x, W.z - player.z);
-    if (!U.lastSees) {
-      U.unseen += dt;
-      let want = U.mode;
-      if (W.moving) want = dist0 < 2.2 ? 'stand' : dist0 < 4.5 ? 'floor' : Math.abs(W.x) > 5.5 ? 'wall' : 'ceiling';
-      else if (U.unseen > 2.5) { want = ['stand', 'ceiling', 'wall', 'hang', 'floor', 'ceiling', 'hang'][Math.floor(Math.random() * 7)]; U.unseen = -4 - Math.random() * 6; }
-      if (want !== U.mode) { U.mode = want; U.changed = true; if (want === 'stand') newPose(); }
-    } else U.unseen = 0;
+    U.modeT = (U.modeT || 0) - dt;
+    let want = U.mode;
+    if (W.stun > 0) want = 'floor';                                 // the light knocked her down
+    else if (W.recoil > 0) want = 'stand';
+    else if (W.moving) {
+      if (dist0 < 2.2) want = 'stand'; else if (dist0 < 4.5) want = 'floor';
+      else if (U.modeT <= 0 || U.mode === 'hang' || (W.chase && U.mode === 'stand')) { want = W.chase ? (Math.abs(W.x) > 5.5 ? 'wall' : Math.random() < 0.6 ? 'ceiling' : 'floor') : ['ceiling', 'ceiling', 'wall', 'floor', 'stand'][Math.floor(Math.random() * 5)]; U.modeT = 6 + Math.random() * 8; }
+    } else if (!U.lastSees && U.modeT <= 0) { want = ['stand', 'hang', 'ceiling', 'hang'][Math.floor(Math.random() * 4)]; U.modeT = 8 + Math.random() * 8; }
+    const forced = W.stun > 0 || W.recoil > 0 || dist0 < 4.5;
+    if (want !== U.mode && (!U.lastSees || forced)) { U.mode = want; U.changed = true; if (want === 'stand') newPose(); }
     mother.position.set(W.x, 0, W.z);
-    if (moved && U.mode === 'stand') { poseT += dt; if (poseT > 0.35) { newPose(); poseT = 0; } }
-    mother.rotation.set(0, Math.atan2(player.x - W.x, player.z - W.z), 0);
-    motherPose(U.mode, t, dt, W.moving, U.lastSees);
+    if (W.moving && U.mode === 'stand') { poseT += dt; if (poseT > 0.35) { newPose(); poseT = 0; } }
+    const faceYaw = W.chase || dist0 < 5 || !W.moving || W.heading == null ? Math.atan2(player.x - W.x, player.z - W.z) : W.heading;
+    mother.rotation.set(0, faceYaw, 0);
+    motherPose(U.mode, t, dt, W.moving, U.lastSees || W.stun > 0);
     mother.updateMatrixWorld(true);
     const hp = motherHead.getWorldPosition(new THREE.Vector3()), bp = U.rig.localToWorld(new THREE.Vector3(0, 1.2, 0)), fp = U.rig.localToWorld(new THREE.Vector3(0, 0.4, 0));
-    const mpts = [hp, bp, fp];
-    const sees = inView(mpts, 22) && (litAt(bp, player) || litAt(hp, player));
+    const mpts = [hp, bp, fp], inV = inView(mpts, 22);
+    const sees = inV && (litAt(bp, player) || litAt(hp, player));
+    let inBeam = false;
+    if (inV && player.light && flash.intensity > 1) { camera.getWorldDirection(_a); for (const q of mpts) { _b.copy(q).sub(camera.position); if (_b.length() < 16 && _a.angleTo(_b.normalize()) < 0.42 + flashWide) { inBeam = true; break; } } }
     U.lastSees = sees; U.headPos = hp;
     // ambient props
     fliers.forEach(fl => { if (!fl.on) return; fl.t += dt * 1.6; const k = Math.min(1, fl.t); fl.g.position.lerpVectors(fl.from, fl.to, k); fl.g.position.y += Math.sin(k * Math.PI) * 1.6; fl.g.rotation.x += fl.spin.x * dt; fl.g.rotation.y += fl.spin.y * dt; if (k >= 1) { fl.on = false; fl.g.visible = false; addDiscard(); } });
@@ -625,12 +647,12 @@
     const dist = Math.hypot(W.x - player.x, W.z - player.z);
     const fear = Math.min(1, (W.active ? Math.max(0, 1 - dist / 10) * 0.8 + W.wake * 0.35 : 0) + (FX.crawl || FX.handT != null || FX.eyes.visible ? 0.25 : 0));
     postMat.uniforms.time.value = t; postMat.uniforms.fear.value = fear; postMat.uniforms.hurt.value = Math.max(hurt, player.stun > 0 ? 0.4 * player.stun / 4 : 0, player.daze > 0 ? 0.25 : 0);
-    postMat.uniforms.black.value = Math.max(black, player.stun > 0 ? Math.min(1, player.stun / 2) * 0.85 : 0); postMat.uniforms.flash.value = fl; postMat.uniforms.glitch.value = glitch;
+    postMat.uniforms.black.value = Math.max(black, player.stun > 0 ? Math.min(1, player.stun / 2) * 0.85 : 0); postMat.uniforms.flash.value = Math.max(fl, flood > 0.6 ? (settings.flashes ? 0.55 : 0.15) * (flood - 0.6) / 0.4 : 0); postMat.uniforms.glitch.value = glitch;
     renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.setRenderTarget(null); renderer.render(postScene, postCam);
     camera.getWorldDirection(_a); ray.set(camera.position, _a); ray.far = 3.6;
-    const hit = ray.intersectObjects([pileMass, door], true)[0];
-    let target = null; if (hit) { let o = hit.object; while (o && !o.userData.pile && !o.userData.door) o = o.parent; if (o) target = o.userData.pile ? 'pile' : 'door'; }
-    return { sees, litAtWatcher: lightsRef.litAt(W.x, W.z), target, fear, dist, bellDir: Math.atan2(W.x - player.x, W.z - player.z) - player.yaw, dripSplash: FX.drip && FX.drip.splash ? (FX.drip.splash = false, true) : false, landed: FX.landed ? (FX.landed = false, true) : false, motherMode: U.mode, motherY: hp.y, twitched: U.didTwitch ? (U.didTwitch = false, true) : false, modeChanged: U.changed ? (U.changed = false, true) : false };
+    const hit = ray.intersectObjects([pileMass, door, FX.lever], true)[0];
+    let target = null; if (hit) { let o = hit.object; while (o && !o.userData.pile && !o.userData.door && !o.userData.lever) o = o.parent; if (o) target = o.userData.pile ? 'pile' : o.userData.lever ? 'lever' : 'door'; }
+    return { sees, inBeam, litAtWatcher: lightsRef.litAt(W.x, W.z), target, fear, dist, bellDir: Math.atan2(W.x - player.x, W.z - player.z) - player.yaw, dripSplash: FX.drip && FX.drip.splash ? (FX.drip.splash = false, true) : false, landed: FX.landed ? (FX.landed = false, true) : false, motherMode: U.mode, motherY: hp.y, twitched: U.didTwitch ? (U.didTwitch = false, true) : false, modeChanged: U.changed ? (U.changed = false, true) : false };
   }
   // kind: 'mother' | 'doll' | 'crawler'; fatal = Mother caught you
   function jumpscare(scare, done, kind, fatal) {
