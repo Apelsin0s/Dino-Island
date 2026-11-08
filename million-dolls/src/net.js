@@ -36,7 +36,7 @@
             if (ids.length + 1 >= MAX) { c.send({ t: 'reject', why: 'full' }); return setTimeout(() => c.close(), 300); }
             const id = 'c' + Math.random().toString(36).slice(2, 8);
             c.pid = id; Net.conns[id] = c; Net.players[id] = { id, nick: String(m.nick || '?').slice(0, 16) };
-            Net.emit('join', id, Net.players[id].nick, c);
+            Net.emit('join', id, Net.players[id].nick, c, m);
             Net.emit('players');
             return;
           }
@@ -58,7 +58,7 @@
       peer.on('error', e => { clearTimeout(timer); if (!done) { finish(e.type === 'peer-unavailable' ? 'notfound' : 'network'); Net.leave(); } else Net.emit('lost'); });
       peer.on('open', () => {
         const c = peer.connect(Net.roomId(room, pass), { reliable: true }); Net.conn = c;
-        c.on('open', () => c.send({ t: 'hello', nick, pass }));
+        c.on('open', () => c.send({ t: 'hello', nick, pass, savedAt: Net.savedAt || 0 }));
         c.on('data', m => {
           if (m.t === 'reject') { clearTimeout(timer); finish(m.why === 'full' ? 'full' : 'notfound'); Net.leave(); return; }
           if (m.t === 'welcome') { clearTimeout(timer); Net.mode = 'client'; Net.me = m.id; Net.players = m.players; finish(null, m); return; }

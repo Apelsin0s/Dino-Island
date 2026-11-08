@@ -129,3 +129,18 @@ input[type=range] { width: 100%; accent-color: var(--blood-hi); }
 #party > b { font-weight: 700; letter-spacing: .05em; }
 #party div { display: grid; grid-template-columns: 1fr 70px; gap: 8px; align-items: center; }
 #party i { height: 6px; background: rgba(255,255,255,.1); } #party i b { display: block; height: 100%; background: #a01010; }
+
+/* her grip: type the word */
+#typing { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); text-align: center; z-index: 6; background: rgba(10,0,0,.72); padding: 14px 26px 16px; border: 1px solid #7a1010; min-width: 280px; }
+#typing small { display: block; color: #e0a090; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; margin-bottom: 6px; }
+#typing .word { font-family: 'Wet Paint', serif; font-size: 52px; color: #e8dcc8; letter-spacing: .06em; white-space: pre; }
+#typing .word b { color: #ff3a20; font-weight: 400; } #typing .word u { text-decoration: none; opacity: .45; }
+#typing i { display: block; height: 6px; margin-top: 10px; background: rgba(255,255,255,.1); } #typing i b { display: block; height: 100%; background: #c01010; }
+#typing.bad { animation: shake .2s; } @keyframes shake { 25% { transform: translate(-52%, -50%); } 75% { transform: translate(-48%, -50%); } }
+/* weapons and her health */
+#weapons { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); display: flex; gap: 6px; }
+#weapons div { background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.2); padding: 5px 8px; font-size: 12px; min-width: 74px; text-align: center; }
+#weapons div.cd { opacity: .45; } #weapons kbd { display: block; font-size: 15px; color: #e0c090; }
+#mhp { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); text-align: center; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+#mhp i { display: block; width: 260px; height: 6px; margin-top: 4px; background: rgba(255,255,255,.1); } #mhp i b { display: block; height: 100%; background: #c8c0b0; }
+.card .votes { color: #e0c090; font-size: 12px; }

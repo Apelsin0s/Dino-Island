@@ -2,7 +2,7 @@
 // lights, blood, post effects, and the visuals for every scare event.
 'use strict';
 (function (root) {
-  const THREE = root.THREE, Sim = root.Sim;
+  const THREE = root.THREE, Sim = root.Sim, DD = root.DOLLS_DATA;
   const PILE_R = 6.6, PILE_H = 4.4, EYE = 1.62, RIDGE = 6.0, KNEE = 1.2, HALF = 11;
   const QUALITY = { low: { scale: 0.6, shadow: 512 }, medium: { scale: 0.8, shadow: 1024 }, high: { scale: 1, shadow: 2048 } };
   const roofY = x => KNEE + (HALF - Math.abs(x)) * (RIDGE - KNEE) / HALF;
@@ -146,7 +146,7 @@
     scene.add(mk(new THREE.TorusGeometry(0.82, 0.06, 6, 24), M.wood, 0, 3.8, A.minZ + 0.03));
     scene.add(mk(new THREE.CircleGeometry(0.8, 24), new THREE.MeshBasicMaterial({ color: '#30405a', transparent: true, opacity: 0.35 }), 0, 3.8, A.minZ - 0.02, false, false));
     // partitions with doorways (gates added later)
-    [14, -8, -19].forEach(z => { const p = mk(new THREE.ShapeGeometry(profileShape([3, 2.5])), M.wall, 0, 0, z); scene.add(p); occluders.push(p); });
+    Sim.WALLS.forEach(z => { const p = mk(new THREE.ShapeGeometry(profileShape([3, 2.5])), M.wall, 0, 0, z); scene.add(p); occluders.push(p); });
     // moonbeams: through the far window and through a broken roof board over the hall
     const beamMat = new THREE.MeshBasicMaterial({ color: '#7f9fd0', transparent: true, opacity: 0.014, depthWrite: false, side: THREE.FrontSide, blending: THREE.AdditiveBlending, fog: true });
     const b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 2.4, 8, 24, 1, true), beamMat); b1.position.set(0, 2.2, A.minZ + 3.4); b1.rotation.x = -Math.PI / 2 + 0.65; scene.add(b1);
@@ -170,22 +170,23 @@
     for (let z = A.minZ + 3; z < A.maxZ - 1; z += 6) { const b = mk(new THREE.SphereGeometry(0.07, 8, 6), bulbMat, 0, RIDGE - 0.75, z, false, false); scene.add(b, mk(new THREE.CylinderGeometry(0.006, 0.006, 0.6, 3), std('#111', 0.8), 0, RIDGE - 0.45, z, false, false)); FX.bulbs.push(b); }
     FX.bulbMat = bulbMat;
     // posts
-    [[-4.5, -5], [4.5, -5], [-4.5, 11.5], [4.5, 11.5], [-4.5, 22], [4.5, 22], [-4.5, -14], [4.5, -14], [-4.5, -25], [4.5, -25]].forEach(([x, z]) => { const p = mk(new THREE.BoxGeometry(0.28, 3.4, 0.28), M.wood, x, 1.7, z); scene.add(p); occluders.push(p); colliders.push({ x, z, r: 0.42 }); });
+    [[-4.5, -5], [4.5, -5], [-4.5, 11.5], [4.5, 11.5], [-4.5, 22], [4.5, 22], [-4.5, -14], [4.5, -14], [-4.5, -25], [4.5, -25], [-4.5, -36], [4.5, -36], [-4.5, -60], [4.5, -60], [-4.5, -73], [4.5, -73]].forEach(([x, z]) => { const p = mk(new THREE.BoxGeometry(0.28, 3.4, 0.28), M.wood, x, 1.7, z); scene.add(p); occluders.push(p); colliders.push({ x, z, r: 0.42 }); });
   }
   function buildGates() {
-    [-8, -19].forEach((z, i) => {
-      const g = new THREE.Group(); g.position.set(0, 0, z);
+    Sim.WALLS.forEach((z, wi) => {
+      if (wi === 0) return;   // hall ↔ entrance is always open
+      const i = wi; const g = new THREE.Group(); g.position.set(0, 0, z);
       const plank = std('#4a3424', 0.85, { map: woodTex([1, 1], true) });
       [0.4, 0.95, 1.5, 2.05].forEach((y, k) => { const b = mk(new THREE.BoxGeometry(3.4, 0.24, 0.06), plank, 0, y, 0.08 * (k % 2 ? 1 : -1)); b.rotation.z = rnd(-0.12, 0.12); g.add(b); });
       g.add(mk(new THREE.CylinderGeometry(0.02, 0.02, 3.2, 6), std('#5a5a5a', 0.4, { metalness: 0.9 }), 0, 1.2, 0.12));
       g.children[g.children.length - 1].rotation.z = Math.PI / 2 + 0.3;
       g.add(mk(new THREE.BoxGeometry(0.16, 0.2, 0.08), std('#8a7040', 0.35, { metalness: 0.8 }), 0, 1.05, 0.16));
-      g.userData.idx = i; g.userData.open = false; gates.push(g); scene.add(g); occluders.push(...g.children);
+      g.userData.wall = wi; g.userData.open = false; gates.push(g); scene.add(g); occluders.push(...g.children);
     });
   }
-  function gateOpen(i) { const g = gates[i]; return g && g.userData.open; }
-  function openGate(i, instant) {
-    const g = gates[i]; if (!g || g.userData.open) return; g.userData.open = true;
+  function gateOpen(wi) { const g = gates.find(g => g.userData.wall === wi); return !g || g.userData.open; }
+  function openGate(g, instant) {
+    if (!g || g.userData.open) return; g.userData.open = true;
     g.children.forEach(c => { const k = occluders.indexOf(c); if (k >= 0) occluders.splice(k, 1); });
     if (instant) { g.visible = false; return; }
     g.userData.fall = 0;
@@ -224,8 +225,32 @@
     FX.tableBlood = { x: 5, z: -24 };
     for (let i = 0; i < 5; i++) { const j = mk(new THREE.CylinderGeometry(0.12, 0.12, 0.3, 10), std('#a8c0b0', 0.1, { transparent: true, opacity: 0.45 }), -8.3 + i * 0.35, 1.05, -22.6, false); scene.add(j); const h = mk(new THREE.SphereGeometry(0.07, 8, 6), std('#6a0a10', 0.4, { emissive: '#3a0005', emissiveIntensity: 0.6 }), -8.3 + i * 0.35, 1.02, -22.6, false); h.userData.beat = i; scene.add(h); FX.hearts = (FX.hearts || []).concat(h); }
     for (let i = 0; i < 6; i++) { const x = -3 + i * 1.3, z = -27 + (i % 2) * 2.5; const hb = new THREE.Group(); hb.position.set(x, roofY(x) - 0.3, z); hb.add(mk(new THREE.CylinderGeometry(0.01, 0.01, 1.3, 3), metal, 0, -0.65, 0, false)); const body = mk(new THREE.CylinderGeometry(0.12, 0.2, 0.7, 8), std(['#5a2a2a', '#3a3a4a', '#6a5a4a'][i % 3], 0.9), 0, -1.6, 0); const head = mk(new THREE.SphereGeometry(0.13, 10, 8), std('#d8d0c4', 0.4), 0, -1.15, 0); hb.add(body, head); scene.add(hb); FX.hanging = (FX.hanging || []).concat(hb); }
+    // chapel: pews, altar, an upside-down cross, candles
+    for (let r = 0; r < 4; r++) [-4.6, 3.0].forEach(x => { solid(mk(new THREE.BoxGeometry(3.8, 0.45, 0.5), dark, x + 0.6, 0.23, -33 - r * 1.8), x + 0.6, -33 - r * 1.8, 3.8, 0.5); scene.add(mk(new THREE.BoxGeometry(3.8, 0.6, 0.08), dark, x + 0.6, 0.75, -33.25 - r * 1.8)); });
+    solid(mk(new THREE.BoxGeometry(2.4, 1.1, 0.9), std('#e8e0d0', 0.8), 0, 0.55, -40.6), 0, -40.6, 2.4, 0.9);
+    const cross = new THREE.Group(); cross.position.set(0, 2.6, -41.85); cross.add(mk(new THREE.BoxGeometry(0.12, 1.4, 0.08), dark, 0, 0, 0), mk(new THREE.BoxGeometry(0.7, 0.12, 0.08), dark, 0, -0.35, 0)); scene.add(cross);
+    for (let i = 0; i < 5; i++) { const x = -1 + i * 0.5; scene.add(mk(new THREE.CylinderGeometry(0.03, 0.035, 0.25 + (i % 2) * 0.1, 8), std('#e8dcc0', 0.6), x, 1.25, -40.8)); }
+    FX.altarLight = new THREE.PointLight('#ffb050', 1.2, 5, 2); FX.altarLight.position.set(0, 1.8, -40.4); scene.add(FX.altarLight);
+    // bathroom: a clawfoot tub full of dark water, a sink, a mirror with something written on it
+    const tub = new THREE.Group(); tub.position.set(-5.2, 0, -48); tub.add(mk(new THREE.CapsuleGeometry(0.42, 1.3, 6, 14), std('#e8e4dc', 0.25), 0, 0.42, 0)); tub.children[0].rotation.x = Math.PI / 2; tub.children[0].scale.y = 0.75;
+    const water = mk(new THREE.PlaneGeometry(0.62, 1.55), std(settings.blood ? '#2a0204' : '#10181a', 0.05, { metalness: 0.3 }), 0, 0.6, 0, false); water.rotation.x = -Math.PI / 2; tub.add(water); scene.add(tub); colliders.push({ box: true, x: -5.2, z: -48, w: 0.9, d: 1.4 });
+    solid(mk(new THREE.BoxGeometry(0.7, 0.85, 0.5), std('#d8d4cc', 0.3), 7.8, 0.43, -45.5), 7.8, -45.5, 0.7, 0.5);
+    const mir = mk(new THREE.PlaneGeometry(0.8, 1.0), std('#ffffff', 0.1, { metalness: 0.6, map: writingTex(settings.blood ? 'ЗА ТОБОЙ' : '...', settings.blood) }), 10.9, 1.9, -45.5, false); mir.rotation.y = -Math.PI / 2; scene.add(mir);
+    // theatre: a stage with red curtains and a little puppet theatre on it
+    solid(mk(new THREE.BoxGeometry(9, 0.6, 3.2), dark, 0, 0.3, -64.2), 0, -64.2, 9, 3.2);
+    [-1, 1].forEach(sd => { const c = mk(new THREE.PlaneGeometry(2.6, 3.2), std('#5a0808', 0.9, { side: THREE.DoubleSide }), sd * 3.4, 2.2, -63.2, false); scene.add(c); });
+    const booth = mk(new THREE.BoxGeometry(1.6, 1.4, 0.4), std('#6a1a1a', 0.8), 0, 1.3, -64.8); scene.add(booth);
+    for (let r = 0; r < 5; r++) for (let k = 0; k < 14; k++) scene.add(mk(new THREE.BoxGeometry(0.42, 0.45, 0.42), dark, -6.5 + k, 0.22, -57 - r * 1.3, false));
+    for (let r = 0; r < 5; r++) colliders.push({ box: true, x: 0, z: -57 - r * 1.3, w: 7.2, d: 0.35 });
+    FX.stageLight = new THREE.SpotLight('#ffd0a0', 0, 14, 0.35, 0.6, 2); FX.stageLight.position.set(0, 5, -57); FX.stageLight.target.position.set(0, 0.6, -64.5); scene.add(FX.stageLight, FX.stageLight.target);
+    // bedroom: the bed made for two, a wardrobe, her portrait
+    solid(mk(new THREE.BoxGeometry(2.2, 0.55, 2.6), std('#d8ccc0', 0.9), 0, 0.28, -77.6), 0, -77.6, 2.2, 2.6);
+    scene.add(mk(new THREE.BoxGeometry(2.3, 1.2, 0.12), dark, 0, 0.6, -78.95), mk(new THREE.BoxGeometry(0.7, 0.18, 0.4), std('#f0e8e0', 0.9), -0.5, 0.64, -78.4), mk(new THREE.BoxGeometry(0.7, 0.18, 0.4), std('#f0e8e0', 0.9), 0.5, 0.64, -78.4));
+    solid(mk(new THREE.BoxGeometry(1.4, 2.2, 0.7), dark, -7.4, 1.1, -71), -7.4, -71, 1.4, 0.7);
+    solid(mk(new THREE.BoxGeometry(1.2, 0.75, 0.5), dark, 6.4, 0.38, -77), 6.4, -77, 1.2, 0.5);
+    const portrait = mk(new THREE.PlaneGeometry(0.9, 1.2), std('#ffffff', 0.8, { map: faceTex(settings.blood) }), -10.9, 2.0, -74, false); portrait.rotation.y = Math.PI / 2; scene.add(portrait);
     // dust
-    const n = 1400, pos = new Float32Array(n * 3); for (let i = 0; i < n; i++) { pos[i * 3] = rnd(-10, 10); pos[i * 3 + 1] = rnd(0.2, 5); pos[i * 3 + 2] = rnd(-29, 29); }
+    const n = 2400, pos = new Float32Array(n * 3); for (let i = 0; i < n; i++) { pos[i * 3] = rnd(-10, 10); pos[i * 3 + 1] = rnd(0.2, 5); pos[i * 3 + 2] = rnd(-79, 29); }
     const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     dust = new THREE.Points(dg, new THREE.PointsMaterial({ color: '#d8d0c0', size: 0.012, transparent: true, opacity: 0.55, depthWrite: false })); scene.add(dust);
   }
@@ -276,13 +301,16 @@
     [-1, 1].forEach(sd => { for (let z = -6; z < 13.5; z += 0.32) [0.48, 1.03].forEach(y => { if (Math.random() < 0.8) spots.push({ x: sd * 10.4, y, z, ry: -sd * Math.PI / 2 + rnd(-0.3, 0.3), s: rnd(0.9, 1.2) }); }); });
     for (let i = 0; i < 160; i++) { const a = rnd(0, 6.28), r = Math.sqrt(Math.random()) * 1.8; spots.push({ x: -5.5 + Math.cos(a) * r, y: Math.max(0, 0.9 * (1 - r / 1.8)) * Math.random(), z: -15.5 + Math.sin(a) * r, ry: rnd(0, 6.28), s: rnd(0.7, 1.0), lay: true }); }
     for (let i = 0; i < 40; i++) spots.push({ x: -8.2 + (i % 20) * 0.32, y: 1.75 + Math.floor(i / 20) * 0.5, z: -29.4, ry: 0, s: 1.1 });
+    // chapel congregation on the pews, theatre audience in rows
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 9; k++) { const x = (k < 4 ? -6.6 : 1.6) + (k % 4) * 0.9 + rnd(-0.1, 0.1); if (Math.random() < 0.85) spots.push({ x, y: 0.5, z: -33 - r * 1.8, ry: Math.PI + rnd(-0.2, 0.2), s: rnd(1.0, 1.25) }); }
+    for (let r = 0; r < 5; r++) for (let k = 0; k < 14; k++) { if (Math.random() < 0.8) spots.push({ x: -6.5 + k, y: 0.48, z: -57 - r * 1.3, ry: Math.PI + rnd(-0.15, 0.15), s: rnd(0.9, 1.15) }); }
     if (FX.chairDoll) spots.push({ x: FX.chairDoll.x, y: FX.chairDoll.y, z: FX.chairDoll.z, ry: FX.chairDoll.ry, s: 2.2, chair: true });
     const heads = new THREE.InstancedMesh(DOLL.heads[2], HEAD_MAT(), spots.length), bodies = new THREE.InstancedMesh(DOLL.body, BODY_MAT(), spots.length);
     const col = new THREE.Color();
     spots.forEach((sp, i) => {
       if (sp.lay) _q.setFromEuler(_e.set(rnd(-1.5, 1.5), sp.ry, rnd(-1.5, 1.5))); else _q.setFromEuler(_e.set(rnd(-0.1, 0.1), sp.ry, rnd(-0.15, 0.15)));
       _m.compose(_p.set(sp.x, sp.y, sp.z), _q, _s.setScalar(sp.s)); heads.setMatrixAt(i, _m); bodies.setMatrixAt(i, _m); bodies.setColorAt(i, col.set(DRESS[i % DRESS.length]));
-      sp.head = new THREE.Vector3(0, 0.345, 0.073).applyMatrix4(_m); sp.room = sp.z > 14 ? 'entrance' : sp.z > -8 ? 'hall' : sp.z > -19 ? 'nursery' : 'workshop';
+      sp.head = new THREE.Vector3(0, 0.345, 0.073).applyMatrix4(_m); sp.room = (DD.ROOMS.find(r => sp.z <= r.z[1] && sp.z >= r.z[0]) || DD.ROOMS[1]).id;
     });
     [heads, bodies].forEach(im => { im.castShadow = im.receiveShadow = true; scene.add(im); });
     decorSpots = spots.filter(s => !s.lay || Math.random() < 0.3);
@@ -536,9 +564,9 @@
     for (let i = 0; i < 8; i++) { const a = (i / 8 + 0.25) * Math.PI * 2, x = P.x + Math.cos(a) * 7.6, z = P.z + Math.sin(a) * 7.6; const pl = new THREE.PointLight('#ffb050', 0, 5, 2); pl.position.set(x, 0.5, z); const c = mk(new THREE.CylinderGeometry(0.04, 0.045, 0.22, 8), std('#e8dcc0', 0.6), x, 0.11, z); const fl = mk(new THREE.ConeGeometry(0.025, 0.06, 6), new THREE.MeshBasicMaterial({ color: '#ffd080' }), x, 0.26, z, false, false); c.visible = fl.visible = false; scene.add(pl, c, fl); candleLights.push({ pl, c, fl, x, z }); }
     lantern = new THREE.PointLight('#ffc070', 0, 13, 1.6); lantern.position.set(P.x, 4.9, P.z); scene.add(lantern);
     const lamp = mk(new THREE.CylinderGeometry(0.1, 0.13, 0.28, 10), std('#4a3a20', 0.4, { metalness: 0.6 }), P.x, 4.95, P.z); lamp.visible = false; scene.add(lamp); lantern.userData.mesh = lamp;
-    [[0, 21], [0, -13.5], [0, -24.5]].forEach(([x, z]) => { const l = new THREE.PointLight('#ffc890', 0, 11, 1.6); l.position.set(x, 3.2, z); scene.add(l); roomLights.push({ l, x, z }); });
+    [[0, 21], [0, -13.5], [0, -24.5], [0, -36], [0, -48], [0, -60], [0, -73]].forEach(([x, z]) => { const l = new THREE.PointLight('#ffc890', 0, 11, 1.6); l.position.set(x, 3.2, z); scene.add(l); roomLights.push({ l, x, z }); });
     M.blood = bloodTex();
-    buildAttic(); buildGates(); buildProps(); buildPile(); buildDecorDolls(); buildMother(); newPose(); buildScareFX(); setupPost();
+    buildAttic(); buildGates(); buildProps(); buildPile(); buildItems(); buildDecorDolls(); buildMother(); newPose(); buildScareFX(); setupPost();
     mirror = mk(new THREE.PlaneGeometry(0.9, 1.3), std('#9aa8b0', 0.05, { metalness: 0.95 }), P.x - 2.6, 4.0, P.z + 4.6); mirror.rotation.x = -0.4; mirror.visible = false; scene.add(mirror);
     resize(); new ResizeObserver(resize).observe(host); setQuality(quality);
   }
@@ -557,13 +585,15 @@
     { const lv = FX.lever.userData; if (lv.pull != null) { lv.pull += dt; lv.arm.rotation.x = lv.pull < 0.15 ? -0.6 + lv.pull / 0.15 * 1.8 : 1.2 - Math.min(1, (lv.pull - 0.6) / 0.8) * 1.8 * (lv.pull > 0.6 ? 1 : 0); if (lv.pull > 1.4) { lv.pull = null; lv.arm.rotation.x = -0.6; } } lv.lamp.material.color.set(world.time < world.leverReady ? '#ff2a10' : '#30ff40'); }
     flash.visible = player.light && !dark; flash.angle = 0.46 + st.wide; flash.intensity = player.light && !dark ? 38 * (0.75 + 0.25 * Math.min(1, player.battery * 3)) * (world.watcher.lunge ? (Math.random() < 0.45 ? 0.05 : 1) : player.battery < 0.15 ? (Math.random() < 0.15 ? 0.2 : 1) : 1) : 0;
     moveAvatars(dt, t);
-    // gates follow the keys
-    gates.forEach((g, i) => { if (world.keys > i && !g.userData.open) openGate(i, world.time < 1); if (g.userData.fall != null) { g.userData.fall += dt; g.children.forEach((c, k) => { c.position.y -= dt * (2 + k); c.rotation.z += dt * (k % 2 ? 2 : -2); }); if (g.userData.fall > 1.2) { g.visible = false; g.userData.fall = null; } } });
+    stepItems(world, t);
+    // gates follow progress
+    FX.gatesInitT = (FX.gatesInitT || 0) + dt; if (FX.gatesInitT > 0.5) FX.gatesInit = true;
+    gates.forEach((g, i) => { if (Sim.gateOpen(world, g.userData.wall) && !g.userData.open) openGate(g, world.time < 1 || !FX.gatesInit); if (g.userData.fall != null) { g.userData.fall += dt; g.children.forEach((c, k) => { c.position.y -= dt * (2 + k); c.rotation.z += dt * (k % 2 ? 2 : -2); }); if (g.userData.fall > 1.2) { g.visible = false; g.userData.fall = null; } } });
     const f = Sim.remaining(world) / Sim.PILE; if ((Math.abs(f - lastPileF) > 0.002 || lastPileF < 0) && !lookAtPlayer) { layoutPile(f); lastPileF = f; }
     const nc = Math.max(1, Math.min(8, Math.ceil(Sim.lv(world, 'candles') * 0.8)));   // one stub candle burns from the start
     candleLights.forEach((c, i) => { const on = i < nc && !dark; c.c.visible = i < nc; c.fl.visible = on; c.pl.intensity = on ? 2.4 * (0.85 + Math.sin(t * 13 + i * 3) * 0.1 + Math.random() * 0.05) : 0; c.fl.scale.y = 0.9 + Math.sin(t * 17 + i) * 0.2; });
     const hasLantern = Sim.lv(world, 'lantern') > 0; lantern.intensity = hasLantern && !dark ? 10 * (0.95 + Math.sin(t * 2.3) * 0.05) : 0; lantern.userData.mesh.visible = hasLantern;
-    const nr = st.rooms; roomLights.forEach((r, i) => { r.l.intensity = i < nr && !dark ? 7 * (0.9 + Math.sin(t * 3 + i) * 0.05) : 0; });
+    const nr = st.rooms ? 1 + st.rooms * 2 : 0; roomLights.forEach((r, i) => { r.l.intensity = i < nr && !dark ? 7 * (0.9 + Math.sin(t * 3 + i) * 0.05) : 0; });
     mirror.visible = Sim.lv(world, 'mirror') > 0;
     lightsRef = { litAt(x, z) {
       const d = Math.hypot(x - Sim.PILE_POS.x, z - Sim.PILE_POS.z);
@@ -578,13 +608,13 @@
     const dist0 = Math.hypot(W.x - player.x, W.z - player.z);
     U.modeT = (U.modeT || 0) - dt;
     let want = U.mode;
-    if (W.stun > 0) want = 'floor';                                 // the light knocked her down
-    else if (W.recoil > 0) want = 'stand';
+    if (W.stun > 0 || W.broken > 0) want = 'floor';                 // the light knocked her down / she is in pieces
+    else if (W.recoil > 0 || W.grab) want = 'stand';
     else if (W.moving) {
       if (dist0 < 2.2) want = 'stand'; else if (dist0 < 4.5) want = 'floor';
-      else if (U.modeT <= 0 || U.mode === 'hang' || (W.chase && U.mode === 'stand')) { want = W.chase ? (Math.abs(W.x) > 5.5 ? 'wall' : Math.random() < 0.6 ? 'ceiling' : 'floor') : ['ceiling', 'ceiling', 'wall', 'floor', 'stand'][Math.floor(Math.random() * 5)]; U.modeT = 6 + Math.random() * 8; }
+      else if (U.modeT <= 0 || U.mode === 'hang' || (W.chase && U.mode === 'stand')) { want = W.chase ? (Math.abs(W.x) > 5.5 ? 'wall' : Math.random() < 0.6 ? 'ceiling' : 'floor') : ['ceiling', 'ceiling', 'wall', 'wall', 'ceiling', 'floor', 'stand'][Math.floor(Math.random() * 7)]; U.modeT = 6 + Math.random() * 8; }
     } else if (!U.lastSees && U.modeT <= 0) { want = ['stand', 'hang', 'ceiling', 'hang'][Math.floor(Math.random() * 4)]; U.modeT = 8 + Math.random() * 8; }
-    const forced = W.stun > 0 || W.recoil > 0 || dist0 < 4.5;
+    const forced = W.stun > 0 || W.broken > 0 || W.recoil > 0 || W.grab || dist0 < 4.5;
     if (want !== U.mode && (!U.lastSees || forced)) { U.mode = want; U.changed = true; if (want === 'stand') newPose(); }
     mother.position.set(W.x, 0, W.z);
     if (W.moving && U.mode === 'stand') { poseT += dt; if (poseT > 0.35) { newPose(); poseT = 0; } }
@@ -651,9 +681,9 @@
     postMat.uniforms.black.value = Math.max(black, player.stun > 0 ? Math.min(1, player.stun / 2) * 0.85 : 0); postMat.uniforms.flash.value = Math.max(fl, flood > 0.6 ? (settings.flashes ? 0.55 : 0.15) * (flood - 0.6) / 0.4 : 0); postMat.uniforms.glitch.value = glitch;
     renderer.setRenderTarget(rt); renderer.render(scene, camera); renderer.setRenderTarget(null); renderer.render(postScene, postCam);
     camera.getWorldDirection(_a); ray.set(camera.position, _a); ray.far = 3.6;
-    const hit = ray.intersectObjects([pileMass, door, FX.lever], true)[0];
-    let target = null; if (hit) { let o = hit.object; while (o && !o.userData.pile && !o.userData.door && !o.userData.lever) o = o.parent; if (o) target = o.userData.pile ? 'pile' : o.userData.lever ? 'lever' : 'door'; }
-    return { sees, inBeam, litAtWatcher: lightsRef.litAt(W.x, W.z), target, fear, dist, bellDir: Math.atan2(W.x - player.x, W.z - player.z) - player.yaw, dripSplash: FX.drip && FX.drip.splash ? (FX.drip.splash = false, true) : false, landed: FX.landed ? (FX.landed = false, true) : false, motherMode: U.mode, motherY: hp.y, twitched: U.didTwitch ? (U.didTwitch = false, true) : false, modeChanged: U.changed ? (U.changed = false, true) : false };
+    const hit = ray.intersectObjects([pileMass, door, FX.lever].concat(Object.values(items).filter(g => g.visible)), true)[0];
+    let target = null; if (hit) { let o = hit.object; while (o && !o.userData.pile && !o.userData.door && !o.userData.lever && !o.userData.item) o = o.parent; if (o) target = o.userData.pile ? 'pile' : o.userData.lever ? 'lever' : o.userData.item ? 'item:' + o.userData.item : 'door'; }
+    return { sees, inBeam, motherInView: inV, litAtWatcher: lightsRef.litAt(W.x, W.z), target, fear, dist, bellDir: Math.atan2(W.x - player.x, W.z - player.z) - player.yaw, dripSplash: FX.drip && FX.drip.splash ? (FX.drip.splash = false, true) : false, landed: FX.landed ? (FX.landed = false, true) : false, motherMode: U.mode, motherY: hp.y, twitched: U.didTwitch ? (U.didTwitch = false, true) : false, modeChanged: U.changed ? (U.changed = false, true) : false };
   }
   // kind: 'mother' | 'doll' | 'crawler'; fatal = Mother caught you
   function jumpscare(scare, done, kind, fatal) {
@@ -666,6 +696,36 @@
     }
     jump = { t: 0, scare, head, done, fatal: fatal !== false, hurt: fatal === false ? 0.6 : 1 };
   }
+  // ---------- things to pick up ----------
+  const items = {};
+  function buildItems() {
+    const lying = dollGroup(1, 2.4); lying.position.set(0.5, 0.62, -77.6); lying.rotation.set(-Math.PI / 2, 0, 0); scene.add(lying);
+    const metal = std('#3a3a3a', 0.35, { metalness: 0.9 }), glow = new THREE.MeshBasicMaterial({ color: '#ffe0a0', transparent: true, opacity: 0.0 });
+    DD.ITEMS.forEach(it => {
+      const g = new THREE.Group(); g.position.set(it.x, it.y, it.z);
+      if (it.id === 'poker') { const m = mk(new THREE.CylinderGeometry(0.018, 0.018, 0.9, 6), metal, 0, 0.02, 0); m.rotation.z = Math.PI / 2; g.add(m, mk(new THREE.BoxGeometry(0.06, 0.12, 0.02), metal, 0.45, 0.05, 0)); }
+      else if (it.id === 'camera') g.add(mk(new THREE.BoxGeometry(0.22, 0.13, 0.1), std('#1a1a1a', 0.5), 0, 0.07, 0), mk(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 12), metal, 0, 0.07, 0.07));
+      else if (it.id === 'holy') g.add(mk(new THREE.CylinderGeometry(0.05, 0.06, 0.2, 10), std('#a8c8d8', 0.1, { transparent: true, opacity: 0.6 }), 0, 0.1, 0), mk(new THREE.BoxGeometry(0.03, 0.1, 0.01), std('#d8c060', 0.3), 0, 0.12, 0.062));
+      else if (it.id === 'flare') g.add(mk(new THREE.CylinderGeometry(0.03, 0.03, 0.32, 8), std('#b01010', 0.6), 0, 0.03, 0)).children[0].rotation.set(0, 0, Math.PI / 2);
+      else if (it.id === 'twin') { const d = dollGroup(0, 1.1); g.add(d); }
+      else if (it.id === 'photo') g.add(mk(new THREE.BoxGeometry(0.18, 0.24, 0.02), std('#ffffff', 0.7, { map: drawingTex() }), 0, 0.12, 0));
+      else if (it.id === 'drawing') { const m = mk(new THREE.PlaneGeometry(0.4, 0.3), std('#ffffff', 0.9, { map: drawingTex() }), 0, 0.01, 0, false); m.rotation.x = -Math.PI / 2; g.add(m); }
+      else if (it.id === 'ring') g.add(mk(new THREE.TorusGeometry(0.03, 0.008, 6, 16), std('#d8b040', 0.2, { metalness: 1 }), 0, 0.02, 0));
+      else if (it.id === 'prayer') g.add(mk(new THREE.BoxGeometry(0.16, 0.05, 0.22), std('#2a1010', 0.8), 0, 0.03, 0));
+      else if (it.id === 'duck') g.add(mk(new THREE.SphereGeometry(0.07, 10, 8), std('#e8c020', 0.4), 0, 0.06, 0), mk(new THREE.SphereGeometry(0.045, 10, 8), std('#e8c020', 0.4), 0.06, 0.13, 0), mk(new THREE.ConeGeometry(0.02, 0.05, 6), std('#e06010', 0.4), 0.11, 0.13, 0));
+      else if (it.id === 'program') { const m = mk(new THREE.PlaneGeometry(0.2, 0.28), std('#e8dcc0', 0.9, { map: writingTex('MOLL', false) }), 0, 0.01, 0, false); m.rotation.x = -Math.PI / 2; g.add(m); }
+      else if (it.id === 'diary') g.add(mk(new THREE.BoxGeometry(0.2, 0.05, 0.26), std('#4a1a2a', 0.7), 0, 0.03, 0));
+      const halo = mk(new THREE.SphereGeometry(0.22, 10, 8), glow.clone(), 0, 0.1, 0, false, false); g.add(halo);
+      g.userData = { item: it.id, halo }; g.traverse(o => { if (o.isMesh) o.castShadow = false; }); scene.add(g); items[it.id] = g;
+    });
+  }
+  function stepItems(world, t) {
+    for (const id in items) { const g = items[id], found = world.found && world.found[id]; g.visible = !found; if (!found) { const d = Math.hypot(camera.position.x - g.position.x, camera.position.z - g.position.z); g.userData.halo.material.opacity = d < 4 ? 0.05 + Math.sin(t * 3) * 0.03 : 0; } }
+    // flare
+    const R = world.repel && world.time < world.repel.until ? world.repel : null;
+    if (R) { if (!FX.flareL) { FX.flareL = new THREE.PointLight('#ff3010', 0, 12, 1.5); scene.add(FX.flareL); } FX.flareL.position.set(R.x, 0.4, R.z); FX.flareL.intensity = 9 * (0.8 + Math.random() * 0.3); } else if (FX.flareL) FX.flareL.intensity = 0;
+  }
+
   // ---------- other players (co-op) ----------
   const avatars = {};
   function nameTag(text) {
@@ -699,7 +759,7 @@
   }
   function collide(p, world, prev) {
     const B = Sim.bounds(world); p.x = Math.max(B.minX, Math.min(B.maxX, p.x)); p.z = Math.max(B.minZ, Math.min(B.maxZ, p.z));
-    [[14, true], [-8, gateOpen(0)], [-19, gateOpen(1)]].forEach(([z, open]) => {
+    Sim.WALLS.map((z, wi) => [z, gateOpen(wi)]).forEach(([z, open]) => {
       if (prev && (prev.z - z) * (p.z - z) < 0 && (!open || Math.abs(p.x) > 1.3)) p.z = prev.z;
       if (Math.abs(p.z - z) < 0.3 && Math.abs(p.x) > 1.3) p.z = z + Math.sign(p.z - z || 1) * 0.3;
     });

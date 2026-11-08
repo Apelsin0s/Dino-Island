@@ -16,10 +16,10 @@
 
   // Three keys. Each one is somewhere in a depth range; each opens the next part of the attic.
   const KEYS = [
-    { id: 'brass', range: [0.26, 0.32], opens: 'nursery', name: { en: 'Brass key', ru: 'Латунный ключ' },
-      text: { en: 'A small brass key with a ribbon. A tag: "Nursery". Behind the boarded gate, something hums a lullaby.', ru: 'Маленький латунный ключ на ленточке. Бирка: «Детская». За заколоченной решёткой кто-то напевает колыбельную.' } },
-    { id: 'iron', range: [0.58, 0.65], opens: 'workshop', name: { en: 'Iron key', ru: 'Железный ключ' },
-      text: { en: 'A heavy iron key, warm as skin. A tag: "Workshop. Do not let her in."', ru: 'Тяжёлый железный ключ, тёплый, как кожа. Бирка: «Мастерская. Не впускать её».' } },
+    { id: 'brass', range: [0.26, 0.32], opens: 'workshop', name: { en: 'Brass key', ru: 'Латунный ключ' },
+      text: { en: 'A small brass key with a ribbon. A tag: "Workshop". Behind the boarded gate, something hums a lullaby.', ru: 'Маленький латунный ключ на ленточке. Бирка: «Мастерская». За заколоченной решёткой кто-то напевает колыбельную.' } },
+    { id: 'iron', range: [0.58, 0.65], opens: 'bathroom', name: { en: 'Iron key', ru: 'Железный ключ' },
+      text: { en: 'A heavy iron key, warm as skin. A tag: "Bath. Do not let her in."', ru: 'Тяжёлый железный ключ, тёплый, как кожа. Бирка: «Ванная. Не впускать её».' } },
     { id: 'bone', range: [0.9, 0.985], opens: 'door', name: { en: 'Bone key', ru: 'Костяной ключ' },
       text: { en: 'A key carved from bone. Yours? The door is far behind you. So is she.', ru: 'Ключ, вырезанный из кости. Твоей? Дверь далеко позади. Как и она.' } }
   ];
@@ -172,7 +172,50 @@
     ru: ['Костяной ключ поворачивается. Дверь открывается.', 'За ней лестница наверх. Ещё один чердак.', 'Ещё одна куча. Три миллиона кукол. На одной из них твоя одежда.', 'Мама уже стоит в углу. Она не смотрит в стену.']
   };
 
-  const api = { PILE, LOOT, KEYS, NODES, NOTES, WRITINGS, WARNING, ENDING };
+  // The attic, from the door inward. Each gate opens when the gate before it is open and its own condition is met.
+  const ROOMS = [
+    { id: 'entrance', z: [14, 30], name: { en: 'Entrance', ru: 'Вход' } },
+    { id: 'hall', z: [-8, 14], name: { en: 'Hall', ru: 'Зал' } },
+    { id: 'nursery', z: [-19, -8], gate: { depth: 0.05 }, name: { en: 'Nursery', ru: 'Детская' },
+      opened: { en: 'The boards over the nursery rot through and fall. Something small runs deeper in.', ru: 'Доски на входе в детскую сгнили и рухнули. Что-то маленькое убежало вглубь.' } },
+    { id: 'workshop', z: [-30, -19], gate: { key: 1 }, name: { en: 'Workshop', ru: 'Мастерская' },
+      opened: { en: 'The brass key turns. The workshop smells of glue and meat.', ru: 'Латунный ключ повернулся. В мастерской пахнет клеем и мясом.' } },
+    { id: 'chapel', z: [-42, -30], gate: { depth: 0.4 }, name: { en: 'Chapel', ru: 'Часовня' },
+      opened: { en: 'Behind the workshop a wall gives way. A tiny chapel, pews full of dolls in their Sunday best.', ru: 'За мастерской проломилась стена. Крошечная часовня, на скамьях куклы в воскресных платьях.' } },
+    { id: 'bathroom', z: [-54, -42], gate: { key: 2 }, name: { en: 'Bathroom', ru: 'Ванная' },
+      opened: { en: 'The iron key opens the bath. The tub is full. It should not be full.', ru: 'Железный ключ открыл ванную. Ванна полная. Она не должна быть полной.' } },
+    { id: 'theatre', z: [-66, -54], gate: { depth: 0.72 }, name: { en: 'Doll theatre', ru: 'Кукольный театр' },
+      opened: { en: 'Applause from behind the wall. The theatre is open. The audience has been waiting.', ru: 'Из-за стены — аплодисменты. Театр открыт. Зрители давно ждут.' } },
+    { id: 'bedroom', z: [-80, -66], gate: { depth: 0.85 }, name: { en: 'Agatha\'s bedroom', ru: 'Спальня Агаты' },
+      opened: { en: 'The last door. Agatha\'s bedroom. The bed is made for two.', ru: 'Последняя дверь. Спальня Агаты. Постель застелена на двоих.' } }
+  ];
+  // Things to find: weapons (everyone in the room can use them once found) and easter eggs (a note and a reward).
+  const WEAPONS = {
+    poker: { key: '1', cd: 4, range: 2.6, dmg: 0.15, name: { en: 'Poker', ru: 'Кочерга' }, desc: { en: 'Hit her up close: she backs off. Breaks her grip.', ru: 'Ударить вблизи: она отползает. Вырывает из её хватки.' } },
+    camera: { key: '2', cd: 20, range: 12, dmg: 0.08, stun: 3, name: { en: 'Flash camera', ru: 'Фотоаппарат' }, desc: { en: 'A flash in her face: she freezes for 3 s.', ru: 'Вспышка в лицо: она замирает на 3 с.' } },
+    holy: { key: '3', cd: 40, range: 6, dmg: 0.25, name: { en: 'Holy water', ru: 'Святая вода' }, desc: { en: 'It burns her. She runs away.', ru: 'Обжигает её. Она убегает.' } },
+    flare: { key: '4', cd: 60, repel: 20, name: { en: 'Flare', ru: 'Фальшфейер' }, desc: { en: 'Red fire for 20 s: she will not come near it.', ru: 'Красный огонь на 20 с: к нему она не подходит.' } }
+  };
+  const ITEMS = [
+    { id: 'poker', kind: 'weapon', room: 'hall', x: 9.9, y: 1.06, z: -4.2 },
+    { id: 'camera', kind: 'weapon', room: 'nursery', x: -9.4, y: 0.06, z: -18.2 },
+    { id: 'holy', kind: 'weapon', room: 'chapel', x: 0, y: 1.16, z: -40.4 },
+    { id: 'flare', kind: 'weapon', room: 'theatre', x: 6.5, y: 0.06, z: -64.5 },
+    { id: 'twin', kind: 'egg', room: 'entrance', x: 8.6, y: 0.06, z: 29.2, name: { en: 'A doll that looks like you', ru: 'Кукла, похожая на тебя' }, text: { en: 'Same coat. Same scar. The tag says your name and a date: tomorrow.', ru: 'То же пальто. Тот же шрам. На бирке твоё имя и дата: завтра.' } },
+    { id: 'photo', kind: 'egg', room: 'hall', x: -10.4, y: 1.06, z: 6.2, name: { en: 'Family photo', ru: 'Семейное фото' }, text: { en: 'Agatha, her husband, a girl. Someone scratched out the husband\'s face and drew a doll\'s.', ru: 'Агата, её муж, девочка. Лицо мужа кто-то выцарапал и нарисовал кукольное.' } },
+    { id: 'drawing', kind: 'egg', room: 'nursery', x: 5.2, y: 0.06, z: -18.4, name: { en: 'A child\'s drawing', ru: 'Детский рисунок' }, text: { en: 'A house, a sun, a tall lady with long arms on the roof. And a little figure with a flashlight. You.', ru: 'Дом, солнце, высокая тётя с длинными руками на крыше. И маленький человечек с фонариком. Ты.' } },
+    { id: 'ring', kind: 'egg', room: 'workshop', x: -5.6, y: 0.97, z: -24.3, name: { en: 'Wedding ring', ru: 'Обручальное кольцо' }, text: { en: 'Inside: "A. M. — forever". It is still on a finger. The finger is porcelain.', ru: 'Внутри: «А. М. — навсегда». Оно всё ещё на пальце. Палец фарфоровый.' } },
+    { id: 'prayer', kind: 'egg', room: 'chapel', x: -8.2, y: 0.56, z: -33.5, name: { en: 'Prayer book', ru: 'Молитвенник' }, text: { en: 'Every page is torn out except one, where the same line is written a thousand times: "Let her stay".', ru: 'Все страницы вырваны, кроме одной, где тысячу раз написано: «Пусть она останется».' } },
+    { id: 'duck', kind: 'egg', room: 'bathroom', x: -5.2, y: 0.62, z: -48, name: { en: 'Rubber duck', ru: 'Резиновая уточка' }, text: { en: 'A perfectly normal rubber duck. Squeak. The only normal thing up here. You keep it.', ru: 'Совершенно обычная резиновая уточка. Пи-и. Единственная нормальная вещь на этом чердаке. Ты оставляешь её себе.' } },
+    { id: 'program', kind: 'egg', room: 'theatre', x: -3, y: 0.06, z: -56.5, name: { en: 'Theatre programme', ru: 'Программка спектакля' }, text: { en: '"Tonight: The Girl Who Came Back. Starring Agatha Moll and her daughter (porcelain)."', ru: '«Сегодня: Девочка, которая вернулась. В ролях: Агата Молль и её дочь (фарфор)».' } },
+    { id: 'diary', kind: 'egg', room: 'bedroom', x: 6.4, y: 0.72, z: -77, name: { en: 'Agatha\'s diary', ru: 'Дневник Агаты' }, text: { en: 'Last entry: "The million-and-first doll will be the one who comes to look for her. I will make it beautiful."', ru: 'Последняя запись: «Миллион первой куклой станет тот, кто придёт её искать. Я сделаю её красивой».' } }
+  ];
+  // What you must type when she has you. Index-matched across languages.
+  const WORDS = {
+    en: ['mother', 'doll', 'let go', 'not me', 'button', 'sleep', 'cradle', 'thread', 'porcelain', 'eyes', 'key', 'lullaby', 'go away', 'agatha', 'stitch', 'hush'],
+    ru: ['мама', 'кукла', 'отпусти', 'не я', 'пуговица', 'спи', 'колыбель', 'нитки', 'фарфор', 'глаза', 'ключ', 'баю бай', 'уходи', 'агата', 'шов', 'тише']
+  };
+  const api = { PILE, LOOT, KEYS, NODES, NOTES, WRITINGS, WARNING, ENDING, ROOMS, WEAPONS, ITEMS, WORDS };
   root.DOLLS_DATA = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
