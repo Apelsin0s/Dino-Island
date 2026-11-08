@@ -27,7 +27,7 @@
       const timer = setTimeout(() => { finish('timeout'); Net.leave(); }, 15000);
       peer.on('open', () => { clearTimeout(timer); Net.mode = 'host'; Net.me = 'h'; Net.players = { h: { id: 'h', nick } }; finish(null); Net.emit('players'); });
       peer.on('error', e => { clearTimeout(timer); if (!done) { finish(e.type === 'unavailable-id' ? 'exists' : 'network'); Net.leave(); } });
-      peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
+      peer.on('disconnected', () => { if (Net.peer === peer && Net.mode === 'host' && !peer.destroyed) try { peer.reconnect(); } catch (e) {} });   // lost the signalling server, not leaving
       peer.on('connection', c => {
         c.on('data', m => {
           if (m.t === 'hello') {
