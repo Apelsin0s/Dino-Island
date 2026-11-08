@@ -555,7 +555,8 @@
     const flood = FX.flood > 0 ? FX.flood / FX.floodMax : 0; if (FX.flood > 0) FX.flood -= dt;
     hemi.intensity = hemi.userData.base + flood * 9; FX.bulbMat.color.set(flood > 0 ? '#fff6d8' : '#2a2418');
     { const lv = FX.lever.userData; if (lv.pull != null) { lv.pull += dt; lv.arm.rotation.x = lv.pull < 0.15 ? -0.6 + lv.pull / 0.15 * 1.8 : 1.2 - Math.min(1, (lv.pull - 0.6) / 0.8) * 1.8 * (lv.pull > 0.6 ? 1 : 0); if (lv.pull > 1.4) { lv.pull = null; lv.arm.rotation.x = -0.6; } } lv.lamp.material.color.set(world.time < world.leverReady ? '#ff2a10' : '#30ff40'); }
-    flash.visible = player.light && !dark; flash.angle = 0.46 + st.wide; flash.intensity = player.light && !dark ? 38 * (0.75 + 0.25 * Math.min(1, player.battery * 3)) * (player.battery < 0.15 ? (Math.random() < 0.15 ? 0.2 : 1) : 1) : 0;
+    flash.visible = player.light && !dark; flash.angle = 0.46 + st.wide; flash.intensity = player.light && !dark ? 38 * (0.75 + 0.25 * Math.min(1, player.battery * 3)) * (world.watcher.lunge ? (Math.random() < 0.45 ? 0.05 : 1) : player.battery < 0.15 ? (Math.random() < 0.15 ? 0.2 : 1) : 1) : 0;
+    moveAvatars(dt, t);
     // gates follow the keys
     gates.forEach((g, i) => { if (world.keys > i && !g.userData.open) openGate(i, world.time < 1); if (g.userData.fall != null) { g.userData.fall += dt; g.children.forEach((c, k) => { c.position.y -= dt * (2 + k); c.rotation.z += dt * (k % 2 ? 2 : -2); }); if (g.userData.fall > 1.2) { g.visible = false; g.userData.fall = null; } } });
     const f = Sim.remaining(world) / Sim.PILE; if ((Math.abs(f - lastPileF) > 0.002 || lastPileF < 0) && !lookAtPlayer) { layoutPile(f); lastPileF = f; }
@@ -665,6 +666,37 @@
     }
     jump = { t: 0, scare, head, done, fatal: fatal !== false, hurt: fatal === false ? 0.6 : 1 };
   }
+  // ---------- other players (co-op) ----------
+  const avatars = {};
+  function nameTag(text) {
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const g = cv.getContext('2d');
+    g.font = '28px "IBM Plex Mono", monospace'; g.textAlign = 'center'; g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(0, 12, 256, 40); g.fillStyle = '#e8dcc8'; g.fillText(text, 128, 42);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false })); sp.scale.set(0.9, 0.225, 1); return sp;
+  }
+  function makeAvatar(nick) {
+    const g = new THREE.Group(), coat = std('#2a2622', 0.9), skin = std('#c8b4a0', 0.6);
+    g.add(mk(new THREE.CapsuleGeometry(0.22, 0.85, 4, 10), coat, 0, 0.75, 0), mk(new THREE.SphereGeometry(0.14, 14, 10), skin, 0, 1.52, 0));
+    [-0.1, 0.1].forEach(x => g.add(mk(new THREE.CylinderGeometry(0.07, 0.06, 0.5, 8), std('#16120f', 0.9), x, 0.25, 0)));
+    const beam = new THREE.Mesh(new THREE.ConeGeometry(1.6, 7, 20, 1, true), new THREE.MeshBasicMaterial({ color: '#eef2ff', transparent: true, opacity: 0.05, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+    beam.geometry.translate(0, -3.5, 0); beam.geometry.rotateX(-Math.PI / 2); const head = new THREE.Group(); head.position.y = 1.45; head.add(beam); g.add(head);
+    const lamp = new THREE.SpotLight('#eef2ff', 0, 12, 0.45, 0.6, 2); lamp.position.set(0, 0, 0); const tgt = new THREE.Object3D(); tgt.position.set(0, 0, -4); head.add(lamp, tgt); lamp.target = tgt;
+    const tag = nameTag(nick); tag.position.y = 2.0; g.add(tag);
+    g.userData = { head, beam, lamp, nick }; g.traverse(o => { if (o.isMesh) o.castShadow = true; }); scene.add(g); return g;
+  }
+  function others(list) {
+    const seen = {};
+    list.forEach(p => {
+      seen[p.id] = true; let a = avatars[p.id];
+      if (!a || a.userData.nick !== p.nick) { if (a) scene.remove(a); a = avatars[p.id] = makeAvatar(p.nick || '?'); a.position.set(p.x, 0, p.z); }
+      a.userData.tx = p.x; a.userData.tz = p.z; a.userData.yaw = p.yaw; a.userData.pitch = p.pitch;
+      a.userData.beam.visible = !!p.light; a.userData.lamp.intensity = p.light ? 14 : 0;
+      a.userData.dig = !!p.digging;
+    });
+    for (const id in avatars) if (!seen[id]) { scene.remove(avatars[id]); delete avatars[id]; }
+  }
+  function moveAvatars(dt, t) {
+    for (const id in avatars) { const a = avatars[id], u = a.userData; if (u.tx == null) continue; const k = Math.min(1, dt * 10); a.position.x += (u.tx - a.position.x) * k; a.position.z += (u.tz - a.position.z) * k; a.rotation.y = u.yaw; u.head.rotation.x = u.pitch; a.children[0].rotation.x = u.dig ? 0.35 + Math.sin(t * 9) * 0.1 : 0; }
+  }
   function collide(p, world, prev) {
     const B = Sim.bounds(world); p.x = Math.max(B.minX, Math.min(B.maxX, p.x)); p.z = Math.max(B.minZ, Math.min(B.maxZ, p.z));
     [[14, true], [-8, gateOpen(0)], [-19, gateOpen(1)]].forEach(([z, open]) => {
@@ -678,5 +710,5 @@
       else { const dx = p.x - c.x, dz = p.z - c.z, dd = Math.hypot(dx, dz); if (dd < c.r && dd > 0) { p.x = c.x + dx / dd * c.r; p.z = c.z + dz / dd * c.r; } }
     });
   }
-  root.World3D = { init, update, setQuality, setSettings, launchDoll, addBlood, jumpscare, collide, visible, scare: S2, canvas: () => renderer.domElement, roofY };
+  root.World3D = { init, update, others, setQuality, setSettings, launchDoll, addBlood, jumpscare, collide, visible, scare: S2, canvas: () => renderer.domElement, roofY };
 })(window);

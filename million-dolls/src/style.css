@@ -120,3 +120,12 @@ input[type=range] { width: 100%; accent-color: var(--blood-hi); }
 #vitals .en span { color: #d8b060; } #vitals .en b { background: #b89040; }
 #vitals.low .hp b { animation: pulse .6s infinite alternate; }
 @keyframes pulse { to { background: #ff2a10; } }
+
+/* co-op */
+.panel.coop .set input[type=text], .panel.coop .set input:not([type]), .panel.coop .set input[type=password] { background: rgba(0,0,0,.4); color: var(--ink); border: 1px solid rgba(255,255,255,.25); padding: 8px 10px; font: inherit; min-width: 0; }
+.menu.row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.note.err { color: #e0a090; min-height: 1.2em; }
+#party { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 120px; display: grid; gap: 4px; font-size: 13px; min-width: 170px; background: rgba(0,0,0,.35); padding: 8px 10px; }
+#party > b { font-weight: 700; letter-spacing: .05em; }
+#party div { display: grid; grid-template-columns: 1fr 70px; gap: 8px; align-items: center; }
+#party i { height: 6px; background: rgba(255,255,255,.1); } #party i b { display: block; height: 100%; background: #a01010; }

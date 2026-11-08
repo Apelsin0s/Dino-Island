@@ -117,10 +117,12 @@
     let dx = tx - W.x, dz = tz - W.z; const d = Math.hypot(dx, dz) || 1;
     // if the straight line clips the pile, aim for a tangent point instead
     const t = Math.max(0, Math.min(1, ((px - W.x) * dx + (pz - W.z) * dz) / (d * d))), cx = W.x + dx * t, cz = W.z + dz * t;
-    if (Math.hypot(cx - px, cz - pz) < R && Math.hypot(tx - px, tz - pz) > R) {
-      const a = Math.atan2(W.z - pz, W.x - px), cross = (W.x - px) * dz - (W.z - pz) * dx, a2 = a + (cross > 0 ? -0.6 : 0.6);
-      dx = px + Math.cos(a2) * (R + 0.6) - W.x; dz = pz + Math.sin(a2) * (R + 0.6) - W.z;
-    }
+    if (Math.hypot(cx - px, cz - pz) < R + 0.3 && Math.hypot(tx - px, tz - pz) > R && (W.x - px) * dx + (W.z - pz) * dz < 0) {   // only if heading into it
+      // go round the pile, and stick to the side she picked so she does not dither in front of it
+      if (!W.side) { const cross = (W.x - px) * dz - (W.z - pz) * dx; W.side = Math.abs(cross) > 0.5 ? (cross > 0 ? -1 : 1) : (Math.random() < 0.5 ? -1 : 1); }
+      const a = Math.atan2(W.z - pz, W.x - px), a2 = a + W.side * 0.5;
+      dx = px + Math.cos(a2) * (R + 0.7) - W.x; dz = pz + Math.sin(a2) * (R + 0.7) - W.z;
+    } else W.side = 0;
     const dd = Math.hypot(dx, dz) || 1, st = Math.min(step, dd);
     W.x += dx / dd * st; W.z += dz / dd * st;
     const pd = Math.hypot(W.x - px, W.z - pz); if (pd < R) { W.x = px + (W.x - px) / (pd || 1) * R; W.z = pz + (W.z - pz) / (pd || 1) * R; }
@@ -130,12 +132,23 @@
   // env.inBeam[i]: player i's flashlight is on her; env.litAtWatcher: candles/lamps light where she is
   function stepWatcher(w, players, dt, env) {
     const W = w.watcher, s = stats(w), ev = [];
-    if (!W.active) { if (w.removed >= PILE * 0.002) { W.active = true; W.wake = 0; ev.push({ woke: true }); } else return ev; }
+    if (!W.active) { if (w.removed >= 100) { W.active = true; ev.push({ woke: true }); } else return ev; }   // she wakes after the first 100 dolls
     W.moving = false;
     if (W.held) return ev;                                     // a scare has her somewhere else for a moment
     if (w.time < w.musicUntil) return ev;
     if (W.stun > 0) { W.stun -= dt; return ev; }
     if (W.recoil > 0) { W.recoil -= dt; return ev; }
+    // the flashlight is dying: she rushes at you out of the dark, stops a step away, and backs off again. No touch.
+    if (W.lunge) {
+      const L = W.lunge, p = players.find(q => q.id === L.id) || players[0]; L.t += dt; W.moving = true;
+      if (L.phase === 'in') { const d = Math.hypot(p.x - W.x, p.z - W.z); if (d > 1.5 && L.t < 4) steer(w, W, p.x, p.z, Math.min(d - 1.4, 7 * dt)); else { L.phase = 'hold'; L.t = 0; ev.push({ lungeHold: p.id }); } }
+      else if (L.phase === 'hold') { W.moving = false; if (L.t > 0.9) { L.phase = 'out'; L.t = 0; ev.push({ lungeBack: p.id }); } }
+      else { const d = Math.hypot(L.ox - W.x, L.oz - W.z); if (d > 0.3 && L.t < 5) steer(w, W, L.ox, L.oz, 6 * dt); else { W.lunge = null; W.recoil = 1.5; } }
+      return ev;
+    }
+    const dying = players.find(p => p.light && p.battery < 0.12 && !p.lunged && p.stun <= 0);
+    if (dying) { dying.lunged = true; W.lunge = { id: dying.id, phase: 'in', t: 0, ox: W.x, oz: W.z }; W.chase = false; ev.push({ lunge: dying.id }); return ev; }
+    players.forEach(p => { if (p.battery > 0.4) p.lunged = false; });
     const alive = players.filter(p => p.stun <= 0 && p.hp > 0);
     let target = null, bd = 1e9; alive.forEach(p => { const d = Math.hypot(p.x - W.x, p.z - W.z); if (d < bd) { bd = d; target = p; } });
     const notice = (5.5 + depth(w) * 6) * (1 - s.salt) * (target && target.digging ? 1.3 : 1);
@@ -148,7 +161,7 @@
     W.moving = true;
     if (W.chase && target) steer(w, W, target.x, target.z, speed * dt);
     else {
-      W.wpT -= dt; if (!W.wp || W.wpT <= 0 || Math.hypot(W.wp.x - W.x, W.wp.z - W.z) < 0.6) { W.wp = pickWaypoint(w, W); W.wpT = 25; }
+      W.wpT -= dt; if (!W.wp || W.wpT <= 0 || Math.hypot(W.wp.x - W.x, W.wp.z - W.z) < 0.6) { W.wp = pickWaypoint(w, W); W.wpT = 50; }
       steer(w, W, W.wp.x, W.wp.z, speed * dt);
     }
     // touch
@@ -209,7 +222,7 @@
   }
 
   const api = { PILE, ATTIC, ROOMS, PILE_POS, SPAWN, HOMES, N, newWorld, newPlayer, stats, depth, remaining, digRate, autoRate, roomsOpen, bounds,
-    nodeCost, nodeVisible, canAfford, buy, pull, bounty, step, pullLever, LEVER, playMusic, offline, keyHint, lv };
+    nodeCost, nodeVisible, canAfford, buy, pull, bounty, step, pullLever, LEVER, playMusic, battery: stepBattery, offline, keyHint, lv };
   root.Sim = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

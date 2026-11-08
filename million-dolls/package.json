@@ -9,21 +9,42 @@
     "start": "electron .",
     "dist": "electron-builder --publish never",
     "simulate": "node tools/simulate.js",
-    "vendor": "esbuild tools/three-entry.js --bundle --format=iife --minify --legal-comments=eof --outfile=src/vendor/three.min.js"
+    "vendor": "esbuild tools/three-entry.js --bundle --format=iife --minify --legal-comments=eof --outfile=src/vendor/three.min.js && esbuild tools/peer-entry.js --bundle --format=iife --minify --legal-comments=eof --outfile=src/vendor/peerjs.min.js"
   },
   "devDependencies": {
     "electron": "44.9.0",
     "electron-builder": "26.17.0",
     "esbuild": "0.28.2",
+    "peerjs": "1.5.5",
     "three": "0.186.1"
   },
   "build": {
     "appId": "com.milliondolls.game",
     "productName": "Million Dolls",
-    "files": ["electron/**", "src/**"],
-    "directories": { "output": "dist" },
-    "win": { "target": ["zip"] },
-    "linux": { "target": ["tar.gz"], "category": "Game" },
-    "mac": { "target": ["zip"], "category": "public.app-category.games", "identity": null }
+    "files": [
+      "electron/**",
+      "src/**"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "tar.gz"
+      ],
+      "category": "Game"
+    },
+    "mac": {
+      "target": [
+        "zip"
+      ],
+      "category": "public.app-category.games",
+      "identity": null
+    }
   }
 }

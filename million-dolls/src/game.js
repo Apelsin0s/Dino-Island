@@ -1,13 +1,13 @@
 // Game controller: screens, input, HUD, notebook (upgrade tree, notes), settings, deaths, saving.
 'use strict';
 (() => {
-  const D = window.DOLLS_DATA, S = window.Sim, V = window.World3D, A = window.Sfx;
+  const D = window.DOLLS_DATA, S = window.Sim, V = window.World3D, A = window.Sfx, Net = window.Net;
   const $ = id => document.getElementById(id);
   const SAVE_KEY = 'million-dolls-v3', SETTINGS_KEY = 'million-dolls-settings';
 
   const T = {
     en: { title: 'Million Dolls', tagline: 'one of them has the key', warnTitle: 'Warning', iUnderstand: 'I understand, continue',
-      cont: 'Continue', newGame: 'New game', newSure: 'Click again: your attic will be emptied… and refilled.', coop: 'Co-op', coopSoon: 'Coming with the Steam release: 2–4 players, one watches Mother while the others dig.',
+      cont: 'Continue', newGame: 'New game', newSure: 'Click again: your attic will be emptied… and refilled.', coop: 'Co-op', coopSoon: 'Up to 5 players, a room with a password',
       settings: 'Settings', quit: 'Quit', back: 'Back', resume: 'Resume', toMenu: 'Main menu',
       lang: 'Language', scares: 'Jumpscares', blood: 'Blood', flashes: 'Flashing light', sens: 'Mouse sensitivity', volume: 'Volume', quality: 'Graphics', low: 'Low', medium: 'Medium', high: 'High', on: 'On', off: 'Off',
       clickToPlay: 'Click to play', left: 'dolls left', perSec: '/s', holdDig: 'Hold left mouse — pull dolls', tryDoor: 'E — try the door', doorLocked: 'Locked. Three locks. The bone key is somewhere deep in the pile.', openDoor: 'E — unlock the door',
@@ -15,10 +15,10 @@
       died: 'MOTHER FOUND YOU', diedText: 'You wake up by the door. Some of your finds are gone.', lost: 'Lost', getUp: 'Get up',
       keyFound: 'THE KEY', keyText: 'Cold. Heavy. It was in a doll\'s mouth. The door is behind you.', chained: 'The chain holds her back… for now.',
       whisper: 'The key is somewhere between doll {a} and {b}', away: 'While you were away the marionettes kept pulling', noPointer: 'Hold the right mouse button to look around',
-      statsDug: 'Dolls pulled', statsKills: 'Times she got you', statsTime: 'Time in the attic', statsKeys: 'Wrong keys found', again: 'Climb the stairs', keys: 'Keys', burned: 'Burned out. It left something behind', grabbed: 'It pulled your hand into the pile', escaped: 'You pulled away in time', music: 'The music box plays. She stands still and listens.', musicWait: 'The music box needs to rewind', chased: 'You drove it off. It dropped something', lever: 'E / click — pull the lever (save)', saved: 'Saved. Every bulb flares: she is blinded for a while', savedWait: 'Saved. The bulbs need {s} s to cool before they can blind her again', hit: 'She touched you. Health and strength drain away', noEnergy: 'No strength left to dig. Pull the lever by the door to recover', diedCp: 'You wake up at the lever. Everything since your last save is gone.', noticed: 'She has seen you', noTorch: 'You have no flashlight. Find buttons in the pile and buy it in the notebook [Tab].', firstHint: 'Dig by the candle. Buy a flashlight for 45 buttons [Tab]. Digging takes strength; the lever by the door saves, heals and blinds her. Keep away from her.', didntTurn: 'You did not turn around. The breathing stopped. Something fell at your feet', stayedDown: 'You did not look up. It crawled away and dropped something',
+      statsDug: 'Dolls pulled', statsKills: 'Times she got you', statsTime: 'Time in the attic', statsKeys: 'Wrong keys found', again: 'Climb the stairs', keys: 'Keys', burned: 'Burned out. It left something behind', grabbed: 'It pulled your hand into the pile', escaped: 'You pulled away in time', music: 'The music box plays. She stands still and listens.', musicWait: 'The music box needs to rewind', chased: 'You drove it off. It dropped something', lever: 'E / click — pull the lever (save)', coopTitle: 'Co-op', coopIntro: 'Up to 5 players in one attic. The host\'s attic is used and only the host\'s game is saved. Everyone digs into the same pile; keep your flashlights on her while the others dig.', nick: 'Your name', roomName: 'Room name', roomPass: 'Room password', create: 'Create room', joinRoom: 'Join room', connecting: 'Connecting…', errExists: 'A room with this name and password already exists. Choose another name.', errNotFound: 'Room not found, or the password is wrong.', errFull: 'The room is full (5 players).', errNetwork: 'Could not reach the co-op server. Check the internet connection.', errOffline: 'Co-op is not available here (no network library).', errFill: 'Enter a name, a room name and a password.', joined: '{n} came into the attic', leftRoom: '{n} left the attic', hostLeft: 'The host left. You are back in your own attic.', inRoom: 'Room', leaveRoom: 'Leave room', diedCoop: 'You wake up at the lever. The team lost some of its finds.', fellNamed: 'She got {n}', hostNote: 'Keep this window open: your game runs the attic for everyone.', saved: 'Saved. Every bulb flares: she is blinded for a while', savedWait: 'Saved. The bulbs need {s} s to cool before they can blind her again', hit: 'She touched you. Health and strength drain away', noEnergy: 'No strength left to dig. Pull the lever by the door to recover', diedCp: 'You wake up at the lever. Everything since your last save is gone.', noticed: 'She has seen you', noTorch: 'You have no flashlight. Find buttons in the pile and buy it in the notebook [Tab].', firstHint: 'Dig by the candle. Buy a flashlight for 45 buttons [Tab]. Digging takes strength; the lever by the door saves, heals and blinds her. Keep away from her.', didntTurn: 'You did not turn around. The breathing stopped. Something fell at your feet', stayedDown: 'You did not look up. It crawled away and dropped something',
       controls: 'WASD — walk · Shift — run · Mouse — look · LMB — pull dolls · E — lever / door · F — flashlight · M — music box · Tab — notebook · Esc — pause' },
     ru: { title: 'Миллион кукол', tagline: 'у одной из них ключ', warnTitle: 'Предупреждение', iUnderstand: 'Я понимаю, продолжить',
-      cont: 'Продолжить', newGame: 'Новая игра', newSure: 'Нажми ещё раз: чердак опустеет… и снова наполнится.', coop: 'Кооператив', coopSoon: 'Появится с выходом в Steam: 2–4 игрока, один держит Маму взглядом, остальные копают.',
+      cont: 'Продолжить', newGame: 'Новая игра', newSure: 'Нажми ещё раз: чердак опустеет… и снова наполнится.', coop: 'Кооператив', coopSoon: 'До 5 игроков, комната с паролем', coopSoonOld: 'Появится с выходом в Steam: 2–4 игрока, один держит Маму взглядом, остальные копают.',
       settings: 'Настройки', quit: 'Выйти', back: 'Назад', resume: 'Продолжить', toMenu: 'Главное меню',
       lang: 'Язык', scares: 'Скримеры', blood: 'Кровь', flashes: 'Вспышки', sens: 'Чувствительность мыши', volume: 'Громкость', quality: 'Графика', low: 'Низкая', medium: 'Средняя', high: 'Высокая', on: 'Вкл', off: 'Выкл',
       clickToPlay: 'Кликни, чтобы играть', left: 'кукол осталось', perSec: '/с', holdDig: 'Держи левую кнопку — вытаскивать кукол', tryDoor: 'E — дёрнуть дверь', doorLocked: 'Заперто. Три замка. Костяной ключ где-то глубоко в куче.', openDoor: 'E — отпереть дверь',
@@ -26,7 +26,7 @@
       died: 'МАМА НАШЛА ТЕБЯ', diedText: 'Ты приходишь в себя у двери. Часть находок пропала.', lost: 'Потеряно', getUp: 'Встать',
       keyFound: 'КЛЮЧ', keyText: 'Холодный. Тяжёлый. Он был у куклы во рту. Дверь у тебя за спиной.', chained: 'Цепь её удержала… пока что.',
       whisper: 'Ключ где-то между {a}-й и {b}-й куклой', away: 'Пока тебя не было, марионетки продолжали тянуть', noPointer: 'Зажми правую кнопку мыши, чтобы осматриваться',
-      statsDug: 'Вытащено кукол', statsKills: 'Сколько раз она тебя поймала', statsTime: 'Времени на чердаке', statsKeys: 'Найдено чужих ключей', again: 'Подняться по лестнице', keys: 'Ключи', burned: 'Глаза выжжены. Кукла что-то оставила', grabbed: 'Рука затянула тебя в кучу', escaped: 'Ты успел отдёрнуть руку', music: 'Играет шкатулка. Она замерла и слушает.', musicWait: 'Шкатулку нужно завести', chased: 'Ты его спугнул. Оно что-то уронило', lever: 'E / клик — дёрнуть рычаг (сохранение)', saved: 'Сохранено. Все лампы вспыхнули: она ослеплена на время', savedWait: 'Сохранено. Лампам нужно {s} с, чтобы снова ослепить её', hit: 'Она коснулась тебя. Уходят здоровье и силы', noEnergy: 'Нет сил копать. Дёрни рычаг у двери, чтобы восстановиться', diedCp: 'Ты приходишь в себя у рычага. Всё, что было после сохранения, пропало.', noticed: 'Она тебя увидела', noTorch: 'У тебя нет фонарика. Собери пуговицы в куче и купи его в блокноте [Tab].', firstHint: 'Копай у свечи. Фонарик — 45 пуговиц [Tab]. Копание тратит силы; рычаг у двери сохраняет, лечит и ослепляет её. Не подходи к ней.', didntTurn: 'Ты не обернулся. Дыхание стихло. У твоих ног что-то упало', stayedDown: 'Ты не поднял голову. Оно уползло и что-то уронило',
+      statsDug: 'Вытащено кукол', statsKills: 'Сколько раз она тебя поймала', statsTime: 'Времени на чердаке', statsKeys: 'Найдено чужих ключей', again: 'Подняться по лестнице', keys: 'Ключи', burned: 'Глаза выжжены. Кукла что-то оставила', grabbed: 'Рука затянула тебя в кучу', escaped: 'Ты успел отдёрнуть руку', music: 'Играет шкатулка. Она замерла и слушает.', musicWait: 'Шкатулку нужно завести', chased: 'Ты его спугнул. Оно что-то уронило', lever: 'E / клик — дёрнуть рычаг (сохранение)', coopTitle: 'Кооператив', coopIntro: 'До 5 игроков на одном чердаке. Используется чердак хозяина комнаты, и сохраняется только его игра. Все копают одну кучу; держите на ней фонарики, пока остальные копают.', nick: 'Твоё имя', roomName: 'Название комнаты', roomPass: 'Пароль комнаты', create: 'Создать комнату', joinRoom: 'Войти в комнату', connecting: 'Подключение…', errExists: 'Комната с таким названием и паролем уже есть. Выбери другое название.', errNotFound: 'Комната не найдена или пароль неверный.', errFull: 'Комната заполнена (5 игроков).', errNetwork: 'Не удалось связаться с сервером кооператива. Проверь интернет.', errOffline: 'Кооператив здесь недоступен (нет сетевой библиотеки).', errFill: 'Введи имя, название комнаты и пароль.', joined: '{n} поднимается на чердак', leftRoom: '{n} ушёл с чердака', hostLeft: 'Хозяин комнаты вышел. Ты снова на своём чердаке.', inRoom: 'Комната', leaveRoom: 'Выйти из комнаты', diedCoop: 'Ты приходишь в себя у рычага. Команда потеряла часть находок.', fellNamed: 'Она схватила игрока {n}', hostNote: 'Не закрывай это окно: твоя игра ведёт чердак для всех.', saved: 'Сохранено. Все лампы вспыхнули: она ослеплена на время', savedWait: 'Сохранено. Лампам нужно {s} с, чтобы снова ослепить её', hit: 'Она коснулась тебя. Уходят здоровье и силы', noEnergy: 'Нет сил копать. Дёрни рычаг у двери, чтобы восстановиться', diedCp: 'Ты приходишь в себя у рычага. Всё, что было после сохранения, пропало.', noticed: 'Она тебя увидела', noTorch: 'У тебя нет фонарика. Собери пуговицы в куче и купи его в блокноте [Tab].', firstHint: 'Копай у свечи. Фонарик — 45 пуговиц [Tab]. Копание тратит силы; рычаг у двери сохраняет, лечит и ослепляет её. Не подходи к ней.', didntTurn: 'Ты не обернулся. Дыхание стихло. У твоих ног что-то упало', stayedDown: 'Ты не поднял голову. Оно уползло и что-то уронило',
       controls: 'WASD — идти · Shift — бежать · Мышь — смотреть · ЛКМ — тянуть кукол · E — рычаг / дверь · F — фонарик · M — шкатулка · Tab — блокнот · Esc — пауза' }
   };
 
@@ -41,7 +41,7 @@
   { const st = setStore.get(); if (st) world.settings = Object.assign(world.settings, st); }
   // the attic is saved only at the lever (a checkpoint); settings are saved on their own whenever they change
   const saveSettings = () => setStore.set(world.settings);
-  const checkpoint = () => { world.last = Date.now(); player.x = S.LEVER.x; player.z = S.LEVER.z - 1.2; store.set({ world, player }); saveSettings(); };
+  const checkpoint = () => { if (Net.mode === 'client') return; world.last = Date.now(); player.x = S.LEVER.x; player.z = S.LEVER.z - 1.2; store.set({ world, player }); saveSettings(); };
   const save = saveSettings;
   function loadCheckpoint() {
     const cp = store.get(), st = world.settings; if (!cp) { fresh(st); return; }
@@ -74,7 +74,7 @@
       <div class="menu">
         ${started ? `<button class="mbtn" data-a="play">${tr('cont')}<small>${big(S.remaining(world))} ${tr('left')}</small></button>` : ''}
         <button class="mbtn" data-a="new">${armed ? tr('newSure') : tr('newGame')}</button>
-        <button class="mbtn" disabled>${tr('coop')}<small>${tr('coopSoon')}</small></button>
+        <button class="mbtn" data-a="coop">${tr('coop')}<small>${tr('coopSoon')}</small></button>
         <button class="mbtn" data-a="settings">${tr('settings')}</button>
         <button class="mbtn" data-a="quit">${tr('quit')}</button>
       </div><p class="note">${tr('controls')}</p></div>`);
@@ -97,10 +97,43 @@
     $('sens').oninput = e => { st.sens = +e.target.value; save(); };
     $('vol').oninput = e => { st.volume = +e.target.value; A.setVolume(st.volume); save(); };
   }
+  function coopScreen(status) {
+    mode = 'coop'; const st = world.settings;
+    show(`<div class="panel coop"><h2 class="title" style="font-size:48px">${tr('coopTitle')}</h2><p class="note">${tr('coopIntro')}</p>
+      <div class="set">
+        <label for="cNick">${tr('nick')}</label><input id="cNick" maxlength="16" value="${esc(st.nick || '')}">
+        <label for="cRoom">${tr('roomName')}</label><input id="cRoom" maxlength="32" value="${esc(st.room || '')}">
+        <label for="cPass">${tr('roomPass')}</label><input id="cPass" type="password" maxlength="32">
+      </div>
+      <div class="menu row"><button class="mbtn" data-a="host">${tr('create')}</button><button class="mbtn" data-a="join">${tr('joinRoom')}</button></div>
+      <p class="note err" id="cStatus">${status ? esc(status) : ''}</p>
+      <button class="mbtn back" data-a="menu">${tr('back')}</button></div>`);
+  }
+  function coopGo(kind) {
+    const nick = $('cNick').value.trim(), room = $('cRoom').value.trim(), pass = $('cPass').value;
+    if (!nick || !room || !pass) { $('cStatus').textContent = tr('errFill'); return; }
+    world.settings.nick = nick; world.settings.room = room; saveSettings(); $('cStatus').textContent = tr('connecting');
+    const err = e => ({ exists: tr('errExists'), notfound: tr('errNotFound'), full: tr('errFull'), offline: tr('errOffline') }[e] || tr('errNetwork'));
+    if (kind === 'host') Net.host(room, pass, nick, e => {
+      if (e) return mode === 'coop' && coopScreen(err(e));
+      player.id = 'h'; remote = {}; toast(tr('hostNote')); startPlay();
+    });
+    else Net.join(room, pass, nick, (e, m) => {
+      if (e) return mode === 'coop' && coopScreen(err(e));
+      const st = world.settings; world = Object.assign(S.newWorld(m.w.seed), m.w); world.settings = st;
+      player = S.newPlayer(m.id); player.x = S.LEVER.x + 1; player.z = S.LEVER.z - 1.5; player.yaw = 0.3; remote = {}; others = [];
+      V.scare.reset && V.scare.reset(); startPlay();
+    });
+  }
+  function leaveRoom() {
+    const was = Net.leave(); remote = {}; others = []; V.others([]);
+    if (was === 'client') loadCheckpoint();
+    player.id = 'p1';
+  }
   function pauseScreen() {
     mode = 'pause'; document.exitPointerLock && document.exitPointerLock();
     show(`<div class="panel"><h2 class="title" style="font-size:56px">${tr('title')}</h2><div class="menu">
-      <button class="mbtn" data-a="play">${tr('resume')}</button><button class="mbtn" data-a="settingsP">${tr('settings')}</button><button class="mbtn" data-a="menu">${tr('toMenu')}</button></div>
+      <button class="mbtn" data-a="play">${tr('resume')}</button><button class="mbtn" data-a="settingsP">${tr('settings')}</button>${Net.mode !== 'solo' ? `<button class="mbtn" data-a="leaveRoom">${tr('leaveRoom')}<small>${tr('inRoom')}: ${esc(Net.room)}</small></button>` : ''}<button class="mbtn" data-a="menu">${tr('toMenu')}</button></div>
       <p class="note">${tr('controls')}</p></div>`);
   }
   let bookTab = 'tree';
@@ -129,8 +162,9 @@
   }
   function deathScreen(lost) {
     mode = 'dead'; document.exitPointerLock && document.exitPointerLock();
-    show(`<div class="panel death"><h2>${tr('died')}</h2><p>${tr('diedCp')}</p>
-      <button class="mbtn" data-a="respawn">${tr('getUp')}</button></div>`);
+    const coop = Net.mode !== 'solo';
+    show(`<div class="panel death"><h2>${tr('died')}</h2><p>${coop ? tr('diedCoop') : tr('diedCp')}</p>
+      <button class="mbtn" data-a="${coop ? 'play' : 'respawn'}">${tr('getUp')}</button></div>`);
   }
   function endingScreen(i) {
     mode = 'ending'; document.exitPointerLock && document.exitPointerLock();
@@ -142,7 +176,7 @@
     A.unlock();
     const b = e.target.closest('[data-a],[data-set],[data-tab],[data-node]'); if (!b) return;
     if (b.dataset.tab) { bookTab = b.dataset.tab; return bookScreen(); }
-    if (b.dataset.node) { if (S.buy(world, b.dataset.node)) { A.find(true); save(); } else A.door(false); return bookScreen(); }
+    if (b.dataset.node) { if (Net.mode === 'client') { Net.send({ t: 'buy', id: b.dataset.node }); A.find(false); setTimeout(() => mode === 'book' && bookScreen(), 300); return; } if (S.buy(world, b.dataset.node)) { A.find(true); save(); } else A.door(false); return bookScreen(); }
     if (b.dataset.set) {
       const k = b.dataset.set, raw = b.dataset.v, v = raw === 'true' ? true : raw === 'false' ? false : raw;
       world.settings[k] = v; if (k === 'quality') V.setQuality(v); V.setSettings(world.settings); save(); return settingsScreen(settingsFrom);
@@ -152,10 +186,13 @@
     if (a === 'play') return startPlay();
     if (a === 'respawn') { loadCheckpoint(); player.stun = 2; return startPlay(); }
     if (a === 'new') { if (!newArmed) return menuScreen(true); const st = world.settings; fresh(st); store.set({ world, player }); return startPlay(); }
+    if (a === 'coop') return coopScreen();
+    if (a === 'host' || a === 'join') return coopGo(a);
+    if (a === 'leaveRoom') { leaveRoom(); return menuScreen(); }
     if (a === 'settings') return settingsScreen('menu');
     if (a === 'settingsP') return settingsScreen('pause');
     if (a === 'back') return settingsFrom === 'pause' ? pauseScreen() : menuScreen();
-    if (a === 'menu') return menuScreen();
+    if (a === 'menu') { if (Net.mode !== 'solo') leaveRoom(); return menuScreen(); }
     if (a === 'quit') { save(); window.close(); return; }
     if (a === 'endNext') return endingScreen(+b.dataset.i);
     if (a === 'again') { const st = world.settings; fresh(st); store.set({ world, player }); return startPlay(); }
@@ -183,7 +220,7 @@
     if (e.code === 'Escape' && mode === 'book') return startPlay();
     if (mode !== 'play') return;
     if (e.code === 'KeyF') { if (!S.stats(world).torch) { toast(tr('noTorch')); return; } if (player.battery > 0.02) player.light = !player.light; A.dig(); }
-    if (e.code === 'KeyM' && S.stats(world).music) { if (S.playMusic(world)) { toast(tr('music')); A.lullaby(); } else toast(tr('musicWait')); }
+    if (e.code === 'KeyM' && S.stats(world).music) { if (Net.mode === 'client') Net.send({ t: 'music' }); else if (S.playMusic(world)) { toast(tr('music')); A.lullaby(); Net.mode === 'host' && Net.broadcast({ t: 'ev', ev: [{ music: true }] }); } else toast(tr('musicWait')); }
     if (e.code === 'KeyE' && sense && sense.target === 'door') tryDoor();
     if (e.code === 'KeyE' && sense && sense.target === 'lever') pull();
   });
@@ -191,11 +228,19 @@
   window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseDown = false; });
 
   function pull() {
-    const r = S.pullLever(world, player); V.scare.flood(r.stunned ? 1.3 : 0.25); A.door(false); A.thud();
+    if (Net.mode === 'client') { Net.send({ t: 'lever' }); return; }
+    leverBy(player);
+  }
+  function leverBy(p) {
+    const r = S.pullLever(world, p);
+    if (Net.mode === 'host') Net.broadcast({ t: 'ev', ev: [{ flood: r.stunned, by: p.id, wait: r.wait || 0 }] });
+    if (p !== player) { V.scare.flood(r.stunned ? 1.3 : 0.25); A.thud(); if (r.stunned) setTimeout(() => A.hiss(0, 0.25), 250); checkpoint(); return; } V.scare.flood(r.stunned ? 1.3 : 0.25); A.door(false); A.thud();
     if (r.stunned) { setTimeout(() => { A.hiss(0, 0.25); A.moan(0, 0.12); }, 250); toast(tr('saved')); } else toast(tr('savedWait', { s: r.wait }));
     endScare(); checkpoint();
   }
   function tryDoor() {
+    if (Net.mode === 'client') { Net.send({ t: 'door' }); if (world.keys < 3) { A.door(false); toast(tr('doorLocked')); } return; }
+    if (world.keys >= 3 && Net.mode === 'host') Net.broadcast({ t: 'ev', ev: [{ escaped: true }] });
     if (world.keys >= 3) { A.door(true); world.escaped = true; checkpoint(); endingScreen(0); }
     else { A.door(false); toast(tr('doorLocked')); }
   }
@@ -213,6 +258,8 @@
     $('hpFill').style.width = Math.round(player.hp * 100) + '%'; $('enFill').style.width = Math.round(player.energy * 100) + '%'; $('vitals').classList.toggle('low', player.hp < 0.35);
     const h = !sense ? '' : sense.target === 'lever' ? tr('lever') : sense.target === 'pile' ? (player.energy <= 0.01 ? tr('noEnergy') : tr('holdDig')) : sense.target === 'door' ? (world.keys >= 3 ? tr('openDoor') : tr('tryDoor')) : '';
     $('hint').textContent = h;
+    const party = $('party'); party.hidden = Net.mode === 'solo';
+    if (!party.hidden) { const ps = Net.mode === 'host' ? [player].concat(Object.values(remote)) : [player].concat(others); party.innerHTML = `<b>${esc(Net.room)}</b>` + ps.map(p => `<div><span>${esc(nickOf(p.id))}${p.id === player.id ? ' ◂' : ''}</span><i><b style="width:${Math.round((p.hp == null ? 1 : p.hp) * 100)}%"></b></i></div>`).join(''); }
     const kh = S.keyHint(world); $('whisper').hidden = !kh; if (kh) $('whisper').textContent = tr('whisper', { a: big(kh.from), b: big(kh.to) });
   }
 
@@ -235,7 +282,7 @@
     const d = S.depth(world), pileDist = Math.hypot(player.x - S.PILE_POS.x, player.z - S.PILE_POS.z);
     const pool = [['eyes', 3], ['drip', world.settings.blood ? 2 : 0], ['fall', 1.5], ['child', 1.5], ['writing', 1.5], ['look', pileDist < 13 ? 2 : 0],
       ['crawler', d > 0.02 ? 2.5 : 0], ['blackout', d > 0.04 ? 1.5 : 0], ['hand', player.digging && d > 0.05 ? 3 : 0],
-      ['behind', world.time > 60 ? 2.5 : 0], ['above', world.time > 90 ? 2 : 0], ['knock', 2]];
+      ['behind', world.time > 60 && Net.mode === 'solo' ? 2.5 : 0], ['above', world.time > 90 && Net.mode === 'solo' ? 2 : 0], ['knock', 2]];
     let sum = pool.reduce((a, p) => a + p[1], 0), x = Math.random() * sum;
     for (const [k, w] of pool) { x -= w; if (x <= 0) return k; } return 'eyes';
   }
@@ -301,6 +348,98 @@
     }
   }
 
+  // ---------- simulation: solo / host runs it, client mirrors the host ----------
+  let remote = {}, others = [], netT = 0, snap = null, evQueue = [];
+  const nickOf = id => (Net.players[id] && Net.players[id].nick) || (id === player.id ? (world.settings.nick || 'you') : '?');
+  const panTo = () => Math.max(-1, Math.min(1, -Math.sin(sense.bellDir)));
+  function showPulled(n, loot) {
+    if (n > 0) { visT += Math.min(n, 6); while (visT >= 1) { V.launchDoll(); visT--; } if (player.digging) { A.dig(); if (Math.random() < 0.15) A.rip(); } }
+    if (player.digging && n > 0 && loot) { const k = Object.keys(loot).filter(id => loot[id] > 0); if (k.length && Math.random() < 0.35) { const id = k[Math.floor(Math.random() * k.length)]; floater(`+${short(loot[id])} ${L(LOOT[id].name)}`); } }
+  }
+  function showFinds(notes, ks) {
+    (notes || []).forEach(i => { toast(L(D.NOTES[i])); A.whisper(0); });
+    (ks || []).forEach(k => { const K = D.KEYS[k]; toast(`${L(K.name)}. ${L(K.text)}`); A.find(true); A.sting(); setTimeout(() => A.creak(0, 0.2), 1500); });
+  }
+  function coopFall(p) {   // co-op death: no rollback, the team loses 15% of what it holds, the player wakes at the lever
+    for (const k in world.cur) world.cur[k] *= 0.85;
+    p.hp = 1; p.energy = 1; p.stun = 3; p.x = S.LEVER.x + 1; p.z = S.LEVER.z - 1.5;
+  }
+  function handleEvents(list) {
+    const me = player.id;
+    list.forEach(ev => {
+      if (ev.chained === me) { toast(tr('chained')); A.bell(0); }
+      if (ev.lunge === me) { const pan = panTo(); A.crawl(pan, 0.25); A.moan(pan, 0.12); setTimeout(() => A.crawl(pan * 0.5, 0.3), 250); setTimeout(() => A.crawl(0, 0.35), 550); }
+      if (ev.lungeHold === me) { A.hiss(0, 0.35); A.breath(0, 0.12); if (scared()) A.sting(); daze(0.8); }
+      if (ev.lungeBack === me) { const pan = panTo(); A.crawl(pan, 0.2); setTimeout(() => A.crawl(pan, 0.12), 300); setTimeout(() => A.giggle(pan), 700); }
+      if (ev.noticed === me) { toast(tr('noticed')); A.screech(panTo()); }
+      if (ev.hit === me) { toast(tr('hit')); if (world.settings.blood) { V.addBlood(player.x, player.z, 0.6); V.scare.bloodLens(); } endScare(); nonFatal('mother', 1.2); }
+      if (ev.kill) {
+        if (Net.mode === 'host' && ev.kill !== me && remote[ev.kill]) { coopFall(remote[ev.kill]); A.moan(panTo(), 0.15); toast(tr('fellNamed', { n: nickOf(ev.kill) })); }
+        if (ev.kill === me) {
+          if (Net.mode === 'host') coopFall(player);
+          if (Net.mode === 'client') { player.stun = 3; player.x = S.LEVER.x + 1; player.z = S.LEVER.z - 1.5; }
+          if (world.settings.scares) A.scream(); else A.sting();
+          mode = 'dying'; document.exitPointerLock && document.exitPointerLock();
+          endScare(); V.jumpscare(world.settings.scares, () => deathScreen(), 'mother', true);
+        } else if (Net.mode === 'client') toast(tr('fellNamed', { n: nickOf(ev.kill) }));
+      }
+      if (ev.flood != null && Net.mode === 'client') { V.scare.flood(ev.flood ? 1.3 : 0.25); A.thud(); if (ev.flood) setTimeout(() => A.hiss(0, 0.25), 250); if (ev.by === me) toast(ev.flood ? tr('saved') : tr('savedWait', { s: ev.wait })); }
+      if (ev.music && Net.mode === 'client') { toast(tr('music')); A.lullaby(); }
+      if (ev.escaped && Net.mode === 'client') { A.door(true); endingScreen(0); }
+    });
+  }
+  function hostStep(dt) {
+    const ps = [player].concat(Object.values(remote));
+    const out = S.step(world, ps, dt, { inBeam: ps.map(p => p === player ? sense.inBeam : !!p.inBeam), litAtWatcher: sense.litAtWatcher });
+    showPulled(player.digging ? out.pulled : Math.min(out.pulled, 1), out.loot);
+    showFinds(out.notes, out.keys);
+    handleEvents(out.events);
+    if (Net.mode === 'host') {
+      if (out.events.length || out.notes.length || out.keys.length) Net.broadcast({ t: 'ev', ev: out.events, notes: out.notes, keys: out.keys });
+      netT += dt; if (netT > 0.1) { netT = 0; Net.broadcast(snapshot()); }
+      V.others(Object.values(remote).map(p => Object.assign({ nick: nickOf(p.id) }, p)));
+    }
+    return out;
+  }
+  function worldNet() { const o = Object.assign({}, world); delete o.settings; return o; }
+  function snapshot() { return { t: 'w', w: worldNet(), ps: [player].concat(Object.values(remote)).map(p => ({ id: p.id, x: p.x, z: p.z, yaw: p.yaw, pitch: p.pitch, light: p.light, digging: p.digging, hp: p.hp, energy: p.energy })) }; }
+  function clientStep(dt) {
+    S.battery(world, player, dt);
+    netT += dt; if (netT > 0.066) { netT = 0; Net.send({ t: 'p', x: player.x, z: player.z, yaw: player.yaw, pitch: player.pitch, light: player.light, battery: player.battery, digging: player.digging, inBeam: !!sense.inBeam }); }
+    let pulled = 0, loot = null;
+    if (snap) {
+      const before = world.removed, tot = Object.assign({}, world.total);
+      Object.assign(world, snap.w); pulled = world.removed - before; loot = {}; for (const k in world.total) loot[k] = world.total[k] - (tot[k] || 0);
+      const me = snap.ps.find(p => p.id === player.id); if (me) { player.hp = me.hp; player.energy = me.energy; }
+      others = snap.ps.filter(p => p.id !== player.id); V.others(others.map(p => Object.assign({ nick: nickOf(p.id) }, p)));
+      snap = null;
+    }
+    showPulled(pulled, loot);
+    const evs = evQueue; evQueue = [];
+    evs.forEach(m => { showFinds(m.notes, m.keys); handleEvents(m.ev || []); });
+    return {};
+  }
+  // network messages
+  Net.on('join', (id, nick, c) => {
+    const p = S.newPlayer(id); p.x = S.LEVER.x + 1; p.z = S.LEVER.z - 1.5; remote[id] = p;
+    c.send({ t: 'welcome', id, players: Net.players, w: worldNet() });
+    toast(tr('joined', { n: nick })); A.door(true);
+  });
+  Net.on('leave', (id, nick) => { delete remote[id]; toast(tr('leftRoom', { n: nick || '?' })); });
+  Net.on('players', () => { if (Net.mode === 'host') Net.broadcast({ t: 'players', players: Net.players }); });
+  Net.on('lost', () => { if (mode === 'play' || mode === 'pause' || mode === 'book' || mode === 'dead' || mode === 'dying') { leaveRoom(); toast(tr('hostLeft')); menuScreen(); } else leaveRoom(); });
+  Net.on('msg', (id, m) => {
+    if (Net.mode === 'client') { if (m.t === 'w') snap = m; else if (m.t === 'ev') evQueue.push(m); return; }
+    const p = remote[id]; if (!p) return;
+    if (m.t === 'p') { p.x = +m.x || 0; p.z = +m.z || 0; p.yaw = +m.yaw || 0; p.pitch = +m.pitch || 0; p.light = !!m.light; p.battery = Math.max(0, Math.min(1, +m.battery || 0)); p.digging = !!m.digging && p.energy > 0.01; p.inBeam = !!m.inBeam; }
+    else if (m.t === 'buy') { if (S.buy(world, String(m.id))) A.find(false); }
+    else if (m.t === 'lever') leverBy(p);
+    else if (m.t === 'music') { if (S.playMusic(world)) { toast(tr('music')); A.lullaby(); Net.broadcast({ t: 'ev', ev: [{ music: true }] }); } }
+    else if (m.t === 'door') { if (world.keys >= 3) tryDoor(); }
+  });
+  // a host whose window is hidden keeps the attic running (browsers stop drawing hidden tabs)
+  setInterval(() => { if (document.hidden && Net.mode === 'host') { const ps = [player].concat(Object.values(remote)); ps.forEach(p => { if (p === player) p.digging = false; }); const out = S.step(world, ps, 0.25, { inBeam: ps.map(p => !!p.inBeam), litAtWatcher: false }); Net.broadcast({ t: 'ev', ev: out.events, notes: out.notes, keys: out.keys }); out.events.forEach(ev => { if (ev.kill && remote[ev.kill]) coopFall(remote[ev.kill]); }); Net.broadcast(snapshot()); } }, 250);
+
   // ---------- loop ----------
   let warnedEnergy = false, last = performance.now(), saveT = 0, sense = null, bellT = 0, stepT = 0, visT = 0, prevMoving = false;
   function frame(now) {
@@ -321,25 +460,10 @@
     } else player.digging = false;
     // render + sense, then simulate
     sense = V.update(world, player, t, dt);
-    const paused = mode === 'menu' || mode === 'warn' || mode === 'settings' && settingsFrom === 'menu' || mode === 'ending';
+    const paused = mode === 'menu' || mode === 'coop' || mode === 'warn' || mode === 'settings' && settingsFrom === 'menu' || mode === 'ending';
     if (!paused) {
-      const out = S.step(world, [player], dt, { inBeam: [sense.inBeam], litAtWatcher: sense.litAtWatcher });
-      // visuals for pulled dolls
-      if (out.pulled) { visT += Math.min(out.pulled, 6); while (visT >= 1) { V.launchDoll(); visT--; } if (player.digging) { A.dig(); if (Math.random() < 0.15) A.rip(); } }
-      if (player.digging && out.pulled) { const k = Object.keys(out.loot); if (k.length && Math.random() < 0.35) { const id = k[Math.floor(Math.random() * k.length)]; floater(`+${short(out.loot[id])} ${L(LOOT[id].name)}`); } }
-      out.notes.forEach(i => { toast(L(D.NOTES[i])); A.whisper(0); });
-      out.keys.forEach(k => { const K = D.KEYS[k]; toast(`${L(K.name)}. ${L(K.text)}`); A.find(true); A.sting(); setTimeout(() => A.creak(0, 0.2), 1500); });
+      const out = Net.mode === 'client' ? clientStep(dt) : hostStep(dt);
       director(dt, out);
-      out.events.forEach(ev => {
-        if (ev.chained) { toast(tr('chained')); A.bell(0); }
-        if (ev.noticed) { toast(tr('noticed')); A.screech(Math.max(-1, Math.min(1, -Math.sin(sense.bellDir)))); }
-        if (ev.hit) { toast(tr('hit')); if (world.settings.blood) { V.addBlood(player.x, player.z, 0.6); V.scare.bloodLens(); } endScare(); nonFatal('mother', 1.2); }
-        if (ev.kill) {
-          if (world.settings.scares) A.scream(); else A.sting();
-          mode = 'dying'; document.exitPointerLock && document.exitPointerLock();
-          endScare(); V.jumpscare(world.settings.scares, () => deathScreen(), 'mother', true);
-        }
-      });
       // Mother moving: footsteps/creaks behind you, bell if owned
       // Mother: knocks and scratching as she crawls over the roof, joints cracking, a throat full of something
       const W = world.watcher, mpan = Math.max(-1, Math.min(1, -Math.sin(sense.bellDir)));
@@ -369,5 +493,5 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') pauseScreen(); });
   if (!world.settings.warned) warnScreen(); else menuScreen();
   requestAnimationFrame(frame);
-  window.__dolls = { get world() { return world; }, get player() { return player; }, save, startPlay, bookScreen, force: k => startScare(k), endForce: () => endScare(), scareState: () => scare };
+  window.__dolls = { get world() { return world; }, get player() { return player; }, get remote() { return remote; }, get others() { return others; }, save, startPlay, bookScreen, force: k => startScare(k), endForce: () => endScare(), scareState: () => scare };
 })();
