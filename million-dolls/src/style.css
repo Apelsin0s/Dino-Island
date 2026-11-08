@@ -144,3 +144,5 @@ input[type=range] { width: 100%; accent-color: var(--blood-hi); }
 #mhp { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); text-align: center; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
 #mhp i { display: block; width: 260px; height: 6px; margin-top: 4px; background: rgba(255,255,255,.1); } #mhp i b { display: block; height: 100%; background: #c8c0b0; }
 .card .votes { color: #e0c090; font-size: 12px; }
+
+.loot-depth { margin: 0 0 10px; line-height: 1.6; }
