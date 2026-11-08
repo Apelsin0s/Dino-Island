@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://0.peerjs.com wss://0.peerjs.com ws://localhost:* http://localhost:* ws://127.0.0.1:* http://127.0.0.1:*; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'">
+<!--PAGE-START-->
+<title>Million Dolls</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="style.css">
+<!--HEAD-END-->
+</head>
+<body>
+<div id="stage">
+  <div id="hud" hidden>
+    <div id="count"><b id="countNum">1 000 000</b><small id="countSub"></small></div>
+    <div id="loot"></div>
+    <div id="vitals"><div class="v hp"><span>♥</span><i><b id="hpFill"></b></i></div><div class="v en"><span>✋</span><i><b id="enFill"></b></i></div></div>
+    <div id="battery"><span>🔦</span><i><b id="batFill"></b></i></div>
+    <div id="cross"></div>
+    <div id="hint"></div>
+    <div id="bell" hidden>🔔</div>
+    <div id="whisper" hidden></div>
+    <div id="party" hidden></div>
+    <div id="weapons"></div>
+    <div id="mhp" hidden><span></span><i><b></b></i></div>
+    <div id="typing" hidden><small></small><div class="word"></div><i><b></b></i></div>
+    <div id="toasts"></div>
+    <div id="floaters"></div>
+  </div>
+</div>
+<div id="screen" class="screen"></div>
+<script src="data.js"></script>
+<script src="sim.js"></script>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/peerjs.min.js"></script>
+<script src="net.js"></script>
+<script src="audio.js"></script>
+<script src="world3d.js"></script>
+<script src="game.js"></script>
+<!--PAGE-END-->
+</body>
+</html>
