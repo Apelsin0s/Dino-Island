@@ -1,0 +1,15 @@
+{
+  "name": "planet-digger",
+  "productName": "Planet Digger",
+  "version": "0.0.1",
+  "description": "First-person incremental digging game on a 1:1 scale planet Earth.",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "vendor": "esbuild tools/three-entry.js --bundle --format=iife --minify --legal-comments=eof --outfile=src/vendor/three.min.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.186.1"
+  }
+}

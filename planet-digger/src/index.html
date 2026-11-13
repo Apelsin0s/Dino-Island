@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--PAGE-START-->
+<title>Planet Digger</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="style.css">
+<!--HEAD-END-->
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="hud" hidden>
+  <div class="panel tl"><div id="coords"></div><div id="alt"></div><div id="core"></div></div>
+  <div class="panel tr"><div id="dug"></div><small id="leftLbl"></small><div id="left" class="mono"></div><div id="pct" class="mono dim"></div></div>
+  <div id="cross"></div>
+  <div class="slots"><button class="slot on" data-t="hands" id="slotHands"></button><button class="slot" data-t="shovel" id="slotShovel"></button></div>
+  <div id="floaters"></div>
+  <div id="clickHint" hidden></div>
+</div>
+<div id="overlay" hidden></div>
+<script src="vendor/three.min.js"></script>
+<script src="world.js"></script>
+<script src="scene.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
