@@ -1,3 +1,4 @@
+[hidden] { display: none !important; }
 :root {
   --ink: #23303d; --paper: #ffffff; --glass: rgba(255, 255, 255, 0.82); --accent: #f08a24; --accent2: #3d7fd6; --ok: #6fbf45;
   --font: "Nunito", "Varela Round", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -39,3 +40,37 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
 .keys b { background: #eef3f7; padding: 1px 6px; border-radius: 6px; color: var(--ink); }
 .bar { height: 12px; background: #eef3f7; border-radius: 6px; overflow: hidden; }
 .bar b { display: block; height: 100%; width: 0; background: var(--ok); transition: width .2s; }
+
+/* ---------- phones and tablets ---------- */
+#stick, .tbtns, .tpause, #turnHint { display: none; }
+.touch body, .touch #view { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; }
+.touch #stick:not([hidden]) { display: block; }
+.touch .tbtns { display: flex; position: absolute; right: max(18px, env(safe-area-inset-right, 0px)); bottom: max(18px, env(safe-area-inset-bottom, 0px)); gap: 14px; align-items: flex-end; pointer-events: auto; }
+.touch .tpause { display: grid; place-items: center; position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: 46px; height: 46px; border-radius: 50%; border: 0;
+  background: var(--glass); font: 900 18px var(--font); color: var(--ink); pointer-events: auto; box-shadow: 0 6px 18px rgba(30, 50, 70, .18); }
+#stick { position: absolute; width: 124px; height: 124px; margin: -62px 0 0 -62px; border-radius: 50%; background: rgba(255, 255, 255, .22); border: 3px solid rgba(255, 255, 255, .6); pointer-events: none; }
+#knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; border-radius: 50%; background: rgba(255, 255, 255, .9); box-shadow: 0 4px 12px rgba(0, 0, 0, .25); transform: translate(-50%, -50%); }
+.tbtn { width: 76px; height: 76px; border-radius: 50%; border: 0; background: var(--glass); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font: 800 11px var(--font); box-shadow: 0 6px 18px rgba(30, 50, 70, .22); touch-action: none; -webkit-tap-highlight-color: transparent; }
+.tbtn b { font-size: 26px; line-height: 1; }
+.tbtn.dig { width: 98px; height: 98px; background: var(--accent); color: #fff; }
+.tbtn.dig b { font-size: 34px; }
+.tbtn.down { transform: scale(.92); filter: brightness(.92); }
+.touch .slots { bottom: auto; top: max(66px, calc(env(safe-area-inset-top, 0px) + 66px)); gap: 6px; }
+.touch .slot { padding: 7px 12px; font-size: 13px; border-radius: 12px; }
+.touch .slot, .touch .tbtn, .touch .tpause { -webkit-tap-highlight-color: transparent; }
+@media (max-width: 900px), (max-height: 500px) {
+  .panel { font-size: 11px; padding: 6px 10px; border-radius: 12px; line-height: 1.35; }
+  .mono, #coords { font-size: 10px; }
+  .tr { max-width: 34vw; }
+  .tr small, #left, #pct { display: none; }
+  .card { padding: 18px; gap: 10px; border-radius: 20px; }
+  .card h1 { font-size: 28px; }
+  .keys { font-size: 12px; line-height: 1.6; }
+}
+@media (orientation: portrait) {
+  .touch #turnHint { display: block; position: absolute; left: 50%; top: 40%; transform: translateX(-50%); width: max-content; max-width: 80vw; text-align: center; background: rgba(35, 48, 61, .7); color: #fff;
+    padding: 8px 14px; border-radius: 14px; font-weight: 700; font-size: 13px; animation: fadeHint 6s forwards; }
+  .touch .tr { display: none; }
+}
+@keyframes fadeHint { 0%, 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }

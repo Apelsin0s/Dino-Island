@@ -21,6 +21,11 @@
     clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km'
   };
   document.documentElement.lang = RU ? 'ru' : 'en';
+  // phones and tablets: on-screen stick, drag to look, dig and jump buttons, lighter graphics
+  const TOUCH = (root.matchMedia && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in root || /[?&]touch\b/.test(location.search);
+  if (TOUCH) document.documentElement.classList.add('touch');
+  Object.assign(L, RU ? { tkeys: '<b>Левый палец</b> — идти (дальше от центра — бег) · <b>правый</b> — смотреть · <b>⛏</b> копать · <b>⤒</b> прыжок · <b>Ⅱ</b> пауза', dig: 'Копать', jumpB: 'Прыжок', turn: 'Поверни телефон боком — так удобнее' }
+    : { tkeys: '<b>Left thumb</b> walk (push further to run) · <b>right</b> look · <b>⛏</b> dig · <b>⤒</b> jump · <b>Ⅱ</b> pause', dig: 'Dig', jumpB: 'Jump', turn: 'Turn your phone sideways for a better view' });
 
   // ---------- tools ----------
   const TOOLS = {
@@ -76,10 +81,12 @@
   function step(dt) {
     frame();
     const k = keys;
-    let mx = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), mz = (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0);
-    const run = k.ShiftLeft || k.ShiftRight, sp = run ? RUN : WALK;
+    let mx = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), mz = (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), amt = 1;
+    let run = k.ShiftLeft || k.ShiftRight;
+    if (stick.id !== null) { mx = stick.x; mz = -stick.y; amt = Math.min(1, Math.hypot(mx, mz) * 1.25); run = amt >= 1 && Math.hypot(mx, mz) > 0.92; }
+    const sp = run ? RUN : WALK;
     const wish = v3(0, 0, 0).addScaledVector(pl.fwd, mz).addScaledVector(right, mx);
-    if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(sp);
+    if (wish.lengthSq() > 0.0001) wish.normalize().multiplyScalar(sp * amt);
     const vu = pl.vel.dot(up), vt = pl.vel.clone().addScaledVector(up, -vu);
     const acc = pl.grounded ? 14 : 3;
     vt.lerp(wish, Math.min(1, acc * dt));
@@ -238,6 +245,7 @@
     return v3(d[0], d[1], d[2]).multiplyScalar(W.R + h + 0.05);
   }
   function setup() {
+    if (TOUCH) S.setMobile(true);
     S.init(canvas);
     S.signText = L.sign;
     const sp = spawnPoint(); S.spawnPoint = sp;
@@ -263,6 +271,48 @@
     addEventListener('resize', () => S.resize());
   }
 
+  // ---------- touch controls ----------
+  const stick = { id: null, x: 0, y: 0, ox: 0, oy: 0 }, lookT = { id: null, x: 0, y: 0 };
+  function fullscreen() { try { const d = document.documentElement, f = d.requestFullscreen || d.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(d); if (r && r.catch) r.catch(() => {}); } } catch (e) {} }
+  function setupTouch() {
+    if (!TOUCH) return;
+    const base = $('stick'), knob = $('knob'), R = 56;
+    canvas.addEventListener('pointerdown', e => {
+      if (!playing) return; e.preventDefault();
+      if (e.clientX < innerWidth * 0.45 && stick.id === null) {
+        stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY; stick.x = stick.y = 0;
+        base.style.left = e.clientX + 'px'; base.style.top = e.clientY + 'px'; base.hidden = false; knob.style.transform = 'translate(-50%,-50%)';
+      } else if (lookT.id === null) { lookT.id = e.pointerId; lookT.x = e.clientX; lookT.y = e.clientY; }
+      try { canvas.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (e.pointerId === stick.id) {
+        let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy; const l = Math.hypot(dx, dy);
+        if (l > R) { dx *= R / l; dy *= R / l; }
+        stick.x = dx / R; stick.y = dy / R; knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+      } else if (e.pointerId === lookT.id) {
+        const s = 0.0055; turn((e.clientX - lookT.x) * s, (e.clientY - lookT.y) * s); lookT.x = e.clientX; lookT.y = e.clientY;
+      }
+    });
+    const end = e => {
+      if (e.pointerId === stick.id) { stick.id = null; stick.x = stick.y = 0; base.hidden = true; }
+      if (e.pointerId === lookT.id) lookT.id = null;
+    };
+    canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+    const hold = (el, on, off) => {
+      el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); el.classList.add('down'); on(); try { el.setPointerCapture(e.pointerId); } catch (er) {} });
+      const up = e => { el.classList.remove('down'); off(); };
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+    };
+    hold($('bDig'), () => { mouseDown = true; }, () => { mouseDown = false; });
+    hold($('bJump'), () => { keys.Space = true; }, () => { keys.Space = false; });
+    $('bPause').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); pause(true); });
+    for (const el of document.querySelectorAll('.slot')) el.addEventListener('pointerdown', e => { e.stopPropagation(); setTool(el.dataset.t); });
+    // keep the page from scrolling, zooming or selecting while playing
+    for (const ev of ['touchstart', 'touchmove', 'gesturestart']) document.addEventListener(ev, e => { if (playing && e.cancelable) e.preventDefault(); }, { passive: false });
+    $('bDig').querySelector('span').textContent = L.dig; $('bJump').querySelector('span').textContent = L.jumpB; $('turnHint').textContent = L.turn;
+  }
+
   // ---------- menus ----------
   function overlay(kind) {
     const o = $('overlay'); o.hidden = false;
@@ -273,14 +323,14 @@
           <button id="bPlay" class="big">${kind === 'pause' ? L.cont : L.play}</button>
           <div class="row"><span>${L.quality}</span><button id="qHi" class="${q === 'high' ? 'on' : ''}">${L.hi}</button><button id="qLo" class="${q === 'low' ? 'on' : ''}">${L.lo}</button></div>
           ${kind === 'pause' ? `<button id="bReset" class="ghost">${L.reset}</button>` : ''}
-          <p class="keys">${L.keys}</p></div>`;
+          <p class="keys">${TOUCH ? L.tkeys : L.keys}</p></div>`;
     if (kind === 'loading') return;
-    $('bPlay').onclick = () => { Sound.unlock(); o.hidden = true; playing = true; lock(); $('hud').hidden = false; };
+    $('bPlay').onclick = () => { Sound.unlock(); o.hidden = true; playing = true; $('hud').hidden = false; if (TOUCH) fullscreen(); else lock(); };
     $('qHi').onclick = () => { S.setQuality('high'); overlay(kind); };
     $('qLo').onclick = () => { S.setQuality('low'); overlay(kind); };
     const r = $('bReset'); if (r) r.onclick = () => { W.clearHoles(); pl.dug = 0; S.resetChunks(); S.updateDeco(pl.pos, true); pl.pos.copy(spawnPoint()); pl.vel.set(0, 0, 0); save(); overlay(kind); };
   }
-  function pause(on) { if (on) { playing = false; mouseDown = false; for (const k in keys) keys[k] = false; overlay('pause'); if (dirty) save(); } }
+  function pause(on) { if (on) { playing = false; mouseDown = false; for (const k in keys) keys[k] = false; stick.id = lookT.id = null; stick.x = stick.y = 0; const sb = $('stick'); if (sb) sb.hidden = true; overlay('pause'); if (dirty) save(); } }
 
   // ---------- loop ----------
   let last = performance.now(), t = 0, loading = true, digT = 0;
@@ -299,7 +349,7 @@
       walk = step(dt);
       // digging stroke
       const tool = TOOLS[pl.tool];
-      if (pl.dig < 0 && mouseDown && (locked || rmb)) { pl.dig = 0; pl.didHit = false; }
+      if (pl.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { pl.dig = 0; pl.didHit = false; }
       if (pl.dig >= 0) {
         const prev = pl.dig; pl.dig += dt / tool.time;
         if (prev < 0.45 && pl.dig >= 0.45 && !pl.didHit) { pl.didHit = true; const h = rayHit(tool.reach); if (h) doDig(h); }
@@ -318,11 +368,12 @@
   }
 
   root.addEventListener('load', () => {
-    $('slotHands').textContent = '1 · ' + L.hands; $('slotShovel').textContent = '2 · ' + L.shovel;
+    $('slotHands').textContent = (TOUCH ? '✋ ' : '1 · ') + L.hands; $('slotShovel').textContent = (TOUCH ? '⛏ ' : '2 · ') + L.shovel;
     $('clickHint').textContent = L.clickHint; $('leftLbl').textContent = L.left;
     document.title = L.title;
     for (const el of document.querySelectorAll('.slot')) el.onclick = () => setTool(el.dataset.t);
     setup();
+    setupTouch();
     overlay('loading');
     requestAnimationFrame(loop);
     addEventListener('beforeunload', () => { if (dirty) save(); });

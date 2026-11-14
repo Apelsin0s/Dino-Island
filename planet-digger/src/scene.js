@@ -12,6 +12,8 @@
   const up = v3(0, 1, 0), sunDir = v3(0, 1, 0), east = v3(1, 0, 0), north = v3(0, 0, 1);
   const timeU = { value: 0 };
   let quality = 'high';
+  const M = { load: 54, farIn: 44, grassR: 28, treeR: 330, samples: 4, maxDpr: 1.5 };
+  Scene.setMobile = on => { if (on) Object.assign(M, { load: 40, farIn: 32, grassR: 15, treeR: 210, samples: 0, maxDpr: 1.25 }); quality = on ? 'low' : 'high'; };
 
   // ---------- palette ----------
   const P = {
@@ -40,7 +42,7 @@
   // ---------- setup ----------
   Scene.init = function (canvas) {
     renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, 1.5));
+    renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, M.maxDpr));
     renderer.outputColorSpace = T.SRGBColorSpace;
     renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap;
@@ -102,7 +104,7 @@
   };
 
   function buildComposer() {
-    const rt = new T.WebGLRenderTarget(4, 4, { type: T.HalfFloatType, samples: 4 });
+    const rt = new T.WebGLRenderTarget(4, 4, { type: T.HalfFloatType, samples: M.samples });
     composer = new T.EffectComposer(renderer, rt);
     composer.addPass(new T.RenderPass(scene, camera));
     gtao = new T.GTAOPass(scene, camera, 4, 4);
@@ -118,7 +120,7 @@
     if (gtao) gtao.enabled = hi;
     if (bloom) bloom.enabled = true;
     if (sun) { sun.shadow.mapSize.set(hi ? 2048 : 1024, hi ? 2048 : 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
-    if (renderer) renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, hi ? 1.5 : 1));
+    if (renderer) renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, hi ? M.maxDpr : 1));
     Scene.resize();
   }
   Scene.setQuality = q => { quality = q; applyQuality(); };
@@ -144,7 +146,6 @@
   // ---------- terrain chunks ----------
   const chunks = new Map();     // key -> { cx, cy, cz, data, mesh }
   let wanted = [], lastCenter = '', buildQueue = [];
-  const LOAD_R = 54;
   function buildMesh(ch) {
     const m = W.meshChunk(ch.data);
     if (ch.mesh) { ch.mesh.geometry.dispose(); scene.remove(ch.mesh); ch.mesh = null; }
@@ -177,11 +178,11 @@
     const cx = Math.floor(p.x / W.CH), cy = Math.floor(p.y / W.CH), cz = Math.floor(p.z / W.CH), ck = cx + ',' + cy + ',' + cz;
     if (ck !== lastCenter) {
       lastCenter = ck;
-      const r = Math.ceil(LOAD_R / W.CH), want = new Set(); const list = [];
+      const r = Math.ceil(M.load / W.CH), want = new Set(); const list = [];
       for (let a = -r; a <= r; a++) for (let b = -r; b <= r; b++) for (let c = -r; c <= r; c++) {
         const X = cx + a, Y = cy + b, Z = cz + c;
         const dx = (X + 0.5) * W.CH - p.x, dy = (Y + 0.5) * W.CH - p.y, dz = (Z + 0.5) * W.CH - p.z, dist = Math.hypot(dx, dy, dz);
-        if (dist > LOAD_R + W.CH * 0.87) continue;
+        if (dist > M.load + W.CH * 0.87) continue;
         if (!W.chunkMayHaveSurface(X, Y, Z)) continue;
         const k = W.key(X, Y, Z); want.add(k);
         if (!chunks.has(k)) list.push({ k, X, Y, Z, dist });
@@ -211,7 +212,7 @@
 
   // ---------- far terrain (non-diggable ring out to the horizon) ----------
   let far = null, farAnchor = null;
-  const FAR_IN = 44, FAR_OUT = 4200, NR = 56, NA = 120;
+  const FAR_OUT = 4200, NR = 56, NA = 120;
   function buildFar(p) {
     farAnchor = p.clone();
     const u = p.clone().normalize();
@@ -219,7 +220,7 @@
     const pos = new Float32Array(NR * NA * 3), cols = new Float32Array(NR * NA * 3);
     const base = u.clone().multiplyScalar(W.R);
     for (let i = 0; i < NR; i++) {
-      const r = FAR_IN * Math.pow(FAR_OUT / FAR_IN, i / (NR - 1));
+      const r = M.farIn * Math.pow(FAR_OUT / M.farIn, i / (NR - 1));
       for (let a = 0; a < NA; a++) {
         const t = a / NA * Math.PI * 2, x = base.x + (e1.x * Math.cos(t) + e2.x * Math.sin(t)) * r, y = base.y + (e1.y * Math.cos(t) + e2.y * Math.sin(t)) * r, z = base.z + (e1.z * Math.cos(t) + e2.z * Math.sin(t)) * r;
         const l = Math.hypot(x, y, z), dx = x / l, dy = y / l, dz = z / l, h = W.heightDir(dx, dy, dz), rr = W.R + h - (i === 0 ? 0.35 : 0.15);
@@ -329,7 +330,7 @@
     },
     update(p, force) {
       if (force || !this.anchor || this.anchor.distanceTo(p) > 40) this.big(p);
-      if (force || !this.grassAnchor || this.grassAnchor.distanceTo(p) > 6) this.small(p);
+      if (force || !this.grassAnchor || this.grassAnchor.distanceTo(p) > M.grassR * 0.22) this.small(p);
     },
     alive(x, y, z) {   // ground still there under this point (not dug away)?
       const l = Math.hypot(x, y, z);
@@ -338,7 +339,7 @@
     big(p) {
       this.anchor = p.clone(); const t = this.types; t.tree.count = t.pine.count = t.bush.count = t.rock.count = 0; this.bigItems = [];
       const spawn = Scene.spawnPoint;
-      this.scatter(p, 330, 9, (X, Y, Z) => {
+      this.scatter(p, M.treeR, 9, (X, Y, Z) => {
         const r = W.hash01(X, Y, Z), jx = W.hash01(X, Y, Z + 7), jy = W.hash01(X + 3, Y, Z), jz = W.hash01(X, Y + 5, Z);
         let x = (X + jx) * 9, y = (Y + jy) * 9, z = (Z + jz) * 9; const l = Math.hypot(x, y, z);
         const forest = W.noise(x / 260, y / 260, z / 260, 77) + 0.05;
@@ -359,7 +360,7 @@
     small(p) {
       this.grassAnchor = p.clone(); const g = this.types.grass, f = this.types.flower; g.count = f.count = 0; this.smallItems = [];
       const fc = [col('#ffffff'), col('#ffd23f'), col('#ff7aa8'), col('#a98bff'), col('#ff8a3d')];
-      this.scatter(p, 28, 0.6, (X, Y, Z) => {
+      this.scatter(p, M.grassR, 0.6, (X, Y, Z) => {
         const r = W.hash01(X, Y, Z); if (r > 0.9) return;
         let x = (X + W.hash01(X, Y, Z + 7)) * 0.6, y = (Y + W.hash01(X + 3, Y, Z)) * 0.6, z = (Z + W.hash01(X, Y + 5, Z)) * 0.6;
         const l = Math.hypot(x, y, z), h = W.heightDir(x / l, y / l, z / l); if (h > 215) return;
