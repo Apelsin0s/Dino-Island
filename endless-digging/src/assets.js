@@ -520,5 +520,97 @@
     return { frame, auger, motor: merge(mp) };
   };
 
+
+  // =====================================================================================
+  // Heavy machinery (built from rounded boxes and cylinders, vertex coloured). Front is +X. Moving parts come back
+  // as separate geometries with the pivot at their origin, and the place where that pivot sits.
+  // =====================================================================================
+  function kit() {
+    const L = [];
+    const box = (w, h, d, x, y, z, c, r, rx, ry, rz) => { const g = new T.RoundedBoxGeometry(w, h, d, 2, Math.min(r === undefined ? 0.06 : r, w / 2.2, h / 2.2, d / 2.2)); if (rx) g.rotateX(rx); if (ry) g.rotateY(ry); if (rz) g.rotateZ(rz); g.translate(x, y, z); L.push(colorize(g, C(c))); };
+    const cyl = (r1, r2, h, x, y, z, c, axis, seg) => { const g = new T.CylinderGeometry(r1, r2, h, seg || 18); if (axis === 'x') g.rotateZ(PI / 2); if (axis === 'z') g.rotateX(PI / 2); g.translate(x, y, z); L.push(colorize(g, C(c))); };
+    const bar = (a, b, r, c) => { const v = new T.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), g = new T.CylinderGeometry(r, r, v.length(), 8); g.applyQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(0, 1, 0), v.clone().normalize())); g.translate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); L.push(colorize(g, C(c))); };
+    return { L, box, cyl, bar, done: () => merge(L) };
+  }
+  function tracks(k, len, w, gap, y0, c) {   // a pair of crawler tracks with rollers
+    for (const s of [-1, 1]) { k.box(len, 0.5 * w, w, 0, y0 + 0.25 * w, s * gap, c || '#2b2f36', 0.2 * w); for (let i = 0; i < 5; i++) k.cyl(0.18 * w, 0.18 * w, w * 1.04, -len * 0.38 + i * len * 0.19, y0 + 0.25 * w, s * gap, '#59616b', 'z', 12); }
+  }
+  // excavator: body colour, scale 1 = a 2.5 t mini excavator about 4 m long
+  A.excavator = function (paint) {
+    const base = kit(); tracks(base, 2.4, 0.45, 0.7, 0, '#2b2f36'); base.cyl(0.55, 0.55, 0.3, 0, 0.6, 0, '#3b4048');
+    const up = kit(); up.box(1.8, 0.7, 1.5, -0.3, 1.1, 0, paint, 0.12); up.box(0.9, 1.1, 0.8, 0.25, 1.9, 0.3, paint, 0.1);
+    up.box(0.8, 0.9, 0.04, 0.25, 1.95, 0.71, '#4d9fe8', 0.02); up.box(0.04, 0.8, 0.7, 0.71, 1.95, 0.3, '#4d9fe8', 0.02); up.box(0.5, 0.5, 1.4, -1.15, 1.05, 0, '#3b4048', 0.12);
+    up.cyl(0.05, 0.05, 0.5, -0.9, 1.7, -0.4, '#3b4048');
+    // arm: boom up and out, stick down, bucket; pivot at the front of the upper body
+    const arm = kit(); arm.box(1.9, 0.26, 0.26, 0.85, 0.55, 0, paint, 0.08, 0, 0, 0.55); arm.box(1.5, 0.22, 0.22, 2.0, 0.35, 0, paint, 0.07, 0, 0, -1.0);
+    arm.box(0.5, 0.45, 0.6, 2.4, -0.35, 0, '#59616b', 0.08); for (let i = 0; i < 4; i++) arm.box(0.06, 0.16, 0.06, 2.62, -0.62, -0.22 + i * 0.15, '#c9d2da', 0.02);
+    arm.cyl(0.05, 0.05, 1.2, 1.2, 0.95, 0.16, '#c9d2da', 'x');
+    return { base: base.done(), upper: up.done(), arm: arm.done(), armAt: [0.6, 1.2, 0] };
+  };
+  A.dumpTruck = function () {   // a mining dump truck about 9 m long
+    const k = kit(), y = '#f2c230';
+    for (const [x, s] of [[-2.6, 1], [-2.6, -1], [2.4, 1], [2.4, -1]]) { k.cyl(1.1, 1.1, 0.9, x, 1.1, s * 1.75, '#24272c', 'z', 24); k.cyl(0.55, 0.55, 0.95, x, 1.1, s * 1.75, '#cfd3d6', 'z', 16); }
+    k.box(7.5, 0.6, 2.4, 0, 1.6, 0, '#3b4048', 0.1);
+    k.box(5.6, 1.9, 3.8, -1.2, 3.0, 0, y, 0.15); k.box(5.8, 0.3, 4.0, -1.2, 4.0, 0, '#d9a91f', 0.1); k.box(0.5, 1.2, 4.2, 1.6, 3.7, 0, y, 0.12);
+    k.box(1.6, 1.5, 3.4, 2.9, 2.6, 0, y, 0.15); k.box(1.2, 1.2, 1.3, 2.9, 3.9, 1.0, y, 0.12); k.box(0.05, 0.8, 1.0, 3.52, 3.95, 1.0, '#4d9fe8', 0.02);
+    k.box(0.2, 0.9, 2.6, 3.7, 2.4, 0, '#2b2f36', 0.05);
+    const soil = new T.SphereGeometry(1, 20, 10, 0, PI * 2, 0, PI / 2); soil.scale(2.6, 0.8, 1.7); soil.translate(-1.2, 3.95, 0); k.L.push(colorize(soil, C('#8a5a33')));
+    return k.done();
+  };
+  A.bucketWheel = function () {   // a bucket-wheel excavator about 45 m long: crawler base, long boom, wheel at the end
+    const base = kit(), y = '#f2c230';
+    for (const s of [-1, 1]) base.box(14, 3, 4, 0, 1.5, s * 5, '#2b2f36', 0.8);
+    base.box(12, 3, 12, 0, 4.5, 0, '#59616b', 0.4); base.cyl(5, 5, 1.2, 0, 6.6, 0, '#3b4048', null, 32);
+    base.box(14, 6, 10, -2, 10, 0, y, 0.5); base.box(6, 4, 6, 2, 15, 0, '#e9e8e4', 0.4); base.box(0.1, 1.6, 5, 5.05, 15.4, 0, '#4d9fe8', 0.05);
+    // the boom: a lattice girder out to the wheel, and a counterweight boom behind
+    const B = [[6, 10, -1.6], [6, 10, 1.6], [6, 13, 0]], E = [[30, 18, -1.2], [30, 18, 1.2], [30, 20.5, 0]];
+    for (let i = 0; i < 3; i++) base.bar(B[i], E[i], 0.35, y);
+    for (let t = 0; t <= 1.0001; t += 0.125) { const P = i => [B[i][0] + (E[i][0] - B[i][0]) * t, B[i][1] + (E[i][1] - B[i][1]) * t, B[i][2] + (E[i][2] - B[i][2]) * t]; base.bar(P(0), P(1), 0.2, y); base.bar(P(1), P(2), 0.2, y); base.bar(P(2), P(0), 0.2, y); }
+    base.bar([-6, 12, -1.4], [-22, 12, -1.2], 0.35, y); base.bar([-6, 12, 1.4], [-22, 12, 1.2], 0.35, y); base.box(5, 4, 4, -23, 11, 0, '#59616b', 0.4);
+    base.bar([2, 17, 0], [30, 21, 0], 0.15, '#c9d2da'); base.bar([2, 17, 0], [-22, 13, 0], 0.15, '#c9d2da'); base.box(1.6, 6, 1.6, 2, 18, 0, y, 0.3);
+    const wheel = kit(), R = 6.5;
+    wheel.L.push(colorize(new T.TorusGeometry(R, 0.45, 10, 48), C(y))); wheel.L.push(colorize(new T.TorusGeometry(R * 0.35, 0.4, 8, 24), C(y)));
+    for (let i = 0; i < 12; i++) { const a = i / 12 * PI * 2; wheel.bar([0, 0, 0], [Math.cos(a) * R, Math.sin(a) * R, 0], 0.25, y); const g = new T.RoundedBoxGeometry(1.6, 1.4, 2.2, 2, 0.2); g.translate(R + 0.5, 0, 0); g.rotateZ(a); wheel.L.push(colorize(g, C('#59616b'))); }
+    return { base: base.done(), wheel: wheel.done(), wheelAt: [31.5, 19, 2.4] };
+  };
+  A.boreRig = function () {   // a truck-mounted drilling rig with a tall mast and a turning drill pipe
+    const k = kit(), o = '#f08a24';
+    for (const x of [-2.6, -1.2, 2.4]) for (const s of [-1, 1]) { k.cyl(0.55, 0.55, 0.45, x, 0.55, s * 1.05, '#24272c', 'z', 20); }
+    k.box(6.6, 0.5, 2.2, 0, 1.1, 0, '#3b4048', 0.08); k.box(1.6, 1.6, 2.3, 2.6, 2.1, 0, '#e9e8e4', 0.15); k.box(0.05, 0.7, 1.9, 3.42, 2.4, 0, '#4d9fe8', 0.02);
+    k.box(2.6, 1.3, 2.1, -0.3, 2.0, 0, o, 0.12);
+    // mast standing at the back end, 12 m
+    for (const [dz, dx] of [[-0.35, -0.35], [0.35, -0.35], [-0.35, 0.35], [0.35, 0.35]]) k.bar([-2.8 + dx, 1.3, dz], [-2.8 + dx * 0.5, 13, dz * 0.5], 0.07, o);
+    for (let y = 2; y < 13; y += 1.2) { k.bar([-3.15, y, -0.3], [-2.45, y + 0.6, 0.3], 0.04, o); k.bar([-3.15, y, 0.3], [-2.45, y + 0.6, -0.3], 0.04, o); }
+    k.box(1.2, 0.4, 1.2, -2.8, 13.1, 0, '#3b4048', 0.1); for (const s of [-1, 1]) k.box(0.3, 1.4, 0.3, -1.6, 0.7, s * 1.3, '#59616b', 0.05);
+    const pipe = kit(); pipe.cyl(0.12, 0.12, 11, 0, 5.5, 0, '#c9d2da', null, 12); for (let y = 1; y < 11; y += 1.5) pipe.box(0.4, 0.15, 0.06, 0, y, 0, '#59616b', 0.02);
+    return { body: k.done(), pipe: pipe.done(), pipeAt: [-2.8, 1.0, 0] };
+  };
+  A.derrick = function () {   // a 40 m drilling derrick with a floor, a doghouse and a travelling block
+    const k = kit(), r = '#c94f22', w = '#e9e8e4', H = 40, B = 5, Tt = 1.2;
+    k.box(14, 1.2, 14, 0, 0.6, 0, '#59616b', 0.1); k.box(10, 5, 10, 0, 3.7, 0, '#3b4048', 0.2); k.box(11, 0.4, 11, 0, 6.4, 0, w, 0.05);
+    const leg = (sx, sz) => [[sx * B, 6.6, sz * B], [sx * Tt, 6.6 + H, sz * Tt]];
+    const legs = [leg(-1, -1), leg(1, -1), leg(1, 1), leg(-1, 1)];
+    for (const l of legs) k.bar(l[0], l[1], 0.22, r);
+    for (let i = 0; i < 10; i++) {
+      const t0 = i / 10, t1 = (i + 1) / 10, P = (l, t) => [l[0][0] + (l[1][0] - l[0][0]) * t, l[0][1] + (l[1][1] - l[0][1]) * t, l[0][2] + (l[1][2] - l[0][2]) * t];
+      for (let j = 0; j < 4; j++) { const a = legs[j], b = legs[(j + 1) % 4]; k.bar(P(a, t0), P(b, t0), 0.1, i % 2 ? r : w); k.bar(P(a, t0), P(b, t1), 0.07, r); }
+    }
+    k.box(3, 1.2, 3, 0, 6.6 + H + 0.6, 0, r, 0.15); k.box(6, 3.5, 4, 9, 2.4, 0, w, 0.2); k.box(4, 3, 3, -9, 2, 3, '#f08a24', 0.2);
+    k.cyl(0.25, 0.25, H - 2, 0, 6.6 + (H - 2) / 2, 0, '#c9d2da', null, 8);
+    const block = kit(); block.box(1.2, 2.2, 0.8, 0, 0, 0, '#f2c230', 0.15); block.cyl(0.18, 0.18, 1.5, 0, -1.8, 0, '#59616b', null, 10);
+    return { tower: k.done(), block: block.done(), blockAt: [0, 6.6 + H * 0.6, 0.9], H };
+  };
+  A.headframe = function () {   // a mine headframe: a steel A-frame over the shaft, two sheave wheels, a winder house
+    const k = kit(), b = '#2f5fb3', H = 30;
+    k.box(10, 1, 10, 0, 0.5, 0, '#59616b', 0.1); k.box(6, 4, 6, 0, 3, 0, '#e9e8e4', 0.2);
+    for (const s of [-1, 1]) { k.bar([-3, 1, s * 3], [-1, H, s * 1.4], 0.4, b); k.bar([3, 1, s * 3], [1, H, s * 1.4], 0.4, b); k.bar([-3, 1, s * 3], [-12, 1, s * 3], 0.2, b); k.bar([-1, H, s * 1.4], [-14, 6, s * 2.5], 0.45, b); }
+    for (let y = 6; y < H; y += 4) for (const s of [-1, 1]) k.bar([-3 + (y / H) * 2, y, s * (3 - (y / H) * 1.6)], [3 - (y / H) * 2, y, s * (3 - (y / H) * 1.6)], 0.15, b);
+    k.box(4, 1, 4, 0, H + 0.5, 0, b, 0.15); k.box(12, 9, 9, -20, 4.5, 0, '#c4561a', 0.3); k.box(12.4, 0.6, 9.4, -20, 9.2, 0, '#59616b', 0.1);
+    for (let i = 0; i < 4; i++) k.box(0.1, 2, 1.6, -13.95, 4.5, -3 + i * 2, '#4d9fe8', 0.05);
+    k.bar([0, H, -0.8], [-14, 7, -0.8], 0.05, '#2b2b2b'); k.bar([0, H, 0.8], [-14, 7, 0.8], 0.05, '#2b2b2b');
+    const sheave = kit(); sheave.L.push(colorize(new T.TorusGeometry(2.2, 0.18, 8, 32), C('#e9e8e4'))); for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; sheave.bar([0, 0, 0], [Math.cos(a) * 2.2, Math.sin(a) * 2.2, 0], 0.08, '#e9e8e4'); } sheave.cyl(0.3, 0.3, 0.4, 0, 0, 0, '#3b4048', 'z');
+    return { frame: k.done(), sheave: sheave.done(), sheaveAt: [[0, H + 2.5, -0.8], [0, H + 2.5, 0.8]] };
+  };
+
   root.Assets = A;
 })(window);

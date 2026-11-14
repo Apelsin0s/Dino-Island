@@ -187,3 +187,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
 .scanBtn { top: calc(max(14px, env(safe-area-inset-top, 0px)) + 222px); }
 .scanBtn.cool { opacity: .5; }
 .touch .scanBtn { top: auto; bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + 160px); }
+
+.driveBtn { top: auto; right: auto; left: 50%; transform: translateX(-50%); bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + 70px); background: var(--accent); color: #fff; }
+.driveBtn b { background: rgba(255, 255, 255, .25); }
+.touch .driveBtn { bottom: auto; top: 58%; }

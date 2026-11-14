@@ -12,8 +12,8 @@
     loading: 'Строим планету…', spoon: 'Ложка',
     lang: 'ru', shop: 'Исследования', shopSub: 'Выбери узел дерева', buy: 'Купить', bought: 'Уже есть', soon: 'Скоро', need: 'Не хватает', openShop: 'исследования', close: 'Закрыть',
     soonLong: 'Появится в следующих обновлениях', needFirst: 'Сначала нужно',
-    rows: ['Инструмент', 'Сила', 'Геология', 'Торговля', 'Автоматизация'],
-    eff: { perStroke: 'За взмах', perTrip: 'За ходку', stroke: 'Время взмаха', price: 'Цена грунта', rigs: 'Установки', rig1: '1 ручная', rig2: '2 с мотором', rig3: '3 с мотором', see: 'Видно', scanR: 'Радиус / глубина скана', probeDepth: 'Глубина щупа', reach: 'Дальность', move: 'Скорость ходьбы', orePrice: 'Цена руды', bank: 'Доход', bankV: '+1 % в минуту', rigSpeed: 'Скорость копалок', rigTurn: 'За оборот', rigIncome: 'Доход копалок', probe: 'породы под прицелом до 4 м', detector: 'руду вокруг до 12 м' },
+    rows: ['Инструмент', 'Сила', 'Геология', 'Торговля', 'Автоматизация', 'Техника', 'Бурение'],
+    eff: { perStroke: 'За взмах', perTrip: 'За ходку', stroke: 'Время взмаха', price: 'Цена грунта', rigs: 'Установки', rig1: '1 ручная', rig2: '2 с мотором', rig3: '3 с мотором', see: 'Видно', scanR: 'Радиус / глубина скана', drive: 'Управление', bucket: 'ковш', exIncome: 'Доход экскаваторов', perSec: 'В секунду', probeDepth: 'Глубина щупа', reach: 'Дальность', move: 'Скорость ходьбы', orePrice: 'Цена руды', bank: 'Доход', bankV: '+1 % в минуту', rigSpeed: 'Скорость копалок', rigTurn: 'За оборот', rigIncome: 'Доход копалок', probe: 'породы под прицелом до 4 м', detector: 'руду вокруг до 12 м' },
     node: {
       spoon: ['Ложка', 'С неё всё начинается. Маленькая ямка за взмах.'], scoop: ['Совок', 'Металлический совок: вдвое больше земли за взмах.'],
       trowel: ['Садовая лопатка', 'Острая лопатка, легко входит в глину.'], shovel: ['Лопата', 'Настоящая штыковая лопата. Нужны сильные руки.'],
@@ -27,17 +27,26 @@
       probe2: ['Глубокий щуп', 'Щуп показывает породы до 8 м вглубь.'], sorting: ['Сортировка руды', 'Отбираешь руду от пустой породы: руда дороже на 25 %.'],
       orebuyer: ['Скупщик руды', 'Свой человек на комбинате: руда дороже в 1,5 раза.'], scales3: ['Оптовые поставки', 'Крупный заказчик: за всё платят вдвое.'], bank: ['Сберкасса', 'Каждую минуту +1 % к деньгам (не больше $10).'],
       grease: ['Смазка шнека', 'Копалки работают на 43 % быстрее.'], auger2: ['Длинный шнек', 'За оборот копалка поднимает 1,6 л вместо 1 л.'], conveyor: ['Конвейер', 'Лента к лачуге: доход копалок ×1,5.'],
+      exMini: ['Мини-экскаватор', 'Свой экскаватор: подойди и нажми R, чтобы сесть. Ездишь на WASD, копаешь ковшом куда смотришь. Без тебя копает котлован сам.'],
+      truck: ['Карьерный самосвал', 'Возит грунт от экскаваторов: их сам по себе доход ×2.'],
+      exBig: ['Карьерный экскаватор', 'Огромный экскаватор с ковшом 0,7 м. Тоже можно сесть и копать (R).'],
+      wheel: ['Роторный экскаватор', 'Махина длиной 45 м: колесо с ковшами снимает 400 л в секунду.'],
+      quarry: ['Карьер-гигант', 'Целый карьерный комплекс.'],
+      bore: ['Буровая установка', 'Бурит скважину на 40 м: 15 л породы и руды в секунду.'],
+      derrick: ['Буровая вышка', 'Вышка 40 м, скважина 200 м: 60 л в секунду.'],
+      shaft: ['Шахта с копром', 'Свой рудник: 200 л руды в секунду с глубины 400 м.'],
+      superdeep: ['Сверхглубокая скважина', 'Глубже, чем кто-либо копал.'],
       auto1: ['Ручная копалка', 'Тренога со шнеком у лачуги: сама бурит землю, деньги идут тебе.'], auto2: ['Мотобур', 'Мотор на копалке — вдвое быстрее, и вторая установка.'], auto3: ['Третья установка', 'Ещё один мотобур.'], excavator: ['Мини-экскаватор', 'Настоящая техника для котлована.']
     },
     mat: ['чернозём', 'глина', 'гранит', 'магнетитовый кварцит', 'гематитовая руда'], firstOre: 'Руда! Железная руда стоит дороже земли',
-    oreSold: 'руда сдана:', probeL: 'Щуп', detL: 'Металлоискатель', noOre: 'руды не найдено', interest: 'проценты', found: 'найдено гнёзд:', nearest: 'ближайшее', scanB: 'скан', ahead: 'впереди', behind: 'сзади', leftS: 'слева', rightS: 'справа', depthL: 'глубина',
+    oreSold: 'руда сдана:', probeL: 'Щуп', detL: 'Металлоискатель', noOre: 'руды не найдено', machines: 'техника', getIn: 'сесть', getOut: 'выйти', driveHint: 'WASD — ехать, мышь — смотреть, ЛКМ — копать ковшом, R — выйти', outReach: 'Ковш не дотянется', interest: 'проценты', found: 'найдено гнёзд:', nearest: 'ближайшее', scanB: 'скан', ahead: 'впереди', behind: 'сзади', leftS: 'слева', rightS: 'справа', depthL: 'глубина',
     status: 'Статус', priceL: 'Цена за литр', rarity: 'в земной коре', ppm: 'г/т', wells: 'добывается скважинами',
     srcUA: 'Координаты приблизительные, статус на 2026 год', srcWorld: 'Данные USGS MRDS, статус на момент их обновления',
     st: { work: 'работает', idle: 'простаивает', closed: 'закрыто', occ14: 'оккупировано с 2014', occ22: 'оккупировано с 2022', front: 'у линии фронта', expl: 'разведано, не разрабатывается',
       usgs_prod: 'добывалось', usgs_past: 'отработано', known: 'известное месторождение' },
     resTitle: 'Ресурсы на карте', lmap: 'л',
     helperPay: 'помощники', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км', l: 'л',
-    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать (деньги сразу) · <b>F</b> исследования · <b>E</b> скан металлоискателем · <b>M</b> карта · <b>Esc</b> пауза',
+    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать (деньги сразу) · <b>F</b> исследования · <b>E</b> скан металлоискателем · <b>R</b> сесть в технику · <b>M</b> карта · <b>Esc</b> пауза',
     pause: 'Пауза', quality: 'Графика', hi: 'Высокая', mid: 'Средняя', lo: 'Быстрая', reset: 'Начать заново', far: 'Слишком далеко',
     clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км',
     sign: ['ПРИЁМ ГРУНТА', '$0.10 за литр'], bucket: 'Ведро', full: 'Ведро полное — неси в приёмку у лачуги', sell: 'сдать грунт', noDig: 'Здесь копать нельзя', inWay: 'Мешает — камень или дерево',
@@ -48,8 +57,8 @@
     loading: 'Building the planet…', spoon: 'Spoon',
     lang: 'en', shop: 'Research', shopSub: 'Pick a node of the tree', buy: 'Buy', bought: 'Owned', soon: 'Soon', need: 'Need', openShop: 'research', close: 'Close',
     soonLong: 'Coming in a later update', needFirst: 'First you need',
-    rows: ['Tool', 'Strength', 'Geology', 'Trade', 'Automation'],
-    eff: { perStroke: 'Per stroke', perTrip: 'Per trip', stroke: 'Stroke time', price: 'Soil price', rigs: 'Rigs', rig1: '1 hand-crank', rig2: '2 motor', rig3: '3 motor', see: 'Shows', scanR: 'Sweep radius / depth', probeDepth: 'Probe depth', reach: 'Reach', move: 'Walking speed', orePrice: 'Ore price', bank: 'Income', bankV: '+1 % a minute', rigSpeed: 'Rig speed', rigTurn: 'Per turn', rigIncome: 'Rig income', probe: 'the ground under the crosshair to 4 m', detector: 'ore around you to 12 m' },
+    rows: ['Tool', 'Strength', 'Geology', 'Trade', 'Automation', 'Machinery', 'Drilling'],
+    eff: { perStroke: 'Per stroke', perTrip: 'Per trip', stroke: 'Stroke time', price: 'Soil price', rigs: 'Rigs', rig1: '1 hand-crank', rig2: '2 motor', rig3: '3 motor', see: 'Shows', scanR: 'Sweep radius / depth', drive: 'Drive it', bucket: 'bucket', exIncome: 'Excavator income', perSec: 'Per second', probeDepth: 'Probe depth', reach: 'Reach', move: 'Walking speed', orePrice: 'Ore price', bank: 'Income', bankV: '+1 % a minute', rigSpeed: 'Rig speed', rigTurn: 'Per turn', rigIncome: 'Rig income', probe: 'the ground under the crosshair to 4 m', detector: 'ore around you to 12 m' },
     node: {
       spoon: ['Spoon', 'Where it all starts. A tiny hole per stroke.'], scoop: ['Hand scoop', 'A metal scoop: twice the soil per stroke.'],
       trowel: ['Garden trowel', 'A sharp trowel that cuts into clay.'], shovel: ['Shovel', 'A real spade. Needs strong arms.'],
@@ -63,17 +72,26 @@
       probe2: ['Deep probe', 'The probe reads the ground 8 m down.'], sorting: ['Ore sorting', 'Pick ore from waste rock: ore pays 25 % more.'],
       orebuyer: ['Ore buyer', 'A contact at the steel plant: ore pays 1.5 times more.'], scales3: ['Wholesale', 'A big customer: everything pays double.'], bank: ['Savings bank', '+1 % of your money every minute (up to $10).'],
       grease: ['Auger grease', 'Rigs work 43 % faster.'], auger2: ['Long auger', 'Each turn brings up 1.6 L instead of 1 L.'], conveyor: ['Conveyor', 'A belt to the shack: rig income ×1.5.'],
+      exMini: ['Mini excavator', 'Your own excavator: walk up and press R to get in. Drive with WASD, dig with the bucket where you look. Left alone it digs a pit by itself.'],
+      truck: ['Mining dump truck', 'Hauls soil for the excavators: their own income ×2.'],
+      exBig: ['Quarry excavator', 'A huge excavator with a 0.7 m bucket. You can get in and dig too (R).'],
+      wheel: ['Bucket-wheel excavator', 'A 45 m giant: the wheel strips 400 L a second.'],
+      quarry: ['Giant quarry', 'A whole quarry complex.'],
+      bore: ['Drilling rig', 'Drills a 40 m well: 15 L of rock and ore a second.'],
+      derrick: ['Drilling derrick', 'A 40 m derrick, a 200 m well: 60 L a second.'],
+      shaft: ['Mine headframe', 'Your own mine: 200 L of ore a second from 400 m down.'],
+      superdeep: ['Super-deep borehole', 'Deeper than anyone has dug.'],
       auto1: ['Hand-crank rig', 'A tripod auger by the shack bores by itself; the money is yours.'], auto2: ['Motor drill', 'A motor on the rig: twice as fast, plus a second rig.'], auto3: ['Third rig', 'One more motor drill.'], excavator: ['Mini excavator', 'Real machinery for a proper pit.']
     },
     mat: ['topsoil', 'clay', 'granite', 'magnetite quartzite', 'hematite ore'], firstOre: 'Ore! Iron ore is worth more than soil',
-    oreSold: 'ore handed in:', probeL: 'Probe', detL: 'Detector', noOre: 'no ore found', interest: 'interest', found: 'pockets found:', nearest: 'nearest', scanB: 'scan', ahead: 'ahead', behind: 'behind', leftS: 'to the left', rightS: 'to the right', depthL: 'depth',
+    oreSold: 'ore handed in:', probeL: 'Probe', detL: 'Detector', noOre: 'no ore found', machines: 'machinery', getIn: 'get in', getOut: 'get out', driveHint: 'WASD to drive, mouse to look, LMB to dig with the bucket, R to get out', outReach: 'The bucket cannot reach that', interest: 'interest', found: 'pockets found:', nearest: 'nearest', scanB: 'scan', ahead: 'ahead', behind: 'behind', leftS: 'to the left', rightS: 'to the right', depthL: 'depth',
     status: 'Status', priceL: 'Price per litre', rarity: 'in the crust', ppm: 'ppm', wells: 'extracted by wells',
     srcUA: 'Approximate coordinates, status as of 2026', srcWorld: 'USGS MRDS data, status as of its last update',
     st: { work: 'working', idle: 'idle', closed: 'closed', occ14: 'occupied since 2014', occ22: 'occupied since 2022', front: 'near the front line', expl: 'explored, not mined',
       usgs_prod: 'producer', usgs_past: 'past producer', known: 'well-known deposit' },
     resTitle: 'Resources on the map', lmap: 'L',
     helperPay: 'helpers', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km', l: 'L',
-    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig (paid at once) · <b>F</b> research · <b>E</b> detector sweep · <b>M</b> map · <b>Esc</b> pause',
+    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig (paid at once) · <b>F</b> research · <b>E</b> detector sweep · <b>R</b> get into a machine · <b>M</b> map · <b>Esc</b> pause',
     pause: 'Paused', quality: 'Graphics', hi: 'High', mid: 'Medium', lo: 'Fast', reset: 'Start over', far: 'Too far',
     clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km',
     sign: ['SOIL WANTED', '$0.10 per litre'], bucket: 'Bucket', full: 'Bucket is full — take it to the bin by the shack', sell: 'hand in soil', noDig: "Can't dig here", inWay: 'A rock or a tree is in the way',
@@ -127,7 +145,15 @@
     { id: 'auger2', row: 4, col: 4, icon: 'auger', p: 160, req: ['auto2', 'grease'] },
     { id: 'auto3', row: 4, col: 5, icon: 'rig3', p: 250, req: ['auto2'] },
     { id: 'conveyor', row: 4, col: 6, icon: 'conveyor', p: 500, req: ['auto3', 'auger2'] },
-    { id: 'excavator', row: 4, col: 7, icon: 'cabin', soon: true, req: ['conveyor'] }
+    { id: 'exMini', row: 5, col: 1, icon: 'excavator', p: 1500, req: ['auto3'] },
+    { id: 'truck', row: 5, col: 2, icon: 'truck', p: 4000, req: ['exMini'] },
+    { id: 'exBig', row: 5, col: 3, icon: 'excavatorBig', p: 15000, req: ['truck', 'conveyor'] },
+    { id: 'wheel', row: 5, col: 4, icon: 'wheel', p: 60000, req: ['exBig'] },
+    { id: 'quarry', row: 5, col: 5, icon: 'quarry', soon: true, req: ['wheel'] },
+    { id: 'bore', row: 6, col: 1, icon: 'borerig', p: 2500, req: ['auto3', 'detector2'] },
+    { id: 'derrick', row: 6, col: 2, icon: 'derrick', p: 10000, req: ['bore'] },
+    { id: 'shaft', row: 6, col: 3, icon: 'headframe', p: 40000, req: ['derrick', 'exBig'] },
+    { id: 'superdeep', row: 6, col: 4, icon: 'superdeep', soon: true, req: ['shaft'] }
   ];
   const owned = new Set(NODES.filter(n => n.root).map(n => n.id));
   const has = id => owned.has(id);
@@ -272,15 +298,14 @@
   function doDig(hit) {
     const tool = TOOLS[pl.tool];
     if (hit.obstacle) { notice(L.inWay); Sound.thud(); return false; }
-    // push the scoop into the ground until it takes a full bite, so every stroke brings up about the same amount
-    const c = hit.p.clone().addScaledVector(hit.d, tool.r * 0.2);
-    for (let k = 0; k < 14 && bite(c, tool.r) < lvl('bite'); k++) c.addScaledVector(hit.d, tool.r * 0.12);
-    if (W.blocked(c.x, c.y, c.z, tool.r + 0.05)) { notice(L.noDig); Sound.thud(); return false; }
-    const per = [0, 0, 0, 0, 0], f = bite(c, tool.r, per), solidN = per.reduce((a, b) => a + b, 0);
-    const litres = f * 4 / 3 * Math.PI * Math.pow(tool.r, 3) * 1000, k = solidN ? litres / solidN : 0;
+    // the scoop goes where you aim: dig into a fresh spot for a full bite, into an old hole for less (until you dig past it)
+    const R = tool.r * (has('sharp') ? 1.08 : 1), c = hit.p.clone().addScaledVector(hit.d, R * 0.45);
+    if (W.blocked(c.x, c.y, c.z, R + 0.05)) { notice(L.noDig); Sound.thud(); return false; }
+    const per = [0, 0, 0, 0, 0], f = bite(c, R, per), solidN = per.reduce((a, b) => a + b, 0);
+    const litres = f * 4 / 3 * Math.PI * Math.pow(R, 3) * 1000, k = solidN ? litres / solidN : 0;
     const depth = W.depthAt(hit.p.x, hit.p.y, hit.p.z);
     let main = 0; for (let i = 1; i < 5; i++) if (per[i] > per[main]) main = i;
-    S.applyHole([c.x, c.y, c.z, tool.r], W.addHole(c.x, c.y, c.z, tool.r));
+    S.applyHole([c.x, c.y, c.z, R], W.addHole(c.x, c.y, c.z, R));
     S.burst(hit.p.x, hit.p.y, hit.p.z, S.matColor(main), tool.parts, hit.d.clone().negate(), tool.size);
     S.setSpoonFull(true);
     Sound.dig(pl.tool, depth);
@@ -294,11 +319,122 @@
     dirty = true; return true;
   }
 
+  // ---------- heavy machinery ----------
+  // auto: an excavator nobody drives digs its own pit in front of it; virtual: machines that work underground (paid per second)
+  const HEAVY = {
+    exMini: { drive: true, r: 0.35, period: 2.6, pit: 3.6, spread: 1.6, speed: 4, turn: 0.9, reach: 5.2, stroke: 1.2, cam: 7 },
+    exBig: { drive: true, r: 0.7, period: 3.2, pit: 9, spread: 3.5, speed: 2.6, turn: 0.5, reach: 13, stroke: 1.8, cam: 17 },
+    truck: {}, wheel: { lps: 400, depth: 6 }, bore: { lps: 15, depth: 40 }, derrick: { lps: 60, depth: 200 }, shaft: { lps: 200, depth: 400, ore: true }
+  };
+  const HEAVY_IDS = ['exMini', 'truck', 'exBig', 'wheel', 'bore', 'derrick', 'shaft'];
+  let drive = null, heavyT = {}, heavyPay = 0, heavyPayT = 0;
+  const fwdOf = (pos, yaw) => { const u = pos.clone().normalize(), q = S.frameAt(pos, yaw); return v3(1, 0, 0).applyQuaternion(q).addScaledVector(u, 0); };
+  // take a bite of ground with a sphere; pays for it; returns litres
+  function takeBite(c, R, show) {
+    const per = [0, 0, 0, 0, 0], f = bite(c, R, per), solidN = per.reduce((a, b) => a + b, 0);
+    if (f <= 0.001) return 0;
+    const litres = f * 4 / 3 * Math.PI * R * R * R * 1000, k = litres / solidN;
+    let main = 0; for (let i = 1; i < 5; i++) if (per[i] > per[main]) main = i;
+    S.applyHole([c.x, c.y, c.z, R], W.addHole(c.x, c.y, c.z, R));
+    S.burst(c.x, c.y, c.z, S.matColor(main), show ? 12 : 6, null, R * 4);
+    let got = 0; for (let i = 0; i < 5; i++) { got += per[i] * k * MATS[i].p * (MATS[i].ore ? lvl('ore') : 1); pl.earned[i] += per[i] * k; }
+    got *= lvl('scale'); pl.dug += litres / 1000; pl.sold += litres; dirty = true;
+    return { litres, got, main, oreL: (per[3] + per[4]) * k };
+  }
+  function updateHeavy(dt) {
+    for (const id of HEAVY_IDS) {
+      if (!has(id)) continue;
+      const H = HEAVY[id], M = S.heavy(id); if (!M) continue;
+      if (H.lps) {   // underground work: pay per second for what lies at its depth
+        const u = M.pos.clone().normalize(), q = M.pos.clone().addScaledVector(u, -H.depth), m = H.ore ? 3 : W.materialAt(q.x, q.y, q.z);
+        let price = MATS[m].p * (MATS[m].ore ? lvl('ore') : 1); if (H.ore) price = (MATS[3].p * 0.6 + MATS[4].p * 0.4) * lvl('ore');
+        const got = H.lps * dt * price * lvl('scale'); pl.money += got; heavyPay += got; pl.dug += H.lps * dt / 1000; continue;
+      }
+      if (!H.drive || (drive && drive.id === id)) continue;
+      if ((heavyT[id] = (heavyT[id] || 0) + dt) < H.period) continue;
+      heavyT[id] = 0;
+      const f = fwdOf(M.pos, M.yaw), u = M.pos.clone().normalize();
+      const p = M.pos.clone().addScaledVector(f, H.pit * (0.8 + Math.random() * 0.4)).addScaledVector(new T.Vector3().crossVectors(f, u), (Math.random() - 0.5) * H.spread * 2);
+      const g = S.groundBelow(p, 6), c = g.addScaledVector(u, -H.r * 0.35);
+      if (W.blocked(c.x, c.y, c.z, H.r * 0.5)) continue;
+      S.heavyDig(id);
+      const res = takeBite(c, H.r, false); if (res) { const k = has('truck') ? 2 : 1; pl.money += res.got * k; heavyPay += res.got * k; }
+    }
+    if ((heavyPayT += dt) > 8) { if (heavyPay > 0.01) floater('+$' + fmtMoney(heavyPay) + ' · ' + L.machines, 'ore'); heavyPay = 0; heavyPayT = 0; }
+  }
+  function nearDrivable() {
+    for (const id of ['exMini', 'exBig']) { const M = has(id) && S.heavy(id); if (M && M.pos.distanceTo(pl.pos) < 4 + 3 * M.scale) return id; }
+    return null;
+  }
+  function toggleDrive() {
+    if (drive) {   // get out beside the machine
+      const M = drive.M; M.auto = true; if (M.block) M.block[3] = drive.blockR;
+      const u = M.pos.clone().normalize(), side = new T.Vector3().crossVectors(fwdOf(M.pos, M.yaw), u).normalize();
+      pl.pos.copy(S.groundBelow(M.pos.clone().addScaledVector(side, 2.6 * M.scale), 4)).addScaledVector(u, 0.05); pl.vel.set(0, 0, 0);
+      drive = null; S.setDriving(false); pl.machines = machinePoses(); dirty = true; return;
+    }
+    const id = nearDrivable(); if (!id) return;
+    const M = S.heavy(id); M.auto = false;
+    drive = { id, M, H: HEAVY[id], camYaw: M.yaw, camPitch: -0.45, dig: -1, blockR: M.block ? M.block[3] : 0 };
+    if (M.block) M.block[3] = 0;   // its own footprint must not stop its own bucket
+    S.setDriving(true); notice(L.driveHint);
+  }
+  function machinePoses() { const o = {}; for (const id of HEAVY_IDS) { const M = S.heavy(id); if (M && HEAVY[id].drive) o[id] = { pos: M.pos.toArray(), yaw: M.yaw }; } return o; }
+  // the driving camera: behind and above the machine, turned with the mouse
+  function driveCam() {
+    const M = drive.M, u = M.pos.clone().normalize(), f = fwdOf(M.pos, drive.camYaw), dir = f.clone().multiplyScalar(Math.cos(drive.camPitch)).addScaledVector(u, Math.sin(drive.camPitch)).normalize();
+    const pivot = M.pos.clone().addScaledVector(u, 2.4 * M.scale), eye = pivot.clone().addScaledVector(dir, -drive.H.cam);
+    const rt = new T.Vector3().crossVectors(dir, u).normalize(), upc = new T.Vector3().crossVectors(rt, dir);
+    return { eye, dir, q: new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(rt, upc, dir.clone().negate())) };
+  }
+  function driveAim(cam) {   // where the bucket would dig: along the view, within the arm's reach of the machine
+    const M = drive.M, H = drive.H, u = M.pos.clone().normalize();
+    for (let t = H.cam * 0.6; t < H.cam + H.reach * 1.6; t += 0.15) {
+      const p = cam.eye.clone().addScaledVector(cam.dir, t);
+      if (W.solid(p.x, p.y, p.z) > 0) {
+        const d = p.clone().sub(M.pos), along = d.dot(u), hd = d.addScaledVector(u, -along).length();
+        return { p, ok: hd < H.reach * M.scale / (M.scale) && hd > 1.4 * M.scale && along > -H.reach };
+      }
+    }
+    return null;
+  }
+  function driveStep(dt) {
+    const M = drive.M, H = drive.H, k = keys, u = M.pos.clone().normalize();
+    let mz = (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), mx = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0);
+    if (stick.id !== null) { mz = -stick.y; mx = stick.x; }
+    M.yaw -= mx * H.turn * dt * (mz < 0 ? -1 : 1); drive.camYaw -= mx * H.turn * dt * (mz < 0 ? -1 : 1);
+    if (Math.abs(mz) > 0.05) {
+      const np = M.pos.clone().addScaledVector(fwdOf(M.pos, M.yaw), mz * H.speed * dt), g = S.groundBelow(np, 2.5);
+      let hitB = false; for (const b of W.blockers) { if (b === M.block) continue; if (Math.hypot(g.x - b[0], g.y - b[1], g.z - b[2]) < b[4] + 1.6 * M.scale) { hitB = true; break; } }
+      if (!hitB && Math.abs(g.clone().sub(M.pos).dot(u)) < 1.2 * M.scale) { S.moveHeavy(drive.id, g, M.yaw); pl.machines = machinePoses(); }
+    }
+    pl.pos.copy(M.pos);
+    // the bucket
+    const cam = driveCam(), aim = driveAim(cam);
+    if (aim) { const lp = M.g.worldToLocal(aim.p.clone().sub(S.origin)); M.upperYaw = Math.atan2(-lp.z, lp.x); }
+    $('cross').classList.toggle('hit', !!(aim && aim.ok));
+    if (drive.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { drive.dig = 0; drive.hit = false; S.heavyDig(drive.id, 1); }
+    if (drive.dig >= 0) {
+      const prev = drive.dig; drive.dig += dt / (H.stroke * lvl('speed'));
+      if (prev < 0.5 && drive.dig >= 0.5 && !drive.hit) {
+        drive.hit = true;
+        if (aim && aim.ok) {
+          const c = aim.p.clone().addScaledVector(cam.dir, H.r * 0.35);
+          if (W.blocked(c.x, c.y, c.z, H.r * 0.4)) notice(L.noDig);
+          else { const res = takeBite(c, H.r, true); if (res) { pl.money += res.got; floater('+$' + fmtMoney(res.got) + ' · ' + res.litres.toFixed(0) + ' ' + L.l + (res.oreL > 1 ? ' · ' + L.mat[3] : ''), res.oreL > 1 ? 'ore' : ''); Sound.dig('shovel', 0); S.setPile(Math.min(1, pl.sold / 400)); } }
+        } else notice(L.outReach);
+      }
+      if (drive.dig >= 1) { drive.dig = mouseDown ? 0 : -1; if (mouseDown) S.heavyDig(drive.id, 1); }
+    }
+    return cam;
+  }
+
   // ---------- shop (at the shack) ----------
   let shopOpen = false;
   function applyUpgrades() {
     pl.tool = lvl('tool'); S.setTool(pl.tool);
     for (let i = 0; i < lvl('rigs'); i++) S.addMachine(i, lvl('rigLevel'));
+    for (const id of HEAVY_IDS) if (has(id)) S.addHeavy(id, pl.machines && pl.machines[id]);
   }
   // the research tree: rows of branches, lines from each node to what it needs; a card on the side says what you buy
   const nodeState = n => has(n.id) ? 'own' : n.soon ? 'soon' : (n.req || []).every(has) ? (pl.money >= n.p ? 'buy' : 'poor') : 'lock';
@@ -310,15 +446,16 @@
       arms1: [E.stroke, '100 %', '85 %'], arms2: [E.stroke, '85 %', '72 %'], arms3: [E.stroke, '72 %', '61 %'],
       scales1: [E.price, '×1', '×1.25'], scales2: [E.price, '×1.25', '×1.5'], auto1: [E.rigs, '0', E.rig1], auto2: [E.rigs, E.rig1, E.rig2], auto3: [E.rigs, E.rig2, E.rig3],
       probe: [E.see, '—', E.probe], probe2: [E.probeDepth, '4 ' + L.m, '8 ' + L.m],
-      sharp: [E.perStroke, sc(lvl('tool')), (Math.round(4 / 3 * Math.PI * Math.pow(t[lvl('tool')].r, 3) * 1000 * 0.62 * 100) / 100) + ' ' + L.l], longhandle: [E.reach, (t[lvl('tool')].reach).toFixed(1) + ' ' + L.m, (t[lvl('tool')].reach + 0.7).toFixed(1) + ' ' + L.m],
+      sharp: [E.perStroke, sc(lvl('tool')), (Math.round(4 / 3 * Math.PI * Math.pow(t[lvl('tool')].r * 1.08, 3) * 1000 * BITE * 100) / 100) + ' ' + L.l], longhandle: [E.reach, (t[lvl('tool')].reach).toFixed(1) + ' ' + L.m, (t[lvl('tool')].reach + 0.7).toFixed(1) + ' ' + L.m],
       boots1: [E.move, '100 %', '115 %'], boots2: [E.move, '115 %', '130 %'], arms4: [E.stroke, '61 %', '52 %'],
       sorting: [E.orePrice, '×' + (has('orebuyer') ? 1.5 : 1), '×' + (has('orebuyer') ? 1.875 : 1.25)], orebuyer: [E.orePrice, '×' + (has('sorting') ? 1.25 : 1), '×' + (has('sorting') ? 1.875 : 1.5)],
       scales3: [E.price, '×1.5', '×2'], bank: [E.bank, '—', E.bankV],
-      grease: [E.rigSpeed, '100 %', '143 %'], auger2: [E.rigTurn, '1 ' + L.l, '1.6 ' + L.l], conveyor: [E.rigIncome, '×1', '×1.5'], detector: [E.scanR, '—', '8 ' + L.m + ' / 4 ' + L.m], detector2: [E.scanR, '8 ' + L.m + ' / 4 ' + L.m, '15 ' + L.m + ' / 8 ' + L.m] }[id];
+      grease: [E.rigSpeed, '100 %', '143 %'], exMini: [E.drive, '—', E.bucket + ' 0.35 ' + L.m], exBig: [E.drive, '—', E.bucket + ' 0.7 ' + L.m], truck: [E.exIncome, '×1', '×2'],
+      wheel: [E.perSec, '—', '400 ' + L.l], bore: [E.perSec, '—', '15 ' + L.l + ', 40 ' + L.m], derrick: [E.perSec, '—', '60 ' + L.l + ', 200 ' + L.m], shaft: [E.perSec, '—', '200 ' + L.l + ' ' + L.mat[3]], auger2: [E.rigTurn, '1 ' + L.l, '1.6 ' + L.l], conveyor: [E.rigIncome, '×1', '×1.5'], detector: [E.scanR, '—', '8 ' + L.m + ' / 4 ' + L.m], detector2: [E.scanR, '8 ' + L.m + ' / 4 ' + L.m, '15 ' + L.m + ' / 8 ' + L.m] }[id];
     return m ? `<div class="eff"><span>${m[0]}</span><b>${m[1]}</b><i>→</i><b class="new">${m[2]}</b></div>` : '';
   }
   function treeHTML() {
-    const CW = 104, RH = 96, X = c => 112 + c * CW, Y = r => 46 + r * RH, W2 = X(7) + 70, H2 = Y(4) + 70;
+    const CW = 104, RH = 96, X = c => 112 + c * CW, Y = r => 46 + r * RH, W2 = X(7) + 70, H2 = Y(6) + 70;
     let lines = '';
     for (const n of NODES) for (const r of n.req || []) {
       const a = NODES.find(x => x.id === r), on = has(r);
@@ -403,6 +540,7 @@
     keys[e.code] = true;
     if (e.code === 'KeyF' && !e.repeat) toggleShop(true);
     if (e.code === 'KeyE' && !e.repeat) scan();
+    if (e.code === 'KeyR' && !e.repeat) toggleDrive();
     if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   });
   addEventListener('keyup', e => { keys[e.code] = false; });
@@ -418,6 +556,7 @@
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   addEventListener('mousemove', e => { if (!playing || (!locked && !rmb)) return; turn(e.movementX * 0.0022, e.movementY * 0.0022); });
   function turn(dx, dy) {
+    if (drive) { drive.camYaw -= dx; drive.camPitch = Math.max(-1.2, Math.min(0.35, drive.camPitch - dy)); return; }
     frame();
     const c = Math.cos(dx), s = Math.sin(dx);
     pl.fwd.multiplyScalar(c).addScaledVector(right, s).normalize();
@@ -491,6 +630,8 @@
     $('pct').textContent = pct === 0 ? '0 %' : pct.toExponential(2).replace('e', ' × 10^') + ' %';
     $('money').textContent = '$' + pl.money.toFixed(2);
     $('bShop').innerHTML = (TOUCH ? '' : '<b>F</b> ') + L.openShop;
+    const near = !drive && nearDrivable(); $('bDrive').hidden = !(near || drive);
+    if (!$('bDrive').hidden) $('bDrive').innerHTML = (TOUCH ? '' : '<b>R</b> ') + (drive ? L.getOut : L.getIn + ': ' + L.node[near][0]);
     $('bScan').hidden = !has('detector'); if (has('detector')) { $('bScan').innerHTML = (TOUCH ? '' : '<b>E</b> ') + L.scanB; $('bScan').classList.toggle('cool', scanCool > 0); }
     if (noticeT > 0 && (noticeT -= dt) <= 0) $('notice').hidden = true;
     geology(dt);
@@ -543,6 +684,7 @@
       const PD = lvl('probeD');
       for (let d = 0; d <= PD + 0.001; d += 0.1) {
         const q = h.p.clone().addScaledVector(u, -d), m = W.solid(q.x, q.y, q.z) > 0 ? W.materialAt(q.x, q.y, q.z) : -1;
+        if (m < 0) continue;   // the air of an earlier hole: skip it, layers either side join up
         if (m !== cur) { if (cur >= 0) parts.push([cur, from, d]); cur = m; from = d; }
       }
       if (cur >= 0) parts.push([cur, from, PD]);
@@ -556,7 +698,7 @@
   const SAVE = 'endlessdigging.v3', OLD_SAVE = 'endlessdigging.v2';   // v3: real relief (v2 holes no longer fit; money is kept)
   let dirty = false, saveT = 0;
   function save() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ holes: W.holes.map(h => h.map(v => Math.round(v * 1000) / 1000)), pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, bucket: pl.bucket, sold: pl.sold, earned: pl.earned, owned: [...owned], foundOre: !!pl.foundOre })); } catch (e) {}
+    try { localStorage.setItem(SAVE, JSON.stringify({ holes: W.holes.map(h => h.map(v => Math.round(v * 1000) / 1000)), pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, bucket: pl.bucket, sold: pl.sold, earned: pl.earned, machines: machinePoses(), owned: [...owned], foundOre: !!pl.foundOre })); } catch (e) {}
     dirty = false;
   }
   function load() {
@@ -583,10 +725,11 @@
     if (saved && !saved.fresh) {
       for (const h of saved.holes || []) W.addHole(h[0], h[1], h[2], h[3]);
       pl.pos.fromArray(saved.pos); pl.fwd.fromArray(saved.fwd); pl.pitch = saved.pitch || 0; pl.dug = saved.dug || 0;
+      pl.machines = saved.machines || null;
       pl.money = saved.money || 0; pl.sold = saved.sold || 0; pl.foundOre = !!saved.foundOre; pl.earned = saved.earned || [0, 0, 0, 0, 0];
       // whatever was still in the old bucket is paid out now
       if (saved.mix) pl.money += saved.mix.reduce((a, l, i) => a + l * MATS[i].p, 0);
-      const renamed = { help1: 'auto1', help2: 'auto2', help3: 'auto3' };   // helpers became rigs
+      const renamed = { help1: 'auto1', help2: 'auto2', help3: 'auto3', excavator: 'exMini' };   // helpers became rigs
       for (let id of saved.owned || []) { id = renamed[id] || id; if (NODES.some(n => n.id === id)) owned.add(id); }
       if (saved.up) {   // the earlier shop (levels per line) -> nodes of the tree
         const chains = { tool: ['scoop', 'trowel', 'shovel'], speed: ['arms1', 'arms2', 'arms3'], scale: ['scales1', 'scales2'], help: ['auto1', 'auto2', 'auto3'] };
@@ -610,7 +753,7 @@
   function fullscreen() { try { const d = document.documentElement, f = d.requestFullscreen || d.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(d); if (r && r.catch) r.catch(() => {}); } } catch (e) {} }
   function setupTouch() {
     const tapBtn = (el, fn) => el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); fn(); });
-    tapBtn($('bShop'), () => toggleShop(true)); tapBtn($('bScan'), scan); tapBtn($('bMap'), () => { if (playing) toggleMap(); }); tapBtn($('mapClose'), () => { if (mapOpen) toggleMap(); });
+    tapBtn($('bShop'), () => toggleShop(true)); tapBtn($('bScan'), scan); tapBtn($('bDrive'), toggleDrive); tapBtn($('bMap'), () => { if (playing) toggleMap(); }); tapBtn($('mapClose'), () => { if (mapOpen) toggleMap(); });
     if (!TOUCH) return;
     const base = $('stick'), knob = $('knob'), R = 56;
     canvas.addEventListener('pointerdown', e => {
@@ -672,7 +815,7 @@
   function pause(on) { if (on) { playing = false; mouseDown = false; for (const k in keys) keys[k] = false; stick.id = lookT.id = null; stick.x = stick.y = 0; const sb = $('stick'); if (sb) sb.hidden = true; overlay('pause'); if (dirty) save(); } }
 
   // ---------- loop ----------
-  let last = performance.now(), t = 0, loading = true, digT = 0, compiled = null;
+  let last = performance.now(), t = 0, loading = true, digT = 0, compiled = null, driveCamNow = null;
   function loop(now) {
     if (root.__stopLoop) return;   // test tools take still frames themselves
     requestAnimationFrame(loop);
@@ -689,24 +832,25 @@
     }
     let walk = 0;
     if (playing) {
-      walk = step(dt);
+      if (drive) driveCamNow = driveStep(dt); else walk = step(dt);
       const tool = TOOLS[pl.tool];
-      if (pl.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { pl.dig = 0; pl.didHit = false; S.setSpoonFull(false); }
+      if (!drive && pl.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { pl.dig = 0; pl.didHit = false; S.setSpoonFull(false); }
       if (pl.dig >= 0) {
         const prev = pl.dig; pl.dig += dt / (tool.time * lvl('speed'));
         if (prev < 0.45 && pl.dig >= 0.45 && !pl.didHit) { pl.didHit = true; const h = rayHit(tool.reach + lvl('reach')); if (h) doDig(h); }
         if (pl.dig >= 1) { pl.dig = mouseDown ? 0 : -1; pl.didHit = false; if (mouseDown) S.setSpoonFull(false); }
       }
-      if ((digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach + lvl('reach')); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
+      if (!drive && (digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach + lvl('reach')); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
       S.updateChunks(pl.pos, 5); S.updateFar(pl.pos); S.updateDeco(pl.pos, false, 3);
       if ((saveT += dt) > 5 && dirty) { saveT = 0; save(); }
-      updateMachines(dt); if (scanCool > 0) scanCool -= dt;
+      updateMachines(dt); updateHeavy(dt); if (scanCool > 0) scanCool -= dt;
       if (has('bank') && (pl.bankT = (pl.bankT || 0) + dt) >= 60) { pl.bankT = 0; const g2 = Math.min(10, pl.money * 0.01); pl.money += g2; floater('+$' + fmtMoney(g2) + ' · ' + L.interest); dirty = true; }
       hud(dt);
     }
     S.setFrame(up);
     look.x *= 0.88; look.y *= 0.88;
-    S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: pl.dig, walk, look }, dt, t);
+    if (drive) { const c = driveCamNow || driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, dt, t); }
+    else S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: pl.dig, walk, look }, dt, t);
   }
 
   root.addEventListener('load', () => {
@@ -725,7 +869,14 @@
       setup(); setupTouch();
       requestAnimationFrame(loop);
       addEventListener('beforeunload', () => { if (dirty) save(); });
-      root.__game = { pl, W, S, owned, scan, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach + lvl('reach')); return h ? doDig(h) : false; }, toggleMap, setTool,
+      root.__game = { pl, W, S, owned, scan, toggleDrive, get drive() { return drive; },
+        driveTest() {   // test helper: drive forward 2 s, turn the camera to the ground ahead, dig three strokes
+          for (let i = 0; i < 40; i++) { keys.KeyW = true; driveStep(0.05); } keys.KeyW = false;
+          drive.camPitch = -0.6; const m0 = pl.money; let n = 0; mouseDown = true; locked = true;
+          for (let i = 0; i < 80; i++) { driveStep(0.05); } mouseDown = false; locked = false;
+          return 'moved, money +' + (pl.money - m0).toFixed(2) + ', holes ' + W.holes.length;
+        },
+        snapDrive(adv) { const c = driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); }, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach + lvl('reach')); return h ? doDig(h) : false; }, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },
         mapSnap(steps) { for (let i = 0; i < (steps || 1); i++) MapV.render(0.1); return canvas.toDataURL('image/jpeg', 0.9); } };
     }, 30));

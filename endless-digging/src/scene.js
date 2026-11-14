@@ -263,7 +263,7 @@
     gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
     gtao.blendIntensity = 0.9;
     // the digger's invisible shadow-casting body must not show up in ambient occlusion
-    const gr = gtao.render.bind(gtao); gtao.render = function () { Shadow.group.visible = Shadow.hold.visible = false; gr.apply(null, arguments); Shadow.group.visible = Shadow.hold.visible = true; };
+    const gr = gtao.render.bind(gtao); gtao.render = function () { Shadow.group.visible = Shadow.hold.visible = false; gr.apply(null, arguments); Shadow.group.visible = Shadow.hold.visible = !Scene.driving; };
     composer.addPass(gtao);
     const hp = new T.RenderPass(handScene, handCam); hp.clear = false; hp.clearDepth = true; composer.addPass(hp);
     bloom = new T.UnrealBloomPass(new T.Vector2(4, 4), 0.07, 0.5, 1.2); composer.addPass(bloom);
@@ -639,6 +639,82 @@
 
   Scene.setPile = function (k) { const d = Scene.drop; if (!d) return; d.fill = Math.min(1, k); d.pile.scale.y = 0.05 + d.fill * 0.9; d.pile.position.y = 0.1 + d.fill * 0.25; };
 
+  // ---------- heavy machinery: excavators (drivable), dump truck, bucket-wheel excavator, drilling rigs, mine headframe ----------
+  // Machines live in planet coordinates (they can drive away); each frame they are placed relative to the floating origin.
+  // pose: pos (ground point, planet metres) and yaw (radians in the local frame: 0 = along LX, i.e. to the right of the start view)
+  const Heavy = { m: {} };
+  const HSITE = {
+    exMini: [9, -12, 0.5, 2.2], truck: [18, -1, 0, 0], exBig: [24, -27, 2.4, 5.5], wheel: [64, -54, 2.6, 24],
+    bore: [-18, -17, 0.3, 4.5], derrick: [-34, -32, 0.2, 9], shaft: [-32, -66, 0.8, 16]
+  };
+  function frameAt(pos, yaw, out) {   // model axes at a point: X forward (yaw), Y up, Z = X x Y
+    const up = pos.clone().normalize(), e = LX.clone().addScaledVector(up, -LX.dot(up)).normalize(), n = new T.Vector3().crossVectors(up, e);
+    const f = e.clone().multiplyScalar(Math.cos(yaw)).addScaledVector(n, -Math.sin(yaw)), z = new T.Vector3().crossVectors(f, up);
+    return (out || new T.Quaternion()).setFromRotationMatrix(new T.Matrix4().makeBasis(f, up, z));
+  }
+  Scene.frameAt = frameAt;
+  Scene.groundBelow = function (p, from) {   // the solid ground under a point (searching down from 'from' metres above)
+    const u = p.clone().normalize(), q = p.clone().addScaledVector(u, from || 3);
+    for (let i = 0; i < 120 && W.solid(q.x, q.y, q.z) <= 0; i++) q.addScaledVector(u, -0.1);
+    for (let i = 0; i < 10 && W.solid(q.x, q.y, q.z) > 0; i++) q.addScaledVector(u, 0.02);
+    return q;
+  };
+  Scene.addHeavy = function (id, saved) {
+    if (Heavy.m[id] || !Scene.props) return Heavy.m[id];
+    const st = HSITE[id], mat = MAT.paint, g = new T.Group(), parts = {};
+    const mesh = (geo, parent, at) => { const m = new T.Mesh(geo, mat); m.castShadow = m.receiveShadow = true; if (at) m.position.set(at[0], at[1], at[2]); (parent || g).add(m); return m; };
+    let scale = 1;
+    if (id === 'exMini' || id === 'exBig') {
+      const e = A.excavator(id === 'exBig' ? '#f2c230' : '#f08a24'); mesh(e.base);
+      parts.upper = new T.Group(); g.add(parts.upper); mesh(e.upper, parts.upper);
+      parts.arm = new T.Group(); parts.arm.position.set(e.armAt[0], e.armAt[1], e.armAt[2]); parts.upper.add(parts.arm); mesh(e.arm, parts.arm);
+      scale = id === 'exBig' ? 2.7 : 1; g.scale.setScalar(scale);
+    } else if (id === 'truck') { mesh(A.dumpTruck()); }
+    else if (id === 'wheel') { const b = A.bucketWheel(); mesh(b.base); parts.wheel = mesh(b.wheel, g, b.wheelAt); }
+    else if (id === 'bore') { const b = A.boreRig(); mesh(b.body); parts.pipe = mesh(b.pipe, g, b.pipeAt); }
+    else if (id === 'derrick') { const d = A.derrick(); mesh(d.tower); parts.block = mesh(d.block, g, d.blockAt); parts.blockY = d.blockAt[1]; }
+    else if (id === 'shaft') { const h = A.headframe(); mesh(h.frame); parts.sheaves = h.sheaveAt.map(a => mesh(h.sheave, g, a)); }
+    scene.add(g);
+    const groundAt = (lx, lz) => { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz), l = w.length(); return w.multiplyScalar((W.R + W.heightDir(w.x / l, w.y / l, w.z / l)) / l); };
+    const pos = saved ? new T.Vector3().fromArray(saved.pos) : groundAt(st[0], st[1]);
+    const M = Heavy.m[id] = { id, g, parts, pos, yaw: saved ? saved.yaw : st[2], scale, upperYaw: 0, armDip: 0, t: Math.random() * 10, auto: true, block: null };
+    if (st[3]) {   // nothing grows there and nothing can be dug under the machine; it is solid to walk into
+      M.block = [pos.x, pos.y, pos.z, st[3], st[3] * 0.85, 'machine:' + id]; W.blockers.push(M.block); blocked.push([pos.x, pos.y, pos.z, st[3] + 1.5]);
+      if (id === 'shaft') { const w = groundAt(st[0] - 14, st[1] + 8); W.blockers.push([w.x, w.y, w.z, 8, 7]); blocked.push([w.x, w.y, w.z, 9]); }
+      Deco.update(Scene.spawnPoint || pos, true);
+    }
+    return M;
+  };
+  Scene.heavy = id => Heavy.m[id];
+  // a machine was driven somewhere: move its no-dig, solid footprint with it
+  Scene.moveHeavy = function (id, pos, yaw) { const M = Heavy.m[id]; if (!M) return; M.pos.copy(pos); M.yaw = yaw; if (M.block) { M.block[0] = pos.x; M.block[1] = pos.y; M.block[2] = pos.z; } };
+  Scene.heavyDig = function (id, dip) { const M = Heavy.m[id]; if (M) M.armDip = dip === undefined ? 1 : dip; };
+  Heavy.update = function (dt) {
+    const q = new T.Quaternion();
+    for (const id in this.m) {
+      const M = this.m[id]; M.t += dt;
+      if (id === 'truck') {   // drives an oval between the small pit and the shack
+        const st = HSITE.truck, a = M.t * 0.18, lx = st[0] + Math.cos(a) * 6, lz = st[1] + Math.sin(a) * 3;
+        const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz), l = w.length(); M.pos.copy(w).multiplyScalar((W.R + W.heightDir(w.x / l, w.y / l, w.z / l)) / l);
+        M.yaw = Math.atan2(-Math.cos(a) * 3, -Math.sin(a) * 6);
+      }
+      M.g.position.set(M.pos.x - O.x, M.pos.y - O.y, M.pos.z - O.z); M.g.quaternion.copy(frameAt(M.pos, M.yaw, q));
+      const P = M.parts;
+      if (P.upper) {
+        M.armDip = Math.max(0, M.armDip - dt * 1.4);
+        const k = M.armDip > 0.5 ? (1 - M.armDip) * 2 : M.armDip * 2;
+        if (M.auto) P.upper.rotation.y = Math.sin(M.t * 0.6) * 0.35; else P.upper.rotation.y += (M.upperYaw - P.upper.rotation.y) * Math.min(1, dt * 4);
+        P.arm.rotation.z = -0.15 - k * 0.55;
+      }
+      if (P.wheel) { P.wheel.rotation.z -= dt * 0.8; }
+      if (P.pipe) P.pipe.rotation.y += dt * 6;
+      if (P.block) P.block.position.y = P.blockY + Math.sin(M.t * 0.4) * 10;
+      if (P.sheaves) { P.sheaves[0].rotation.z += dt * 1.5; P.sheaves[1].rotation.z -= dt * 1.5; }
+    }
+  };
+  // while driving: no hand, no first-person shadow body
+  Scene.setDriving = function (on) { Hand.hold.visible = !on; Shadow.group.visible = Shadow.hold.visible = !on; Scene.driving = on; };
+
   // ---------- metal detector sweep: a ring that runs out over the ground, then marks over the ore found ----------
   const Scan = { ring: null, marks: [], t: 0, life: 12 };
   function labelTex(text, color) {
@@ -851,7 +927,7 @@
     camera.updateMatrixWorld();
     handCam.quaternion.copy(q); handCam.updateMatrixWorld();
     sky.position.copy(camera.position);
-    Particles.update(dt); Rigs.update(dt, t); Scan.update(dt);
+    Particles.update(dt); Rigs.update(dt, t); Scan.update(dt); Heavy.update(dt);
     Hand.update(info.dig, info.walk, t, dt, info.look);
     Shadow.update(eye, q);
     composer.render(dt);
