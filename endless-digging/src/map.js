@@ -85,14 +85,72 @@
           gl_FragColor = vec4(mix(c, vec3(0.02, 0.04, 0.08), uDim)*v, 1.0); }` });
     bgScene.add(new T.Mesh(new T.PlaneGeometry(2, 2), bgMat));
     pin = document.createElement('div'); pin.className = 'mapPin'; pin.innerHTML = '<i></i><span></span>'; ui.appendChild(pin);
+    buildMarkers();
     bindInput();
   };
+
+  // ---------- deposits: resource marks with a legend; information only ----------
+  const marks = [];
+  let layer, tip, tipFor = null;
+  function buildMarkers() {
+    const DD = root.DepositData; if (!DD) return;
+    const L = MapView.L, ru = L.lang === 'ru';
+    layer = document.createElement('div'); layer.className = 'mkLayer'; ui.appendChild(layer);
+    tip = document.createElement('div'); tip.className = 'mkTip'; tip.hidden = true; ui.appendChild(tip);
+    const add = (d, ua) => {
+      const r = DD.res[d[2]]; if (!r) return;
+      const el = document.createElement('button'); el.className = 'mk' + (ua ? ' ua' : ''); el.style.setProperty('--c', r.col);
+      el.textContent = r.sym; el.setAttribute('aria-label', (ru ? d[3] : d[4]) + ' — ' + (ru ? r.ru : r.en));
+      el.addEventListener('pointerdown', e => { e.stopPropagation(); showTip(m); });
+      layer.appendChild(el);
+      // importance: Ukraine first, then the dearer resources
+      const m = { d, r, el, ua, v: dir(d[0], d[1]), pri: (ua ? 1000 : 0) + Math.log(1 + r.price) * 10 };
+      marks.push(m);
+    };
+    for (const d of DD.ua) add(d, true);
+    for (const d of DD.world) add(d, false);
+    marks.sort((a, b) => b.pri - a.pri);
+    // legend: every resource on the map, cheapest to dearest
+    const used = new Set(marks.map(m => m.d[2])), lg = ui.querySelector('.mapRes');
+    if (lg) lg.innerHTML = Object.keys(DD.res).filter(k => used.has(k)).sort((a, b) => DD.res[a].price - DD.res[b].price).map(k => {
+      const r = DD.res[k]; return `<span class="lgr"><i class="mk" style="--c:${r.col}">${r.sym}</i>${ru ? r.ru : r.en}<em>${r.price ? '$' + fmtP(r.price) + '/' + L.l : L.wells}</em></span>`;
+    }).join('');
+  }
+  const fmtP = p => p >= 100 ? Math.round(p) : p >= 10 ? p.toFixed(1) : p.toFixed(2);
+  function showTip(m) {
+    const L = MapView.L, ru = L.lang === 'ru', d = m.d, r = m.r;
+    tipFor = m; tip.hidden = false;
+    tip.innerHTML = `<b>${ru ? d[3] : d[4]}</b><div class="tr"><i class="mk" style="--c:${r.col}">${r.sym}</i>${ru ? r.ru : r.en}</div>
+      <div>${L.status}: <span class="st ${d[5]}">${(L.st[d[5]] || d[5])}</span>${d[6] && d[6] !== 'UA' ? ' · ' + d[6] : ''}</div>
+      <div>${r.price ? L.priceL + ': <b>$' + fmtP(r.price) + '</b> · ' + L.rarity + ': ' + (r.ppm >= 1 ? Math.round(r.ppm) : r.ppm) + ' ' + L.ppm : L.wells}</div>
+      <div class="dim">${m.ua ? L.srcUA : L.srcWorld}</div>`;
+  }
+  function placeMarkers(s, w, h) {
+    if (!layer) return;
+    const placed = [], camN = camera.position.clone().normalize(), close = view.dist < 1.9, q = new T.Vector3();
+    let shown = 0;
+    for (const m of marks) {
+      let vis = false;
+      if (s > 0.9 && (close || m.ua || m.pri > 30)) {
+        if (m.v.dot(camN) > 0.2) {
+          q.copy(m.v).project(camera); const x = (q.x * 0.5 + 0.5) * w, y = (-q.y * 0.5 + 0.5) * h;
+          if (x > -20 && x < w + 20 && y > -20 && y < h + 20) {
+            let free = true; const gap = m.ua ? 16 : 20;
+            for (const p of placed) if (Math.abs(p[0] - x) < gap && Math.abs(p[1] - y) < gap) { free = false; break; }
+            if (free && shown < 260) { placed.push([x, y]); vis = true; shown++; m.el.style.transform = `translate(${x}px, ${y}px)`; }
+          }
+        }
+      }
+      if (vis !== m.shown) { m.el.style.display = vis ? '' : 'none'; m.shown = vis; }
+    }
+    if (tipFor && !tipFor.shown) tip.hidden = true;
+  }
 
   // ---------- input: drag to turn, wheel / pinch to zoom ----------
   const ptrs = new Map(); let pinch0 = 0, dist0 = 0;
   function bindInput() {
     const el = ui;
-    el.addEventListener('pointerdown', e => { if (!MapView.open) return; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { el.setPointerCapture(e.pointerId); } catch (er) {} if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); dist0 = target.dist; } zoomAnim = 1; });
+    el.addEventListener('pointerdown', e => { if (!MapView.open) return; if (tip) tip.hidden = true, tipFor = null; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { el.setPointerCapture(e.pointerId); } catch (er) {} if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); dist0 = target.dist; } zoomAnim = 1; });
     el.addEventListener('pointermove', e => {
       const p = ptrs.get(e.pointerId); if (!p || !MapView.open) return;
       if (ptrs.size === 1) {
@@ -151,6 +209,7 @@
     pin.style.display = facing && anim > 0.6 ? '' : 'none';
     pin.style.transform = `translate(${(q.x * 0.5 + 0.5) * w}px, ${(-q.y * 0.5 + 0.5) * h}px)`;
     pin.querySelector('span').textContent = MapView.L.here;
+    placeMarkers(s, w, h);
     return true;
   };
   MapView.isBusy = () => state !== 'closed';

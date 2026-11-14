@@ -273,10 +273,44 @@
     return null;
   }
 
+  // ---------- what the ground is made of ----------
+  // 0 topsoil (chernozem, 0-1.4 m), 1 loess clay (to 16 m), 2 granite/gneiss, 3 magnetite quartzite (iron ore, ~30 % Fe),
+  // 4 rich hematite ore (~60 % Fe). The Kryvbas strip runs through the real open pits; inside it, ore pockets sit in the clay
+  // from ~1.7 m and banded iron formation fills the rock below 16 m.
+  const KRYVBAS = [[47.62, 33.20], [47.78, 33.26], [47.87, 33.31], [47.94, 33.36], [48.02, 33.42], [48.12, 33.47], [48.35, 33.50]].map(([la, lo]) => [lo * 74.6, la * 111.2]);
+  function kryvbas(lat, lon) {   // signed distance (km) across the strip; + is east
+    const px = lon * 74.6, py = lat * 111.2; let best = 1e9, side = 1;
+    for (let i = 0; i < KRYVBAS.length - 1; i++) {
+      const [ax, ay] = KRYVBAS[i], [bx, by] = KRYVBAS[i + 1], dx = bx - ax, dy = by - ay;
+      let t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy); t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const ex = px - ax - dx * t, ey = py - ay - dy * t, d = Math.hypot(ex, ey);
+      if (d < best) { best = d; side = (dx * ey - dy * ex) < 0 ? 1 : -1; }
+    }
+    return best * side;
+  }
+  function materialAt(x, y, z) {
+    const l = Math.hypot(x, y, z), d = R + heightDir(x / l, y / l, z / l) - l;
+    if (d < 1.4 + noise(x / 7, y / 7, z / 7, 61) * 0.25) return 0;
+    const lat = Math.asin(y / l) * 57.29577951308232, lon = Math.atan2(-z, x) * 57.29577951308232;
+    const across = kryvbas(lat, lon), zone = 1 - Math.min(1, Math.max(0, (Math.abs(across) - 3.0) / 2.0));
+    if (d < 16) {
+      if (zone > 0 && d > 1.7) {
+        const n = noise(x / 1.8, y / 1.8, z / 1.8, 101) * 0.8 + noise(x / 0.55, y / 0.55, z / 0.55, 103) * 0.25;
+        if (n > 0.44 - 0.12 * zone) return n > 0.64 && d > 2.6 ? 4 : 3;
+      }
+      return 1;
+    }
+    if (zone > 0) {   // steeply dipping bands a few metres wide
+      const b = Math.sin(across * 1000 * 2 * Math.PI / 7 + d * 0.35 + noise(x / 9, y / 9, z / 9, 107) * 2.2);
+      if (b > 0.25 - 0.3 * (1 - zone)) return noise(x / 4, y / 4, z / 4, 109) > 0.35 ? 4 : 3;
+    }
+    return 2;
+  }
+
   // ---------- geography helpers ----------
   function fromLatLon(lat, lon) { const a = lat * Math.PI / 180, b = lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), -Math.cos(a) * Math.sin(b)]; }
   function toLatLon(x, y, z) { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; }
 
   root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, heightAt, solid, depthAt, addHole, clearHoles, holes, key,
-    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, fineSet, blockers, blocked, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
+    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, fineSet, blockers, blocked, materialAt, kryvbas, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
 })(typeof window !== 'undefined' ? window : globalThis);

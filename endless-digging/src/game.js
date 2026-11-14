@@ -10,12 +10,29 @@
   const L = RU ? {
     title: 'Endless Digging', sub: 'Выкопай всю Землю. Начни с ложки.', play: 'Играть', cont: 'Продолжить',
     loading: 'Строим планету…', spoon: 'Ложка',
-    shop: 'Магазин', shopSub: 'Лачуга копателя', buy: 'Купить', bought: 'Есть', next: 'Дальше', soon: 'Скоро', need: 'Не хватает', openShop: 'магазин', close: 'Закрыть',
-    up: { tool: ['Инструмент', 'Больше земли за один взмах'], bag: ['Ёмкость', 'Больше земли за одну ходку'], speed: ['Сильные руки', 'Быстрее копаешь'], scale: ['Весы в приёмке', 'Дороже принимают грунт'], help: ['Помощники', 'Копают у лачуги и сдают сами'] },
-    names: { spoon: 'Ложка', scoop: 'Совок', trowel: 'Садовая лопатка', shovel: 'Лопата', 5: 'Ведро 5 л', 10: 'Ведро 10 л', 20: 'Большое ведро 20 л', 50: 'Мешок за спиной 50 л', speed: 'Уровень', scale: 'Цена ×', help: 'Помощников' },
-    soonN: { pick: 'Кирка — для камня', barrow: 'Тачка 120 л', trailer: 'Вагончик — новая база', probe: 'Щуп — искать руду' },
+    lang: 'ru', shop: 'Исследования', shopSub: 'Лачуга копателя · выбери узел дерева', buy: 'Купить', bought: 'Уже есть', soon: 'Скоро', need: 'Не хватает', openShop: 'исследования', close: 'Закрыть',
+    soonLong: 'Появится в следующих обновлениях', needFirst: 'Сначала нужно',
+    rows: ['Инструмент', 'Ёмкость', 'Сила', 'Геология', 'Торговля', 'Люди'],
+    eff: { perStroke: 'За взмах', perTrip: 'За ходку', stroke: 'Время взмаха', price: 'Цена в приёмке', helpers: 'Помощников', see: 'Видно', probe: 'породы под прицелом до 4 м', detector: 'руду вокруг до 12 м' },
+    node: {
+      spoon: ['Ложка', 'С неё всё начинается. Маленькая ямка за взмах.'], scoop: ['Совок', 'Металлический совок: вдвое больше земли за взмах.'],
+      trowel: ['Садовая лопатка', 'Острая лопатка, легко входит в глину.'], shovel: ['Лопата', 'Настоящая штыковая лопата. Нужны сильные руки.'],
+      pick: ['Кирка', 'Разбивает камень глубже 16 м.'], b5: ['Ведро 5 л', 'Оранжевое ведро в левой руке.'], b10: ['Ведро 10 л', 'Вдвое больше земли за ходку.'],
+      b20: ['Большое ведро 20 л', 'Тяжёлое, но ходить к приёмке реже.'], sack: ['Мешок за спиной 50 л', 'Прочный мешок, руки свободны.'], barrow: ['Тачка 120 л', 'Возить грунт тачкой.'],
+      arms1: ['Сильные руки I', 'Взмах на 15 % быстрее.'], arms2: ['Сильные руки II', 'Ещё быстрее.'], arms3: ['Сильные руки III', 'Копаешь как машина.'],
+      probe: ['Щуп', 'Стальной щуп: показывает, какие породы под прицелом, до 4 м вглубь.'], detector: ['Металлоискатель', 'Пищит рядом с рудой и говорит, где копать: направление, расстояние, глубина.'],
+      radar: ['Георадар', 'Карта руды под участком.'], scales1: ['Весы', 'Честные весы: приёмка платит на 25 % больше.'], scales2: ['Весы с поверкой', 'Платят на 50 % больше.'],
+      help1: ['Помощник', 'Рабочий копает у лачуги и сам сдаёт грунт.'], help2: ['Два помощника', 'Ещё один рабочий.'], help3: ['Бригада', 'Трое рабочих.'], cabin: ['Вагончик', 'Вторая база с новыми возможностями.']
+    },
+    mat: ['чернозём', 'глина', 'гранит', 'магнетитовый кварцит', 'гематитовая руда'], firstOre: 'Руда! Железная руда стоит дороже земли — сдай её в приёмку',
+    oreSold: 'руда сдана:', probeL: 'Щуп', detL: 'Металлоискатель', noOre: 'руды рядом нет', ahead: 'впереди', behind: 'сзади', leftS: 'слева', rightS: 'справа', depthL: 'глубина',
+    status: 'Статус', priceL: 'Цена за литр', rarity: 'в земной коре', ppm: 'г/т', wells: 'добывается скважинами',
+    srcUA: 'Координаты приблизительные, статус на 2026 год', srcWorld: 'Данные USGS MRDS, статус на момент их обновления',
+    st: { work: 'работает', idle: 'простаивает', closed: 'закрыто', occ14: 'оккупировано с 2014', occ22: 'оккупировано с 2022', front: 'у линии фронта', expl: 'разведано, не разрабатывается',
+      usgs_prod: 'добывалось', usgs_past: 'отработано', known: 'известное месторождение' },
+    resTitle: 'Ресурсы на карте', lmap: 'л',
     helperPay: 'помощники', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км', l: 'л',
-    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать · <b>E</b> сдать грунт · <b>F</b> магазин у лачуги · <b>M</b> карта · <b>Esc</b> пауза',
+    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать · <b>E</b> сдать грунт · <b>F</b> исследования у лачуги · <b>M</b> карта · <b>Esc</b> пауза',
     pause: 'Пауза', quality: 'Графика', hi: 'Высокая', mid: 'Средняя', lo: 'Быстрая', reset: 'Начать заново', far: 'Слишком далеко',
     clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км',
     sign: ['ПРИЁМ ГРУНТА', '$0.10 за литр'], bucket: 'Ведро', full: 'Ведро полное — неси в приёмку у лачуги', sell: 'сдать грунт', noDig: 'Здесь копать нельзя', inWay: 'Мешает — камень или дерево',
@@ -24,12 +41,29 @@
   } : {
     title: 'Endless Digging', sub: 'Dig out the whole Earth. Start with a spoon.', play: 'Play', cont: 'Continue',
     loading: 'Building the planet…', spoon: 'Spoon',
-    shop: 'Shop', shopSub: "The digger's shack", buy: 'Buy', bought: 'Owned', next: 'Next', soon: 'Soon', need: 'Need', openShop: 'shop', close: 'Close',
-    up: { tool: ['Tool', 'More soil per stroke'], bag: ['Container', 'More soil per trip'], speed: ['Strong arms', 'Dig faster'], scale: ['Scales at the bin', 'Better price for soil'], help: ['Helpers', 'Dig by the shack and hand in themselves'] },
-    names: { spoon: 'Spoon', scoop: 'Hand scoop', trowel: 'Garden trowel', shovel: 'Shovel', 5: 'Bucket 5 L', 10: 'Bucket 10 L', 20: 'Big bucket 20 L', 50: 'Back sack 50 L', speed: 'Level', scale: 'Price ×', help: 'Helpers' },
-    soonN: { pick: 'Pickaxe — for rock', barrow: 'Wheelbarrow 120 L', trailer: 'Site cabin — a new base', probe: 'Probe — find ore' },
+    lang: 'en', shop: 'Research', shopSub: "The digger's shack · pick a node of the tree", buy: 'Buy', bought: 'Owned', soon: 'Soon', need: 'Need', openShop: 'research', close: 'Close',
+    soonLong: 'Coming in a later update', needFirst: 'First you need',
+    rows: ['Tool', 'Container', 'Strength', 'Geology', 'Trade', 'People'],
+    eff: { perStroke: 'Per stroke', perTrip: 'Per trip', stroke: 'Stroke time', price: 'Price at the bin', helpers: 'Helpers', see: 'Shows', probe: 'the ground under the crosshair to 4 m', detector: 'ore around you to 12 m' },
+    node: {
+      spoon: ['Spoon', 'Where it all starts. A tiny hole per stroke.'], scoop: ['Hand scoop', 'A metal scoop: twice the soil per stroke.'],
+      trowel: ['Garden trowel', 'A sharp trowel that cuts into clay.'], shovel: ['Shovel', 'A real spade. Needs strong arms.'],
+      pick: ['Pickaxe', 'Breaks rock below 16 m.'], b5: ['Bucket 5 L', 'The orange bucket in your left hand.'], b10: ['Bucket 10 L', 'Twice the soil per trip.'],
+      b20: ['Big bucket 20 L', 'Heavy, but fewer trips to the bin.'], sack: ['Back sack 50 L', 'A strong sack, hands free.'], barrow: ['Wheelbarrow 120 L', 'Move soil by barrow.'],
+      arms1: ['Strong arms I', 'Strokes 15 % faster.'], arms2: ['Strong arms II', 'Faster still.'], arms3: ['Strong arms III', 'You dig like a machine.'],
+      probe: ['Probe', 'A steel probe: shows the ground under the crosshair, 4 m down.'], detector: ['Metal detector', 'Beeps near ore and tells you where to dig: direction, distance, depth.'],
+      radar: ['Ground radar', 'A map of the ore under the site.'], scales1: ['Scales', 'Honest scales: the bin pays 25 % more.'], scales2: ['Certified scales', 'Pays 50 % more.'],
+      help1: ['Helper', 'A worker digs by the shack and hands the soil in.'], help2: ['Two helpers', 'One more worker.'], help3: ['Crew', 'Three workers.'], cabin: ['Site cabin', 'A second base with new things to do.']
+    },
+    mat: ['topsoil', 'clay', 'granite', 'magnetite quartzite', 'hematite ore'], firstOre: 'Ore! Iron ore is worth more than soil — hand it in at the bin',
+    oreSold: 'ore handed in:', probeL: 'Probe', detL: 'Detector', noOre: 'no ore nearby', ahead: 'ahead', behind: 'behind', leftS: 'to the left', rightS: 'to the right', depthL: 'depth',
+    status: 'Status', priceL: 'Price per litre', rarity: 'in the crust', ppm: 'ppm', wells: 'extracted by wells',
+    srcUA: 'Approximate coordinates, status as of 2026', srcWorld: 'USGS MRDS data, status as of its last update',
+    st: { work: 'working', idle: 'idle', closed: 'closed', occ14: 'occupied since 2014', occ22: 'occupied since 2022', front: 'near the front line', expl: 'explored, not mined',
+      usgs_prod: 'producer', usgs_past: 'past producer', known: 'well-known deposit' },
+    resTitle: 'Resources on the map', lmap: 'L',
     helperPay: 'helpers', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km', l: 'L',
-    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig · <b>E</b> hand in soil · <b>F</b> shop at the shack · <b>M</b> map · <b>Esc</b> pause',
+    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig · <b>E</b> hand in soil · <b>F</b> research at the shack · <b>M</b> map · <b>Esc</b> pause',
     pause: 'Paused', quality: 'Graphics', hi: 'High', mid: 'Medium', lo: 'Fast', reset: 'Start over', far: 'Too far',
     clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km',
     sign: ['SOIL WANTED', '$0.10 per litre'], bucket: 'Bucket', full: 'Bucket is full — take it to the bin by the shack', sell: 'hand in soil', noDig: "Can't dig here", inWay: 'A rock or a tree is in the way',
@@ -39,8 +73,8 @@
   document.documentElement.lang = RU ? 'ru' : 'en';
   const TOUCH = (root.matchMedia && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in root || /[?&]touch\b/.test(location.search);
   if (TOUCH) document.documentElement.classList.add('touch');
-  Object.assign(L, RU ? { tkeys: '<b>Левый палец</b> — идти (дальше от центра — бег) · <b>правый</b> — смотреть · <b>⛏</b> копать · <b>⤒</b> прыжок · <b>🗺</b> карта · <b>Ⅱ</b> пауза', dig: 'Копать', jumpB: 'Прыжок', turn: 'Поверни телефон боком — так удобнее' }
-    : { tkeys: '<b>Left thumb</b> walk (push further to run) · <b>right</b> look · <b>⛏</b> dig · <b>⤒</b> jump · <b>🗺</b> map · <b>Ⅱ</b> pause', dig: 'Dig', jumpB: 'Jump', turn: 'Turn your phone sideways for a better view' });
+  Object.assign(L, RU ? { tkeys: '<b>Левый палец</b> — идти (дальше от центра — бег) · <b>правый</b> — смотреть · <b>копать</b> · <b>прыжок</b> · <b>карта</b> · <b>Ⅱ</b> пауза', dig: 'Копать', jumpB: 'Прыжок', turn: 'Поверни телефон боком — так удобнее' }
+    : { tkeys: '<b>Left thumb</b> walk (push further to run) · <b>right</b> look · <b>dig</b> · <b>jump</b> · <b>map</b> · <b>Ⅱ</b> pause', dig: 'Dig', jumpB: 'Jump', turn: 'Turn your phone sideways for a better view' });
 
   // ---------- tools and economy ----------
   // the tool ladder (variant 1 of the progression page): each step digs a bigger scoop
@@ -50,24 +84,50 @@
     trowel: { r: 0.085, time: 0.55, reach: 2.4, parts: 6, size: 0.5 },
     shovel: { r: 0.12, time: 0.65, reach: 2.6, parts: 9, size: 0.75 }
   };
-  // the shop: lines of upgrades, each bought in order. price, value (what it sets)
-  const SHOP = [
-    { id: 'tool', icon: '🥄', levels: [{ v: 'spoon' }, { v: 'scoop', p: 2 }, { v: 'trowel', p: 15 }, { v: 'shovel', p: 60 }] },
-    { id: 'bag', icon: '🪣', levels: [{ v: 5 }, { v: 10, p: 5 }, { v: 20, p: 15 }, { v: 50, p: 45 }] },
-    { id: 'speed', icon: '💪', levels: [{ v: 1 }, { v: 0.85, p: 8 }, { v: 0.72, p: 25 }, { v: 0.61, p: 70 }] },
-    { id: 'scale', icon: '⚖️', levels: [{ v: 1 }, { v: 1.25, p: 20 }, { v: 1.5, p: 90 }] },
-    { id: 'help', icon: '👷', levels: [{ v: 0 }, { v: 1, p: 30 }, { v: 2, p: 90 }, { v: 3, p: 250 }] }
+  // ---------- research tree ----------
+  // Bought at the shack. Each node needs the nodes in req; 'soon' nodes are shown but not for sale yet.
+  const NODES = [
+    { id: 'spoon', row: 0, col: 0, icon: 'spoon', root: true },
+    { id: 'scoop', row: 0, col: 1, icon: 'scoop', p: 2, req: ['spoon'] },
+    { id: 'trowel', row: 0, col: 2, icon: 'trowel', p: 15, req: ['scoop'] },
+    { id: 'shovel', row: 0, col: 3, icon: 'shovel', p: 60, req: ['trowel', 'arms1'] },
+    { id: 'pick', row: 0, col: 4, icon: 'pick', soon: true, req: ['shovel'] },
+    { id: 'b5', row: 1, col: 0, icon: 'b5', root: true },
+    { id: 'b10', row: 1, col: 1, icon: 'b10', p: 5, req: ['b5'] },
+    { id: 'b20', row: 1, col: 2, icon: 'b20', p: 15, req: ['b10'] },
+    { id: 'sack', row: 1, col: 3, icon: 'sack', p: 45, req: ['b20'] },
+    { id: 'barrow', row: 1, col: 4, icon: 'barrow', soon: true, req: ['sack'] },
+    { id: 'arms1', row: 2, col: 1, icon: 'arm', p: 8, req: ['scoop'] },
+    { id: 'arms2', row: 2, col: 2, icon: 'arm2', p: 25, req: ['arms1'] },
+    { id: 'arms3', row: 2, col: 3, icon: 'arm3', p: 70, req: ['arms2'] },
+    { id: 'probe', row: 3, col: 1, icon: 'probe', p: 12, req: ['scoop'] },
+    { id: 'detector', row: 3, col: 2, icon: 'detector', p: 40, req: ['probe'] },
+    { id: 'radar', row: 3, col: 3, icon: 'radar', soon: true, req: ['detector'] },
+    { id: 'scales1', row: 4, col: 2, icon: 'scale', p: 20, req: ['b10'] },
+    { id: 'scales2', row: 4, col: 3, icon: 'scale2', p: 90, req: ['scales1'] },
+    { id: 'help1', row: 5, col: 2, icon: 'worker', p: 30, req: ['scales1', 'trowel'] },
+    { id: 'help2', row: 5, col: 3, icon: 'workers2', p: 90, req: ['help1'] },
+    { id: 'help3', row: 5, col: 4, icon: 'workers3', p: 250, req: ['help2'] },
+    { id: 'cabin', row: 5, col: 5, icon: 'cabin', soon: true, req: ['help3'] }
   ];
-  const SOON = ['pick', 'barrow', 'trailer', 'probe'];
-  const up_ = { tool: 0, bag: 0, speed: 0, scale: 0, help: 0 };
-  const lvl = id => SHOP.find(x => x.id === id).levels[up_[id]].v;
-  let BUCKET_L = 5;                                      // litres (grows with the shop)
+  const owned = new Set(NODES.filter(n => n.root).map(n => n.id));
+  const has = id => owned.has(id);
+  const lvl = id => id === 'tool' ? (has('shovel') ? 'shovel' : has('trowel') ? 'trowel' : has('scoop') ? 'scoop' : 'spoon')
+    : id === 'bag' ? (has('sack') ? 50 : has('b20') ? 20 : has('b10') ? 10 : 5)
+    : id === 'speed' ? (has('arms3') ? 0.61 : has('arms2') ? 0.72 : has('arms1') ? 0.85 : 1)
+    : id === 'scale' ? (has('scales2') ? 1.5 : has('scales1') ? 1.25 : 1)
+    : id === 'help' ? (has('help3') ? 3 : has('help2') ? 2 : has('help1') ? 1 : 0) : 0;
+  let BUCKET_L = 5;                                      // litres (grows with the tree)
   const HELPER_L = 1.0, HELPER_T = 2.5;                  // a helper scoops 1 L every 2.5 s and hands it in himself
-  const PRICE = d => d < 1.4 ? 0.10 : d < 6 ? 0.14 : d < 16 ? 0.2 : 0.35;   // $ per litre: topsoil, clay, deeper clay, rock
+  // ---------- what the ground is made of; price per litre follows rarity in the Earth's crust (deposits.js) ----------
+  // 0 topsoil, 1 clay, 2 granite, 3 magnetite quartzite (~30 % Fe), 4 rich hematite ore (~60 % Fe: twice the iron)
+  const RESP = (root.DepositData && root.DepositData.res) || {}, FE = (RESP.fe && RESP.fe.price) || 0.29;
+  const MATS = [{ p: 0.10 }, { p: 0.14 }, { p: (RESP.stone && RESP.stone.price) || 0.14 }, { p: FE, ore: true }, { p: FE * 2, ore: true }];
   const EARTH_VOL = 4 / 3 * Math.PI * Math.pow(W.R, 3);
 
   // ---------- player ----------
-  const pl = { pos: v3(0, 0, 0), vel: v3(0, 0, 0), fwd: v3(0, 0, -1), pitch: 0, grounded: false, tool: 'spoon', dig: -1, dug: 0, money: 0, bucket: 0, bucketValue: 0, sold: 0 };
+  const pl = { pos: v3(0, 0, 0), vel: v3(0, 0, 0), fwd: v3(0, 0, -1), pitch: 0, grounded: false, tool: 'spoon', dig: -1, dug: 0, money: 0, bucket: 0, mix: [0, 0, 0, 0, 0], sold: 0 };
+  const bucketValue = () => pl.mix.reduce((a, l, i) => a + l * MATS[i].p, 0);
   const RAD = 0.3, EYE = 1.62, G = 9.81, JUMP = 4.3, WALK = 4.2, RUN = 7.0;   // real gravity; a jump of about 0.9 m
   const SPHERES = [0.31, 0.9, 1.42];
   const up = v3(0, 1, 0), right = v3(1, 0, 0);
@@ -180,23 +240,25 @@
     if (pl.bucket >= BUCKET_L - 1e-6) { notice(L.full); Sound.thud(); return false; }
     const c = hit.p.clone().addScaledVector(hit.d, tool.r * 0.45);
     if (W.blocked(c.x, c.y, c.z, tool.r + 0.05)) { notice(L.noDig); Sound.thud(); return false; }
-    // how much solid ground the scoop removes (sampled)
-    let solidN = 0; const NS = 48;
+    // how much solid ground the scoop removes and what it is made of (sampled)
+    const NS = 48, per = [0, 0, 0, 0, 0]; let solidN = 0;
     for (let i = 0; i < NS; i++) {
       const a = v3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1); if (a.lengthSq() > 1) { i--; continue; }
-      const q = c.clone().addScaledVector(a, tool.r); if (W.solid(q.x, q.y, q.z) > 0) solidN++;
+      const q = c.clone().addScaledVector(a, tool.r); if (W.solid(q.x, q.y, q.z) > 0) { solidN++; per[W.materialAt(q.x, q.y, q.z)]++; }
     }
-    let litres = solidN / NS * 4 / 3 * Math.PI * Math.pow(tool.r, 3) * 1000;
-    litres = Math.min(litres, BUCKET_L - pl.bucket);
+    const full = solidN / NS * 4 / 3 * Math.PI * Math.pow(tool.r, 3) * 1000, litres = Math.min(full, BUCKET_L - pl.bucket), k = solidN ? litres / solidN : 0;
     const depth = W.depthAt(hit.p.x, hit.p.y, hit.p.z);
-    const color = S.groundColor(Math.max(0.6, depth), 0, 0);
+    let main = 0; for (let i = 1; i < 5; i++) if (per[i] > per[main]) main = i;
+    const color = S.matColor(main);
     const hole = [c.x, c.y, c.z, tool.r];
     S.applyHole(hole, W.addHole(c.x, c.y, c.z, tool.r));
     S.burst(hit.p.x, hit.p.y, hit.p.z, color, tool.parts, hit.d.clone().negate(), tool.size);
     S.setSpoonFull(true);
     Sound.dig(pl.tool, depth);
-    pl.dug += litres / 1000; pl.bucket += litres; pl.bucketValue += litres * PRICE(depth);
-    if (litres > 0.001) floater('+' + litres.toFixed(2) + ' ' + L.l);
+    pl.dug += litres / 1000; pl.bucket += litres; for (let i = 0; i < 5; i++) pl.mix[i] += per[i] * k;
+    const oreL = (per[3] + per[4]) * k;
+    if (oreL > 0.001) { floater('+' + oreL.toFixed(2) + ' ' + L.l + ' ' + L.mat[per[4] > per[3] ? 4 : 3], 'ore'); if (!pl.foundOre) { pl.foundOre = true; notice(L.firstOre); } }
+    else if (litres > 0.001) floater('+' + litres.toFixed(2) + ' ' + L.l + ' ' + L.mat[main]);
     if (pl.bucket >= BUCKET_L - 1e-6) notice(L.full);
     dirty = true; return true;
   }
@@ -205,8 +267,9 @@
   function nearBin() { const d = S.drop; return d && pl.pos.distanceTo(d.point) < 2.7; }
   function sell() {
     if (!nearBin() || pl.bucket < 0.01 || tipT > 0) return;
-    const got = Math.round(pl.bucketValue * lvl('scale') * 100) / 100, litres = pl.bucket;
-    pl.money += got; pl.sold += litres; pl.bucket = 0; pl.bucketValue = 0; tipT = 0.9;
+    const got = Math.round(bucketValue() * lvl('scale') * 100) / 100, litres = pl.bucket, ore = pl.mix[3] + pl.mix[4];
+    pl.money += got; pl.sold += litres; pl.bucket = 0; pl.mix = [0, 0, 0, 0, 0]; tipT = 0.9;
+    if (ore > 0.01) floater(L.oreSold + ' ' + ore.toFixed(2) + ' ' + L.l, 'ore');
     const d = S.drop; S.burst(d.point.x, d.point.y, d.point.z, S.groundColor(0.6, 0, 0), 10, null, 0.5);
     S.setPile(Math.min(1, pl.sold / 400));
     floater('+$' + got.toFixed(2)); Sound.coin(); dirty = true;
@@ -220,29 +283,60 @@
     BUCKET_L = lvl('bag'); S.setContainer({ 5: 1, 10: 1.15, 20: 1.32, 50: 1.32 }[BUCKET_L] || 1);
     for (let i = 0; i < lvl('help'); i++) S.addWorker(i);
   }
-  function shopHTML() {
-    const nm = (id, v) => id === 'tool' || id === 'bag' ? L.names[v] : id === 'speed' ? L.names.speed + ' ' + (SHOP[2].levels.findIndex(l => l.v === v) + 1) : id === 'scale' ? L.names.scale + v : L.names.help + ': ' + v;
-    let h = `<div class="shopHead"><div><h2>${L.shop}</h2><p>${L.shopSub}</p></div><div class="shopMoney">$${pl.money.toFixed(2)}</div><button id="shopClose" aria-label="${L.close}">✕</button></div><div class="shopGrid">`;
-    for (const line of SHOP) {
-      const cur = line.levels[up_[line.id]], nx = line.levels[up_[line.id] + 1], t = L.up[line.id];
-      h += `<div class="shopItem"><div class="si"><span class="sIcon">${line.icon}</span><div><b>${t[0]}</b><small>${t[1]}</small></div></div>
-        <div class="sNow">${nm(line.id, cur.v)}</div>`;
-      if (nx) { const can = pl.money >= nx.p; h += `<div class="sNext">${L.next}: <b>${nm(line.id, nx.v)}</b></div><button class="sBuy" data-id="${line.id}" ${can ? '' : 'disabled'}>${can ? L.buy : L.need} · $${nx.p}</button>`; }
-      else h += `<div class="sNext done">✓ ${L.bought}</div>`;
-      h += '</div>';
+  // the research tree: rows of branches, lines from each node to what it needs; a card on the side says what you buy
+  const nodeState = n => has(n.id) ? 'own' : n.soon ? 'soon' : (n.req || []).every(has) ? (pl.money >= n.p ? 'buy' : 'poor') : 'lock';
+  let selNode = 'scoop';
+  function effectText(id) {   // "now -> after" in plain words
+    const E = L.eff, t = TOOLS;
+    const sc = x => (Math.round(4 / 3 * Math.PI * Math.pow(t[x].r, 3) * 1000 * 0.55 * 100) / 100) + ' ' + L.l;
+    const m = { scoop: [E.perStroke, sc('spoon'), sc('scoop')], trowel: [E.perStroke, sc('scoop'), sc('trowel')], shovel: [E.perStroke, sc('trowel'), sc('shovel')],
+      b10: [E.perTrip, '5 ' + L.l, '10 ' + L.l], b20: [E.perTrip, '10 ' + L.l, '20 ' + L.l], sack: [E.perTrip, '20 ' + L.l, '50 ' + L.l],
+      arms1: [E.stroke, '100 %', '85 %'], arms2: [E.stroke, '85 %', '72 %'], arms3: [E.stroke, '72 %', '61 %'],
+      scales1: [E.price, '×1', '×1.25'], scales2: [E.price, '×1.25', '×1.5'], help1: [E.helpers, '0', '1'], help2: [E.helpers, '1', '2'], help3: [E.helpers, '2', '3'],
+      probe: [E.see, '—', E.probe], detector: [E.see, E.probe, E.detector] }[id];
+    return m ? `<div class="eff"><span>${m[0]}</span><b>${m[1]}</b><i>→</i><b class="new">${m[2]}</b></div>` : '';
+  }
+  function treeHTML() {
+    const CW = 104, RH = 96, X = c => 112 + c * CW, Y = r => 46 + r * RH, W2 = X(5) + 70, H2 = Y(5) + 60;
+    let lines = '';
+    for (const n of NODES) for (const r of n.req || []) {
+      const a = NODES.find(x => x.id === r), on = has(r);
+      lines += `<path d="M${X(a.col) + 30} ${Y(a.row)} C${X(a.col) + 64} ${Y(a.row)} ${X(n.col) - 64} ${Y(n.row)} ${X(n.col) - 30} ${Y(n.row)}" class="ln${on ? ' on' : ''}${has(n.id) ? ' done' : ''}"/>`;
     }
-    h += `</div><div class="shopSoon"><b>${L.soon}:</b> ${SOON.map(k => L.soonN[k]).join(' · ')}</div>`;
-    return h;
+    let nodes = '';
+    for (const n of NODES) {
+      const st = nodeState(n);
+      nodes += `<button class="tn ${st}${selNode === n.id ? ' sel' : ''}" data-id="${n.id}" style="left:${X(n.col) - 30}px;top:${Y(n.row) - 30}px" aria-label="${L.node[n.id][0]}">${Icons.svg(n.icon)}`
+        + (st === 'own' ? '<em class="ok">✓</em>' : st === 'soon' ? `<em>${L.soon}</em>` : st === 'lock' ? `<em class="lk">${Icons.svg('lock')}</em>` : `<em>$${n.p}</em>`) + '</button>';
+    }
+    const rows = L.rows.map((r, i) => `<div class="rowL" style="top:${Y(i) - 9}px">${r}</div>`).join('');
+    return `<div class="tree" style="width:${W2}px;height:${H2}px"><svg class="lines" width="${W2}" height="${H2}">${lines}</svg>${rows}${nodes}</div>`;
+  }
+  function cardHTML() {
+    const n = NODES.find(x => x.id === selNode), st = nodeState(n), t = L.node[n.id];
+    const need = (n.req || []).filter(r => !has(r)).map(r => L.node[r][0]);
+    let act = '';
+    if (st === 'own') act = `<div class="cState ok">✓ ${L.bought}</div>`;
+    else if (st === 'soon') act = `<div class="cState">${L.soonLong}</div>`;
+    else if (st === 'lock') act = `<div class="cState">${L.needFirst}: <b>${need.join(', ')}</b></div><button class="cBuy" disabled>$${n.p}</button>`;
+    else act = `<button class="cBuy" data-id="${n.id}"${st === 'buy' ? '' : ' disabled'}>${st === 'buy' ? L.buy : L.need + ' $' + (n.p - pl.money).toFixed(2)} · $${n.p}</button>`;
+    return `<div class="cIcon">${Icons.svg(n.icon)}</div><h3>${t[0]}</h3><p>${t[1]}</p>${effectText(n.id)}${act}`;
   }
   function renderShop() {
-    const el = $('shop'); el.innerHTML = '<div class="shopCard">' + shopHTML() + '</div>';
+    const el = $('shop'), tw = el.querySelector('.treeWrap'), keep = tw ? [tw.scrollLeft, tw.scrollTop] : [0, 0];
+    el.innerHTML = `<div class="shopCard"><div class="shopHead"><div><h2>${L.shop}</h2><p>${L.shopSub}</p></div><div class="shopMoney">$${pl.money.toFixed(2)}</div><button id="shopClose" aria-label="${L.close}">✕</button></div>`
+      + `<div class="shopBody"><div class="treeWrap">${treeHTML()}</div><div class="nodeCard">${cardHTML()}</div></div></div>`;
+    const tw2 = el.querySelector('.treeWrap'); tw2.scrollLeft = keep[0]; tw2.scrollTop = keep[1];
     $('shopClose').addEventListener('click', () => toggleShop(false));
-    for (const b of el.querySelectorAll('.sBuy')) b.addEventListener('click', () => buy(b.dataset.id));
+    for (const b of el.querySelectorAll('.tn')) b.addEventListener('click', () => { selNode = b.dataset.id; renderShop(); });
+    const cb = el.querySelector('.cBuy[data-id]'); if (cb) cb.addEventListener('click', () => buy(cb.dataset.id));
   }
   function buy(id) {
-    const line = SHOP.find(x => x.id === id), nx = line.levels[up_[id] + 1];
-    if (!nx || pl.money < nx.p) return;
-    pl.money -= nx.p; up_[id]++; applyUpgrades(); Sound.coin(); dirty = true; save(); renderShop();
+    const n = NODES.find(x => x.id === id);
+    if (!n || n.soon || has(id) || !(n.req || []).every(has) || pl.money < n.p) return;
+    pl.money -= n.p; owned.add(id); applyUpgrades(); Sound.coin(); dirty = true; save();
+    const nx = NODES.find(x => (x.req || []).includes(id) && !has(x.id) && !x.soon); if (nx) selNode = nx.id;   // point at what comes next
+    renderShop();
   }
   function toggleShop(on) {
     if (on === shopOpen) return;
@@ -272,7 +366,7 @@
           const c = q.clone().addScaledVector(u, -0.03), r = 0.075;
           S.applyHole([c.x, c.y, c.z, r], W.addHole(c.x, c.y, c.z, r));
           S.burst(q.x, q.y, q.z, S.groundColor(0.6, 0, 0), 3, null, 0.35);
-          const depth = W.depthAt(q.x, q.y, q.z), got = HELPER_L * PRICE(depth) * lvl('scale');
+          const got = HELPER_L * MATS[W.materialAt(q.x, q.y, q.z)].p * lvl('scale');
           pl.money += got; pl.dug += HELPER_L / 1000; pl.helperEarned = (pl.helperEarned || 0) + got; dirty = true;
           return;
         }
@@ -354,6 +448,7 @@
       unlock() { try { ctx(); if (ac.state === 'suspended') ac.resume(); } catch (e) {} },
       dig(tool, depth) { if (!ac) return; const hard = depth > 13 ? 1 : 0; noise(0.16, 700 + hard * 900, 0.8, 0.22); tone(1900 + hard * 600, 0.05, 0.02, 0, 'triangle'); noise(0.25, 2600, 0.6, 0.04, 'highpass', 0.04); },
       thud() { if (!ac) return; noise(0.1, 220, 1, 0.12); },
+      beep(k) { if (!ac) return; tone(900 + 900 * k, 0.07, 0.04 + 0.05 * k, 0, 'square'); },
       coin() { if (!ac) return; noise(0.5, 400, 0.8, 0.25); tone(1320, 0.12, 0.12, 0, 'triangle', 0.25); tone(1760, 0.25, 0.12, 0, 'triangle', 0.36); },
       step() { if (!ac) return; noise(0.12, 380 + Math.random() * 120, 1.2, 0.1); noise(0.08, 2800, 0.7, 0.02, 'highpass'); },
       jump() { if (!ac) return; noise(0.1, 600, 1, 0.06); },
@@ -363,7 +458,7 @@
 
   // ---------- HUD ----------
   function fmtInt(n) { return Math.round(n).toLocaleString(RU ? 'ru-RU' : 'en-US'); }
-  function floater(text) { const el = document.createElement('div'); el.className = 'floater'; el.textContent = text; $('floaters').appendChild(el); setTimeout(() => el.remove(), 1200); }
+  function floater(text, cls) { const el = document.createElement('div'); el.className = 'floater' + (cls ? ' ' + cls : ''); el.textContent = text; $('floaters').appendChild(el); setTimeout(() => el.remove(), 1200); }
   let noticeT = 0;
   function notice(text) { const el = $('notice'); el.textContent = text; el.hidden = false; noticeT = 2.2; }
   function hud(dt) {
@@ -379,18 +474,57 @@
     const f = pl.bucket / BUCKET_L;
     $('bucketFill').style.width = (f * 100).toFixed(1) + '%'; $('bucketFill').classList.toggle('full', f > 0.999);
     $('bucketTxt').textContent = pl.bucket.toFixed(2) + ' / ' + BUCKET_L + ' ' + L.l;
-    $('bShop').hidden = !nearShop(); if (!$('bShop').hidden) $('bShop').innerHTML = (TOUCH ? '🛒 ' : '<b>F</b> ') + L.openShop;
+    $('bShop').hidden = !nearShop(); if (!$('bShop').hidden) $('bShop').innerHTML = (TOUCH ? '' : '<b>F</b> ') + L.openShop;
     const canSell = nearBin() && pl.bucket > 0.01;
-    $('bSell').hidden = !canSell; if (canSell) $('bSell').innerHTML = (TOUCH ? '' : '<b>E</b> ') + L.sell + ' · +$' + (Math.round(pl.bucketValue * lvl('scale') * 100) / 100).toFixed(2);
+    $('bSell').hidden = !canSell; if (canSell) $('bSell').innerHTML = (TOUCH ? '' : '<b>E</b> ') + L.sell + ' · +$' + (Math.round(bucketValue() * lvl('scale') * 100) / 100).toFixed(2);
     if (noticeT > 0 && (noticeT -= dt) <= 0) $('notice').hidden = true;
+    geology(dt);
     S.setBucket(f);
+  }
+
+  // ---------- geology: the probe reads the column under the crosshair, the detector looks for ore around ----------
+  let geoT = 0, detT = 0, lastDet = '';
+  function geology(dt) {
+    const el = $('geo'); if (!has('probe')) { el.hidden = true; return; }
+    if ((geoT -= dt) > 0) return; geoT = 0.25;
+    let txt = '';
+    const h = rayHit(TOOLS[pl.tool].reach + 1.5);
+    if (h && !h.obstacle) {
+      const u = h.p.clone().normalize(), parts = []; let cur = -1, from = 0;
+      for (let d = 0; d <= 4.001; d += 0.1) {
+        const q = h.p.clone().addScaledVector(u, -d), m = W.solid(q.x, q.y, q.z) > 0 ? W.materialAt(q.x, q.y, q.z) : -1;
+        if (m !== cur) { if (cur >= 0) parts.push([cur, from, d]); cur = m; from = d; }
+      }
+      if (cur >= 0) parts.push([cur, from, 4]);
+      txt = `<b>${L.probeL}</b> ` + parts.slice(0, 4).map(([m, a, b]) => `<span class="m${m}">${L.mat[m]}</span> ${a.toFixed(1)}–${b.toFixed(1)} ${L.m}`).join(' · ');
+    }
+    if (has('detector')) {
+      if ((detT -= 0.25) <= 0) {
+        detT = 1;
+        // nearest ore within 12 m around and 1.5..8 m down
+        let best = null;
+        const right2 = right.clone(), fwd2 = pl.fwd.clone();
+        for (let a = -12; a <= 12; a += 1) for (let b = -12; b <= 12; b += 1) {
+          const r2 = a * a + b * b; if (r2 > 144 || (best && r2 > best.r2)) continue;
+          const p0 = pl.pos.clone().addScaledVector(right2, a).addScaledVector(fwd2, b);
+          for (let d = 1.6; d <= 8; d += 0.5) { const q = p0.clone().addScaledVector(up, -d); if (W.solid(q.x, q.y, q.z) > 0 && W.materialAt(q.x, q.y, q.z) >= 3) { best = { a, b, d, r2 }; break; } }
+        }
+        if (best) {
+          const dist = Math.sqrt(best.r2), dirW = Math.abs(best.b) >= Math.abs(best.a) ? (best.b >= 0 ? L.ahead : L.behind) : (best.a > 0 ? L.rightS : L.leftS);
+          lastDet = `<b>${L.detL}</b> <span class="m3">●</span> ${dist < 1 ? '' : dist.toFixed(0) + ' ' + L.m + ' ' + dirW + ', '}${L.depthL} ~${best.d.toFixed(1)} ${L.m}`;
+          Sound.beep(1 - dist / 13);
+        } else lastDet = `<b>${L.detL}</b> ${L.noOre}`;
+      }
+      txt += (txt ? '<br>' : '') + lastDet;
+    }
+    el.innerHTML = txt; el.hidden = !txt;
   }
 
   // ---------- save ----------
   const SAVE = 'endlessdigging.v3', OLD_SAVE = 'endlessdigging.v2';   // v3: real relief (v2 holes no longer fit; money is kept)
   let dirty = false, saveT = 0;
   function save() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ holes: W.holes.map(h => h.map(v => Math.round(v * 1000) / 1000)), pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, bucket: pl.bucket, bucketValue: pl.bucketValue, sold: pl.sold, up: up_ })); } catch (e) {}
+    try { localStorage.setItem(SAVE, JSON.stringify({ holes: W.holes.map(h => h.map(v => Math.round(v * 1000) / 1000)), pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, bucket: pl.bucket, mix: pl.mix, sold: pl.sold, owned: [...owned], foundOre: !!pl.foundOre })); } catch (e) {}
     dirty = false;
   }
   function load() {
@@ -417,8 +551,13 @@
     if (saved && !saved.fresh) {
       for (const h of saved.holes || []) W.addHole(h[0], h[1], h[2], h[3]);
       pl.pos.fromArray(saved.pos); pl.fwd.fromArray(saved.fwd); pl.pitch = saved.pitch || 0; pl.dug = saved.dug || 0;
-      pl.money = saved.money || 0; pl.bucket = saved.bucket || 0; pl.bucketValue = saved.bucketValue || 0; pl.sold = saved.sold || 0;
-      if (saved.up) for (const k in up_) up_[k] = Math.min(saved.up[k] || 0, SHOP.find(x => x.id === k).levels.length - 1);
+      pl.money = saved.money || 0; pl.bucket = saved.bucket || 0; pl.sold = saved.sold || 0; pl.foundOre = !!saved.foundOre;
+      pl.mix = saved.mix || [saved.bucket || 0, 0, 0, 0, 0];
+      for (const id of saved.owned || []) if (NODES.some(n => n.id === id)) owned.add(id);
+      if (saved.up) {   // the earlier shop (levels per line) -> nodes of the tree
+        const chains = { tool: ['scoop', 'trowel', 'shovel'], bag: ['b10', 'b20', 'sack'], speed: ['arms1', 'arms2', 'arms3'], scale: ['scales1', 'scales2'], help: ['help1', 'help2', 'help3'] };
+        for (const k in chains) for (let i = 0; i < (saved.up[k] || 0); i++) owned.add(chains[k][i]);
+      }
     } else { pl.pos.copy(sp); pl.fwd.copy(fwd0); pl.pitch = -0.12; }
     frame();
     S.setOrigin(pl.pos);
@@ -492,7 +631,7 @@
     $('qLo').onclick = () => { S.setQuality('low'); overlay(kind); };
     const r = $('bReset'); if (r) r.onclick = () => {
       if (!r.dataset.armed) { r.dataset.armed = '1'; r.textContent = L.resetAsk; r.classList.add('warn'); return; }   // second press confirms
-      W.clearHoles(); Object.assign(pl, { dug: 0, money: 0, bucket: 0, bucketValue: 0, sold: 0 }); for (const k in up_) up_[k] = 0; applyUpgrades(); S.resetChunks(); S.updateDeco(pl.pos, true); S.setPile(0);
+      W.clearHoles(); Object.assign(pl, { dug: 0, money: 0, bucket: 0, mix: [0, 0, 0, 0, 0], sold: 0, foundOre: false }); owned.clear(); for (const n of NODES) if (n.root) owned.add(n.id); applyUpgrades(); S.resetChunks(); S.updateDeco(pl.pos, true); S.setPile(0);
       pl.pos.copy(spawnPoint()); pl.vel.set(0, 0, 0); save(); overlay(kind);
     };
   }
@@ -538,8 +677,10 @@
 
   root.addEventListener('load', () => {
     $('clickHint').textContent = L.clickHint; $('leftLbl').textContent = L.left; $('bucketLbl').textContent = L.bucket;
+    $('resTitle').textContent = L.resTitle;
     $('mapTitle').textContent = L.map; $('mapHint').textContent = TOUCH ? L.mapTouch : L.mapHint; $('mapOpen').textContent = L.open; $('mapLocked').textContent = L.locked;
     document.title = L.title;
+    for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = Icons.svg(el.dataset.icon);
     overlay('loading');
     // build the world after the loading screen has been painted
     // the real relief has to be loaded before the world is built
@@ -550,7 +691,7 @@
       setup(); setupTouch();
       requestAnimationFrame(loop);
       addEventListener('beforeunload', () => { if (dirty) save(); });
-      root.__game = { pl, W, S, up: up_, applyUpgrades, toggleShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach); return h ? doDig(h) : false; }, sell, toggleMap, setTool,
+      root.__game = { pl, W, S, owned, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach); return h ? doDig(h) : false; }, sell, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },
         mapSnap(steps) { for (let i = 0; i < (steps || 1); i++) MapV.render(0.1); return canvas.toDataURL('image/jpeg', 0.9); } };
     }, 30));

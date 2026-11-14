@@ -47,6 +47,17 @@
     return out;
   }
   Scene.groundColor = groundColor;
+  // colours of the materials (0 topsoil, 1 clay, 2 granite, 3 magnetite quartzite, 4 hematite ore), with their natural texture
+  const MC = [col(V.soil[0]), col('#b9733f'), col('#b8a49a'), col('#3a404b'), col('#8a2e22')], MC2 = [col(V.soil[1]), col('#c98a52'), col('#d6c4bb'), col('#8c96a5'), col('#b5523a')];
+  function matColor(id, x, y, z, out) {
+    out = out || new T.Color();
+    const l = Math.hypot(x, y, z), r = (x * x + y * y + z * z) ** 0.5;
+    let k = 0.5 + 0.5 * W.noise(x / 0.9, y / 0.9, z / 0.9, 7);
+    if (id === 3 || id === 4) k = 0.5 + 0.5 * Math.sin(l * 42 + W.noise(x / 0.6, y / 0.6, z / 0.6, 11) * 5);   // thin ore and quartz layers
+    if (id === 2) k = W.hash01(Math.floor(x / 0.03), Math.floor(y / 0.03), Math.floor(z / 0.03)) > 0.8 ? 0.9 : 0.25;   // speckled granite
+    return out.copy(MC[id]).lerp(MC2[id], k);
+  }
+  Scene.matColor = (id) => MC[id].clone().lerp(MC2[id], 0.4);
 
   // ---------- local frame of the region ----------
   // Shading noise and the sky use local coordinates: x = right, y = up, z = back (as the player first stands).
@@ -106,8 +117,8 @@
     if (back) { m.polygonOffset = true; m.polygonOffsetFactor = 1; m.polygonOffsetUnits = 2; }
     return pd(m, {
       uniforms: Object.assign({ uG1: U(col(V.lawn[0])), uG2: U(col(V.lawn[1])), uG3: U(col(V.lawn[2])), uRim: U(rim) }, soilU),
-      vdecl: 'attribute float aDepth; varying float vDepth;\n', vertex: 'vDepth = aDepth;',
-      fdecl: 'varying float vDepth; uniform float uRim; uniform vec3 uG1; uniform vec3 uG2; uniform vec3 uG3; uniform vec3 uS1; uniform vec3 uS2;\n',
+      vdecl: 'attribute float aDepth; attribute float aMat; varying float vDepth; varying float vMat;\n', vertex: 'vDepth = aDepth; vMat = aMat;',
+      fdecl: 'varying float vDepth; varying float vMat; uniform float uRim; uniform vec3 uG1; uniform vec3 uG2; uniform vec3 uG3; uniform vec3 uS1; uniform vec3 uS2;\n',
       color: `
         float patch1 = pdFbm(P, 0.16, 2).x, patch2 = pdFbm(P + 7.3, 0.035, 2).x;
         vec3 lawn = mix(uG1, uG2, clamp(0.5 + patch1*0.9, 0.0, 1.0));
@@ -123,7 +134,7 @@
           float dn = vDepth/uRim + pdFbm(P, 40.0, 2).x*0.0012;
           vec3 soilc = mix(uS1, uS2, clamp(0.5 + pdFbm(P, 5.0, 2).x*0.7, 0.0, 1.0));
           soilc *= mix(1.0, 0.55, smoothstep(0.02, 0.3, vDepth));   // deeper is darker, so a pit reads as a pit
-          soilc = mix(soilc, vColor.rgb, smoothstep(1.0, 2.5, vDepth));
+          soilc = mix(soilc, vColor.rgb, max(smoothstep(1.0, 2.5, vDepth), vMat));
           vec3 edge = mix(uS1*0.5, soilc, smoothstep(0.005, 0.013, dn));
           col = mix(lawn, edge, smoothstep(0.0008, 0.0055, dn));
         }
@@ -299,15 +310,16 @@
     const g = new T.BufferGeometry();
     g.setAttribute('position', new T.BufferAttribute(m.pos, 3));
     g.setAttribute('normal', new T.BufferAttribute(m.nrm, 3));
-    const cols = new Float32Array(m.pos.length);
+    // dug walls show what the ground is made of there (World.materialAt): clay, granite, iron ore
+    const cols = new Float32Array(m.pos.length), mats = new Float32Array(m.pos.length / 3);
     for (let i = 0, n = m.pos.length / 3; i < n; i++) {
-      if (m.depth[i] < 0.9) { cols[i * 3] = P.soil.r; cols[i * 3 + 1] = P.soil.g; cols[i * 3 + 2] = P.soil.b; continue; }
+      if (m.depth[i] <= 0) { cols[i * 3] = P.soil.r; cols[i * 3 + 1] = P.soil.g; cols[i * 3 + 2] = P.soil.b; continue; }
       const x = bx + m.pos[i * 3], y = by + m.pos[i * 3 + 1], z = bz + m.pos[i * 3 + 2];
-      const nz = W.noise(x / 2.3, y / 2.3, z / 2.3, 7) * 0.6 + W.noise(x / 0.7, y / 0.7, z / 0.7, 9) * 0.25;
-      groundColor(m.depth[i], 0, nz, tmpC);
+      const id = W.materialAt(x, y, z);
+      matColor(id, x, y, z, tmpC); mats[i] = id > 0 ? 1 : 0;
       cols[i * 3] = tmpC.r; cols[i * 3 + 1] = tmpC.g; cols[i * 3 + 2] = tmpC.b;
     }
-    g.setAttribute('color', new T.BufferAttribute(cols, 3));
+    g.setAttribute('color', new T.BufferAttribute(cols, 3)); g.setAttribute('aMat', new T.BufferAttribute(mats, 1));
     g.setAttribute('aDepth', new T.BufferAttribute(m.depth, 1));
     g.setIndex(new T.BufferAttribute(m.idx, 1));
     g.computeBoundingSphere();

@@ -61,26 +61,56 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
 .tmap span { position: absolute; bottom: 3px; right: 6px; font: 900 10px var(--font); color: var(--ink); opacity: .55; }
 .touch .tmap span { display: none; }
 
-/* ---------- shop ---------- */
+/* ---------- research tree ---------- */
 .shopBtn { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); top: calc(max(14px, env(safe-area-inset-top, 0px)) + 172px); pointer-events: auto; border: 0; border-radius: 14px;
   background: #fff; color: var(--ink); font: 800 15px var(--font); padding: 10px 14px; box-shadow: 0 6px 18px rgba(30, 50, 70, .2); cursor: pointer; }
 .shopBtn b { background: #eef3f7; padding: 1px 7px; border-radius: 6px; margin-right: 4px; }
-#shop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(20, 30, 40, .45); padding: 16px; overflow: auto; }
-.shopCard { background: var(--paper); border-radius: 24px; width: min(760px, 100%); max-height: calc(100% - 8px); overflow: auto; padding: 22px; box-shadow: 0 20px 60px rgba(10, 30, 50, .35); display: flex; flex-direction: column; gap: 14px; }
+#shop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(20, 30, 40, .5); padding: 12px; }
+.shopCard { background: var(--paper); border-radius: 24px; width: min(1100px, 100%); height: min(640px, 100%); padding: 18px; box-shadow: 0 20px 60px rgba(10, 30, 50, .35); display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .shopHead { display: flex; align-items: center; gap: 14px; }
-.shopHead h2 { margin: 0; font: 900 28px var(--font); } .shopHead p { margin: 0; color: #5b6b79; font-weight: 700; font-size: 13px; }
-.shopHead > div:first-child { flex: 1; }
+.shopHead h2 { margin: 0; font: 900 26px var(--font); } .shopHead p { margin: 0; color: #5b6b79; font-weight: 700; font-size: 13px; }
+.shopHead > div:first-child { flex: 1; min-width: 0; }
 .shopMoney { font: 900 24px var(--font); color: #2f8a3a; }
-#shopClose { width: 42px; height: 42px; border-radius: 50%; border: 0; background: #eef3f7; font: 900 16px var(--font); cursor: pointer; color: var(--ink); }
-.shopGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
-.shopItem { border: 2px solid #eef3f7; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
-.si { display: flex; gap: 10px; align-items: center; } .si b { display: block; font-size: 15px; } .si small { color: #5b6b79; font-size: 12px; font-weight: 700; }
-.sIcon { font-size: 28px; }
-.sNow { font-weight: 800; font-size: 14px; } .sNext { font-size: 13px; color: #5b6b79; } .sNext.done { color: #2f8a3a; font-weight: 800; }
-.sBuy { border: 0; border-radius: 12px; padding: 9px; font: 800 15px var(--font); background: var(--accent); color: #fff; box-shadow: 0 4px 0 #c96a12; cursor: pointer; }
-.sBuy:disabled { background: #e3e9ee; color: #8a98a5; box-shadow: none; cursor: default; }
-.shopSoon { font-size: 13px; color: #5b6b79; border-top: 2px dashed #eef3f7; padding-top: 10px; }
+#shopClose { width: 42px; height: 42px; border-radius: 50%; border: 0; background: #eef3f7; font: 900 16px var(--font); cursor: pointer; color: var(--ink); flex: none; }
+.shopBody { flex: 1; min-height: 0; display: flex; gap: 14px; }
+.treeWrap { flex: 1; min-width: 0; overflow: auto; background: #f4f7f9; border-radius: 18px; }
+.tree { position: relative; }
+.tree .lines { position: absolute; left: 0; top: 0; }
+.ln { fill: none; stroke: #cfd8df; stroke-width: 4; stroke-dasharray: 2 7; stroke-linecap: round; }
+.ln.on { stroke: #f0a95a; stroke-dasharray: none; } .ln.done { stroke: #6fbf45; }
+.rowL { position: absolute; left: 10px; width: 76px; font: 800 11px var(--font); text-transform: uppercase; letter-spacing: .06em; color: #8a98a5; }
+.tn { position: absolute; width: 60px; height: 60px; border-radius: 18px; border: 3px solid #d9e1e7; background: #fff; padding: 6px; cursor: pointer; color: var(--ink); box-shadow: 0 3px 0 #d9e1e7; transition: transform .1s; }
+.tn svg { width: 100%; height: 100%; display: block; }
+.tn em { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); font: 900 11px var(--font); font-style: normal; background: #fff; border-radius: 999px; padding: 1px 7px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); }
+.tn em.ok { background: #6fbf45; color: #fff; } .tn em.lk { width: 22px; height: 22px; padding: 3px; color: #8a98a5; } .tn em.lk svg { width: 100%; height: 100%; }
+.tn.own { border-color: #6fbf45; box-shadow: 0 3px 0 #4f9a2e; }
+.tn.buy { border-color: var(--accent); box-shadow: 0 3px 0 #c96a12; animation: glow 1.6s ease-in-out infinite; }
+.tn.poor { border-color: #f3c58f; }
+.tn.lock, .tn.soon { opacity: .55; filter: grayscale(.8); }
+.tn.sel { transform: scale(1.12); outline: 3px solid var(--accent2); outline-offset: 3px; z-index: 2; }
+.tn:focus-visible { outline: 3px solid var(--accent2); outline-offset: 3px; }
+@keyframes glow { 50% { box-shadow: 0 3px 0 #c96a12, 0 0 0 6px rgba(240, 138, 36, .25); } }
+.nodeCard { width: 290px; flex: none; display: flex; flex-direction: column; gap: 10px; border: 2px solid #eef3f7; border-radius: 18px; padding: 16px; overflow: auto; }
+.cIcon { width: 96px; height: 96px; border-radius: 24px; background: #f4f7f9; padding: 12px; color: var(--ink); }
+.cIcon svg { width: 100%; height: 100%; }
+.nodeCard h3 { margin: 0; font: 900 22px var(--font); } .nodeCard p { margin: 0; color: #5b6b79; font-weight: 700; font-size: 14px; line-height: 1.45; }
+.eff { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; background: #f4f7f9; border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.eff span { width: 100%; font: 800 11px var(--font); text-transform: uppercase; letter-spacing: .06em; color: #8a98a5; }
+.eff b { font-size: 17px; } .eff b.new { color: #2f8a3a; } .eff i { font-style: normal; color: #8a98a5; }
+.cBuy { margin-top: auto; border: 0; border-radius: 14px; padding: 12px; font: 800 17px var(--font); background: var(--accent); color: #fff; box-shadow: 0 5px 0 #c96a12; cursor: pointer; }
+.cBuy:disabled { background: #e3e9ee; color: #8a98a5; box-shadow: none; cursor: default; }
+.cState { font-weight: 700; font-size: 14px; color: #5b6b79; } .cState.ok { color: #2f8a3a; font-weight: 900; font-size: 16px; margin-top: auto; }
+@media (max-width: 760px) { .shopBody { flex-direction: column; } .nodeCard { width: auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px; gap: 8px; }
+  .cIcon { width: 56px; height: 56px; padding: 6px; border-radius: 14px; } .nodeCard h3 { font-size: 17px; } .nodeCard p { width: 100%; font-size: 13px; } .cBuy { margin-top: 0; width: 100%; padding: 9px; }
+  .shopCard { padding: 12px; border-radius: 18px; } }
 .touch .shopBtn { top: auto; bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + 110px); }
+.bIcon { width: 30px; height: 30px; display: inline-block; } .bIcon svg, .tmap i svg, .tbtn b svg { width: 100%; height: 100%; display: block; }
+.tmap i { width: 30px; height: 30px; display: block; } .tbtn b { width: 34px; height: 34px; display: block; } .tbtn.dig b { width: 44px; height: 44px; color: #fff; }
+
+/* ---------- geology readout, ore ---------- */
+.geo { position: absolute; left: 50%; top: calc(50% + 34px); transform: translateX(-50%); background: rgba(35, 48, 61, .78); color: #fff; padding: 7px 12px; border-radius: 12px; font-size: 13px; font-weight: 700; line-height: 1.5; max-width: 86vw; text-align: center; }
+.geo b { color: #ffd23f; } .geo .m0 { color: #d9a77a; } .geo .m1 { color: #f0b27a; } .geo .m2 { color: #e6d7cf; } .geo .m3 { color: #9fb2c8; } .geo .m4 { color: #ff8a6e; }
+.floater.ore { color: #ffd23f; font-size: 18px; }
 
 /* ---------- world map ---------- */
 #mapUI { position: fixed; inset: 0; touch-action: none; cursor: grab; opacity: 0; transition: opacity .35s; }
@@ -91,8 +121,22 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
 .mapHead p { margin: 4px 0 0; font-weight: 700; font-size: 13px; opacity: .8; }
 #mapClose { position: absolute; top: max(14px, env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px)); width: 46px; height: 46px; border-radius: 50%; border: 0;
   background: rgba(255, 255, 255, .9); font: 900 18px var(--font); color: var(--ink); cursor: pointer; }
-.mapLegend { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); display: flex; gap: 8px; align-items: center; color: #fff; font-size: 13px;
-  background: rgba(10, 20, 35, .55); padding: 8px 14px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
+.mapLegend { position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 6px; color: #fff; font-size: 12px; background: rgba(10, 20, 35, .72); padding: 8px 12px; border-radius: 16px; pointer-events: auto; }
+.lgTop { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.lgT { margin-left: auto; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; opacity: .7; }
+.mapRes { display: flex; gap: 6px 12px; flex-wrap: wrap; max-height: 74px; overflow: auto; }
+.lgr { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.lgr em { font-style: normal; opacity: .65; font-variant-numeric: tabular-nums; }
+.mkLayer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.mk { --c: #888; position: absolute; left: -12px; top: -12px; min-width: 24px; height: 24px; padding: 0 4px; border-radius: 12px; border: 2px solid #fff; background: var(--c); color: #fff;
+  font: 900 10px/20px var(--font); text-align: center; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); pointer-events: auto; cursor: pointer; }
+.mk.ua { border-color: #ffd23f; }
+.lgr .mk, .mkTip .mk { position: static; display: inline-block; pointer-events: none; }
+.mkTip { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); top: calc(max(14px, env(safe-area-inset-top, 0px)) + 60px); width: min(300px, 80vw); background: #fff; color: var(--ink);
+  border-radius: 16px; padding: 12px 14px; font-size: 13px; line-height: 1.5; box-shadow: 0 10px 30px rgba(0, 0, 0, .4); display: flex; flex-direction: column; gap: 4px; }
+.mkTip > b { font-size: 15px; } .mkTip .tr { display: flex; gap: 6px; align-items: center; font-weight: 800; } .mkTip .dim { opacity: .6; font-size: 11px; }
+.st { font-weight: 800; } .st.work, .st.usgs_prod { color: #2f8a3a; } .st.occ14, .st.occ22 { color: #c94f22; } .st.front { color: #d97a12; } .st.closed, .st.idle, .st.usgs_past { color: #6b7a87; }
 .mapLegend b { font-weight: 700; margin-right: 10px; }
 .lg { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
 .lg.open { background: #6fb848; box-shadow: 0 0 0 2px #f39a2e; }
@@ -138,3 +182,4 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
   .touch .tr { display: none; }
 }
 @keyframes fadeHint { 0%, 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+.mkLayer { z-index: 1; } .mapPin { z-index: 2; } .mapLegend, .mapHead, #mapClose { z-index: 3; } .mkTip { z-index: 4; }
