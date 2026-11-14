@@ -605,36 +605,35 @@
     Scene.drop = { point: worldAt(BX, groundAt(BX, BZ) + 0.5, BZ), pile, fill: 0 };
     scene.add(g); Scene.props = g;
   };
-  // helpers: worker figures at fixed stations near the shack; they swing a trowel, the game digs where they point
-  const Workers = { list: [] };
-  const STATIONS = [[-7.9, -5.6, 2.4], [-0.6, -9.8, -0.9], [-6.2, -11.4, 0.4]];
-  Scene.addWorker = function (i) {
-    if (Workers.list[i] || !Scene.props) return;
-    const st = STATIONS[i], w = A.worker(i + 3), g = new T.Group(), body = new T.Mesh(w.body, MAT.flower), arm = new T.Group(), armM = new T.Mesh(w.arm, MAT.flower);
-    arm.position.set(w.pivot[0], w.pivot[1], w.pivot[2]); arm.add(armM); g.add(body, arm);
+  // automation: digging rigs at fixed spots near the shack; the auger spins and sinks into its own pit, the game digs under it
+  const Rigs = { list: [] };
+  const STATIONS = [[-8.2, -5.2], [-0.4, -10.2], [-6.4, -11.8]];
+  Scene.addMachine = function (i, level) {
+    if (!Scene.props) return;
+    const old = Rigs.list[i]; if (old && old.level === level) return;
+    if (old) Scene.props.remove(old.g);
+    const st = STATIONS[i], r = A.rig(level), g = new T.Group(), auger = new T.Group(), mat = MAT.flower;
+    g.add(new T.Mesh(r.frame, mat), new T.Mesh(r.motor, mat)); auger.add(new T.Mesh(r.auger, mat)); g.add(auger);
     g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     const lx = st[0], lz = st[1], gy = W.heightDir(...anchorDir(lx, lz));
-    g.position.set(lx, gy - 0.02, lz); g.rotation.y = st[2]; Scene.props.add(g);
-    const fwd = v3(Math.sin(st[2]), 0, Math.cos(st[2])), spot = { lx: lx + fwd.x * 0.75, lz: lz + fwd.z * 0.75 };
-    Workers.list[i] = { g, arm, swing: 0, spot, fwd };
-    { const w2 = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).addScaledVector(LY, gy); W.blockers.push([w2.x, w2.y, w2.z, 0.3, 0.3]); }
+    g.position.set(lx, gy - 0.02, lz); g.rotation.y = i * 1.3; Scene.props.add(g);
+    Rigs.list[i] = { g, auger, level, spot: { lx, lz }, hit: 0, depth: old ? old.depth : 0 };
+    if (!old) { const w2 = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).addScaledVector(LY, gy); W.blockers.push([w2.x, w2.y, w2.z, 0.75, 0.75, 'rig']); }
   };
   function anchorDir(lx, lz) { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).normalize(); return [w.x, w.y, w.z]; }
-  // a point on the ground near worker i's digging spot (planet metres), jittered
-  Scene.workerSpot = function (i, jx, jz) {
-    const wk = Workers.list[i]; if (!wk) return null;
-    const lx = wk.spot.lx + jx, lz = wk.spot.lz + jz, d = anchorDir(lx, lz), h = W.heightDir(d[0], d[1], d[2]);
+  // the ground point under rig i (planet metres), jittered a little
+  Scene.machineSpot = function (i, jx, jz) {
+    const rg = Rigs.list[i]; if (!rg) return null;
+    const lx = rg.spot.lx + jx, lz = rg.spot.lz + jz, d = anchorDir(lx, lz), h = W.heightDir(d[0], d[1], d[2]);
     return v3(d[0], d[1], d[2]).multiplyScalar(W.R + h);
   };
-  Scene.workerSwing = i => { const wk = Workers.list[i]; if (wk) wk.swing = 1; };
-  Scene.workerCount = () => Workers.list.filter(Boolean).length;
-  Workers.update = function (dt, t) {
-    for (const wk of this.list) {
-      if (!wk) continue;
-      wk.swing = Math.max(0, wk.swing - dt * 1.6);
-      const k = wk.swing, a = k > 0.5 ? (1 - k) * 2 : k * 2;   // down then back up
-      wk.arm.rotation.x = -0.2 + a * 1.1 + Math.sin(t * 1.3 + wk.spot.lx) * 0.04;
-      wk.g.children[0].position.y = Math.sin(t * 2 + wk.spot.lz) * 0.005 - a * 0.04;
+  Scene.machineHit = (i, depth) => { const rg = Rigs.list[i]; if (rg) { rg.hit = 1; rg.depth = depth; } };
+  Rigs.update = function (dt, t) {
+    for (const rg of this.list) {
+      if (!rg) continue;
+      rg.hit = Math.max(0, rg.hit - dt * 2.5);
+      rg.auger.rotation.y += dt * (rg.level > 1 ? 14 : 5);
+      rg.auger.position.y = -Math.min(1.2, rg.depth) - rg.hit * 0.08 + Math.sin(t * 6) * 0.01;
     }
   };
 
@@ -727,7 +726,7 @@
       const bb = new T.Mesh(b.body, MAT.bucket), bs = new T.Mesh(b.soil, MAT.soilObj); bs.position.y = -0.158; this.bucketSoil = bs;
       this.bucket.add(bb, bs); this.bucket.position.set(-0.36, -0.40, -0.62); this.bucket.rotation.set(0.42, 0.5, 0.1); this.bucket.scale.setScalar(0.95);
       for (const m of [bb, bs]) m.frustumCulled = false;
-      handCam.add(this.bucket); this.setFill(0);
+      handCam.add(this.bucket); this.bucket.visible = false; this.setFill(0);   // money is paid per stroke now: no bucket
       console.log('[scene] hand built in ' + Math.round(performance.now() - t0) + ' ms');
     },
     pose(h, base, hint) {
@@ -808,7 +807,7 @@
     camera.updateMatrixWorld();
     handCam.quaternion.copy(q); handCam.updateMatrixWorld();
     sky.position.copy(camera.position);
-    Particles.update(dt); Workers.update(dt, t);
+    Particles.update(dt); Rigs.update(dt, t);
     Hand.update(info.dig, info.walk, t, dt, info.look);
     Shadow.update(eye, q);
     composer.render(dt);

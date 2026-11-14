@@ -238,9 +238,10 @@
       const l = Math.hypot(b[0], b[1], b[2]), ux = b[0] / l, uy = b[1] / l, uz = b[2] / l;
       const dx = x - b[0], dy = y - b[1], dz = z - b[2], along = dx * ux + dy * uy + dz * uz;
       const hx = dx - ux * along, hy = dy - uy * along, hz = dz - uz * along;
-      if (along < 6 && hx * hx + hy * hy + hz * hz < (b[3] + pad) * (b[3] + pad)) return b;
+      if (b[5] === 'rig' && pad < 0) continue;   // a rig may dig under itself (called with a negative pad)
+      if (along < 6 && hx * hx + hy * hy + hz * hz < (b[3] + Math.abs(pad)) * (b[3] + Math.abs(pad))) return b;
     }
-    return obstacleAt(x, y, z, pad);
+    return obstacleAt(x, y, z, Math.abs(pad));
   }
 
   // ---------- scenery obstacles: rocks, tree trunks, bushes ----------

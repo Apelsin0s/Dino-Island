@@ -492,5 +492,33 @@
     return { body: merge(parts), arm: merge(armP), pivot: [0.24, 1.38, 0] };
   };
 
+
+  // =====================================================================================
+  // Automation: a digging rig on a tripod. Returns { frame, auger, motor } (vertex coloured); the auger spins about Y
+  // and moves up and down. level 1: hand-crank rig (wood, no motor); level 2: motor drill (orange motor box).
+  // =====================================================================================
+  A.rig = function (level) {
+    const parts = [], wood = C('#b07a45'), steel = C('#c9d2da'), dark = C('#3b4048'), orange = C('#f08a24');
+    const legC = level > 1 ? steel : wood;
+    for (let i = 0; i < 3; i++) {
+      const a = i / 3 * PI * 2, foot = new T.Vector3(cos(a) * 0.7, 0, sin(a) * 0.7), top = new T.Vector3(0, 1.7, 0), v = top.clone().sub(foot);
+      const g = new T.CylinderGeometry(0.035, 0.045, v.length(), 10); g.applyQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(0, 1, 0), v.clone().normalize()));
+      g.translate((foot.x + top.x) / 2, (foot.y + top.y) / 2, (foot.z + top.z) / 2); parts.push(colorize(g, legC));
+      const f = new T.CylinderGeometry(0.07, 0.08, 0.05, 12); f.translate(foot.x, 0.025, foot.z); parts.push(colorize(f, dark));
+    }
+    const hub = new T.CylinderGeometry(0.1, 0.1, 0.16, 16); hub.translate(0, 1.72, 0); parts.push(colorize(hub, dark));
+    const frame = merge(parts);
+    // the auger: a shaft with a spiral of flights, 1.4 m long, tip at y = 0
+    const ap = [], sh = new T.CylinderGeometry(0.03, 0.03, 1.5, 10); sh.translate(0, 0.75, 0); ap.push(colorize(sh, steel));
+    for (let k = 0; k < 26; k++) { const b = new T.BoxGeometry(0.2, 0.012, 0.05); b.rotateY(k * 0.7); b.rotateZ(0.25); b.translate(0, 0.08 + k * 0.045, 0); ap.push(colorize(b, steel)); }
+    const tip = new T.ConeGeometry(0.05, 0.12, 10); tip.rotateX(PI); tip.translate(0, 0.0, 0); ap.push(colorize(tip, dark));
+    const auger = merge(ap);
+    // drive on top: a crank (level 1) or an orange motor (level 2)
+    const mp = [];
+    if (level > 1) { const m = new T.RoundedBoxGeometry(0.34, 0.26, 0.3, 3, 0.04); m.translate(0, 1.62, 0); mp.push(colorize(m, orange)); const c = new T.CylinderGeometry(0.06, 0.06, 0.1, 12); c.rotateZ(PI / 2); c.translate(0.2, 1.66, 0); mp.push(colorize(c, dark)); }
+    else { const c = new T.TorusGeometry(0.14, 0.015, 8, 20); c.rotateX(PI / 2); c.translate(0, 1.62, 0); mp.push(colorize(c, wood)); const h = new T.CylinderGeometry(0.02, 0.02, 0.14, 8); h.translate(0.14, 1.69, 0); mp.push(colorize(h, dark)); }
+    return { frame, auger, motor: merge(mp) };
+  };
+
   root.Assets = A;
 })(window);
