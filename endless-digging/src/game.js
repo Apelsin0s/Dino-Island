@@ -543,7 +543,7 @@
     overlay('loading');
     // build the world after the loading screen has been painted
     // the real relief has to be loaded before the world is built
-    const D = root.DemInfo, get = f => fetch(f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.arrayBuffer(); });
+    const D = root.DemInfo, get = f => fetch(f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); }).then(t => { const bin = atob(t.trim()), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; });   // base64 int16
     const dem = D ? Promise.all(['local', 'ukraine'].map(k => get(D[k].file).then(b => [k, Object.assign({}, D[k], { data: new Int16Array(b) })])))
       .then(list => W.setDem(Object.fromEntries(list))).catch(e => console.warn('relief not loaded, using invented ground:', e.message)) : Promise.resolve();
     dem.then(() => setTimeout(() => {
