@@ -18,30 +18,30 @@
       sun: [-0.74, 0.62, -0.26], sunColor: '#fff1dc', sunI: 3.0, envI: 1.0, exposure: 1.0,
       sky: { zen: '#3f86e6', hor: '#d4e9fb', ground: '#7d9a58' }, fog: ['#d6e9f8', 0.00038],
       lawn: ['#74b952', '#93cf66', '#b6d872'], soil: ['#5a3a24', '#80573a'], pathC: '#bfa07a', forestC: '#3d7d4c',
-      grass: 'tufts', tuft: { root: '#74b952', tip: '#c6ea88', width: 0.017, blades: 17 }, tuftK: 1, carpet: { root: '#70b54f', tip: '#a9dc74' },
+      grass: 'tufts', tuft: { root: '#62b04a', tip: '#b2e476', width: 0.017, blades: 17 }, tuftK: 1, carpet: { root: '#70b54f', tip: '#a9dc74' },
       lumpy: 0, sheen: 0.55, leafBump: 0.016, gloss: 0,
       leaf: ['#4c9c46', '#a6dc6e'], spruce: ['#2a6f4a', '#62ae66'],
-      pal: { glove: '#ecc891', gloveCuff: '#a9713f', glovePad: '#d8a566', sleeve: '#f0852a', band: '#e9edf0', awning1: '#f08a24', awning2: '#fff4e0' },
+      pal: { glove: '#f1dcb6', gloveCuff: '#3d434c', glovePad: '#ee7d2b', gloveStrap: '#dfe3e6', sleeve: '#3f6fb8', band: '#e9edf0', awning1: '#f08a24', awning2: '#fff4e0' },
       grade: { sat: 1.05, con: 1.03, vig: 0.2 }
     },
     '2': {   // modelling clay, stop-motion feel
       sun: [-0.62, 0.55, -0.20], sunColor: '#ffe9c8', sunI: 2.7, envI: 0.8, exposure: 1.02,
       sky: { zen: '#3a86e0', hor: '#d6ecfb', ground: '#7a8a45' }, fog: ['#d4e9f7', 0.00030],
-      lawn: ['#62b436', '#86cc3e', '#b2cf4a'], soil: ['#5c3519', '#8a5428'], pathC: '#c79a5c', forestC: '#2f7a37',
+      lawn: ['#6fb848', '#90cc56', '#bbd65e'], soil: ['#5c3519', '#8a5428'], pathC: '#c79a5c', forestC: '#3a8440',
       grass: 'tufts', tuft: { root: '#4aa42c', tip: '#b6e04a', width: 0.03, blades: 9, hMin: 0.07, hMax: 0.14 }, tuftK: 0.75,
-      lumpy: 1, sheen: 0, leafBump: 0.03, gloss: 1,
+      lumpy: 1, sheen: 0, leafBump: 0.03, gloss: 1, clay: 1, tilt: 1,
       leaf: ['#3f9a2f', '#a4d845'], spruce: ['#1f6f3a', '#5fb44c'],
-      pal: { glove: '#f0c074', gloveCuff: '#b0662c', glovePad: '#dd9a4c', sleeve: '#e9502c', band: '#f3efe2', awning1: '#e9502c', awning2: '#fff1cf' },
+      pal: { glove: '#f6d27c', gloveCuff: '#7a4a2c', glovePad: '#e9502c', gloveStrap: '#fff1cf', sleeve: '#2f7fd0', band: '#fff1cf', awning1: '#e9502c', awning2: '#fff1cf' },
       grade: { sat: 1.12, con: 1.06, vig: 0.26 }
     },
     '3': {   // living nature: dense soft grass, late light
-      sun: [-0.60, 0.40, -0.62], sunColor: '#ffdcae', sunI: 3.0, envI: 0.85, exposure: 1.0,
-      sky: { zen: '#2a62c8', hor: '#f3dfc2', ground: '#667a45' }, fog: ['#ecdcc4', 0.00034],
-      lawn: ['#4f9238', '#6fae45', '#93b552'], soil: ['#4e3220', '#74502f'], pathC: '#a98a63', forestC: '#2a5f3a',
-      grass: 'dense', tuft: { root: '#3f7f30', tip: '#b4d868', width: 0.012 }, tuftK: 1,
-      lumpy: 0.35, sheen: 0.25, leafBump: 0.045, gloss: 0,
+      sun: [-0.62, 0.38, -0.60], sunColor: '#ffe2b8', sunI: 3.3, envI: 0.8, exposure: 1.0,
+      sky: { zen: '#3f7fd6', hor: '#e9e4d6', ground: '#64784a' }, fog: ['#e3e1d6', 0.00036],
+      lawn: ['#55893c', '#739f49', '#94a958'], soil: ['#4e3220', '#74502f'], pathC: '#a98a63', forestC: '#2f6140',
+      grass: 'dense', tuft: { root: '#4c8036', tip: '#a8c764', width: 0.011 }, tuftK: 1, carpet: { root: '#55893c', tip: '#86b354' },
+      lumpy: 0.35, sheen: 0.25, leafBump: 0.045, gloss: 0, skyClouds: 1, treeBlend: 0.3,
       leaf: ['#35792f', '#8ec652'], spruce: ['#1b5437', '#4f9552'],
-      pal: { glove: '#e3bd86', gloveCuff: '#9a6639', glovePad: '#cf9c60', sleeve: '#e8892f', band: '#e6e9ec', awning1: '#e58a2c', awning2: '#fbefd9' },
+      pal: { glove: '#d9b684', gloveCuff: '#4a4038', glovePad: '#b9753a', gloveStrap: '#c9c2b6', sleeve: '#35517a', band: '#d9dde0', awning1: '#d9772c', awning2: '#f6ead6' },
       grade: { sat: 1.08, con: 1.06, vig: 0.28 }
     }
   };
@@ -134,7 +134,8 @@
       let fs = 'varying vec3 vPd;\n' + (world ? '#define PD_TOVIEW mat3(viewMatrix)\n' : 'uniform mat3 normalMatrix;\n#define PD_TOVIEW normalMatrix\n') + NOISE + (o.fdecl || '') + sh.fragmentShader;
       if (o.color) fs = fs.replace('#include <color_fragment>', '#include <color_fragment>\n{ vec3 P = vPd;\n' + o.color + '\n}');
       if (o.rough) fs = fs.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n{ vec3 P = vPd;\n' + o.rough + '\n}');
-      if (o.normal) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n{ vec3 P = vPd; vec3 G = vec3(0.0); float px = length(fwidth(P));\n' + o.normal + '\n vec3 gv = PD_TOVIEW * G; gv -= normal * dot(gv, normal); normal = normalize(normal - gv); }');
+      const clay = V.clay ? (world ? 'vec4 ncl = pdFbm(P, 11.0, 2); G += ncl.yzw*0.008*pdFade(px*22.0); vec4 ncl2 = pdFbm(P + 3.1, 2.6, 2); G += ncl2.yzw*0.03*pdFade(px*5.2);' : 'vec4 ncl = pdFbm(P, 55.0, 2); G += ncl.yzw*0.0009;') : '';
+      if (o.normal || clay) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n{ vec3 P = vPd; vec3 G = vec3(0.0); float px = length(fwidth(P));\n' + (o.normal || '') + clay + '\n vec3 gv = PD_TOVIEW * G; gv -= normal * dot(gv, normal); normal = normalize(normal - gv); }');
       if (o.noFlip) fs = fs.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n normal = normalize(vNormal); nonPerturbedNormal = normal;');
       if (o.post) fs = fs.replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n{ vec3 P = vPd;\n' + o.post + '\n}');
       sh.fragmentShader = fs;
@@ -150,7 +151,7 @@
   const soilU = { uS1: U(C(V.soil[0])), uS2: U(C(V.soil[1])), uPeb: U(C('#b9ad9a')) };
   const soilColor = `
     vec3 soilc = mix(uS1, uS2, clamp(0.4 + pdFbm(P, 16.0, 3).x*0.9, 0.0, 1.0));
-    vec4 cl = pdCell(P*44.0); soilc = mix(soilc, uPeb*(0.8+0.4*cl.w), smoothstep(0.30, 0.22, length(cl.xyz))*step(0.88, cl.w));
+    vec4 cl = pdCell(P*44.0); { float pr = 0.12 + 0.2*fract(cl.w*7.3); soilc = mix(soilc, uPeb*(0.55+0.6*fract(cl.w*3.1)), smoothstep(pr + 0.06, pr, length(cl.xyz))*step(0.9, cl.w)); }
     diffuseColor.rgb = soilc;`;
   const soilNormal = `vec4 n3 = pdFbm(P, 62.0, 3); G += n3.yzw*0.0042*pdFade(px*250.0);`;
   const soilDecl = 'uniform vec3 uS1; uniform vec3 uS2; uniform vec3 uPeb;\n';
@@ -170,7 +171,7 @@
       if (vDepth > 0.0005) {
         float dn = vDepth + pdFbm(P, 60.0, 2).x*0.005;
         vec3 soilc = mix(uS1, uS2, clamp(0.38 + pdFbm(P, 16.0, 3).x*0.9 - vDepth*2.0, 0.0, 1.0));
-        vec4 cl = pdCell(P*44.0); soilc = mix(soilc, uPeb*(0.8+0.4*cl.w), smoothstep(0.30, 0.22, length(cl.xyz))*step(0.88, cl.w));
+        vec4 cl = pdCell(P*44.0); { float pr = 0.12 + 0.2*fract(cl.w*7.3); soilc = mix(soilc, uPeb*(0.55+0.6*fract(cl.w*3.1)), smoothstep(pr + 0.06, pr, length(cl.xyz))*step(0.9, cl.w)); }
         soilc *= mix(1.0, 0.72, smoothstep(0.03, 0.11, vDepth));
         vec3 edge = mix(mix(lawn*0.6, uS1, 0.65), soilc, smoothstep(0.006, 0.02, dn));
         col = mix(lawn, edge, smoothstep(0.002, 0.006, dn));
@@ -215,7 +216,7 @@
       diffuseColor.rgb = mix(rc, uMoss, moss*0.8);`,
     normal: 'vec4 n = pdFbm(P, 13.0, 3); G += n.yzw*0.004*pdFade(px*52.0);'
   });
-  M.tuft = pd(std({ vertexColors: true, roughness: 0.62, side: T.DoubleSide, sheen: 0.3, sheenRoughness: 0.5, sheenColor: C(V.tuft.tip) }), { noFlip: true, color: 'diffuseColor.rgb *= 0.9 + 0.2*pdFbm(P, 0.45, 2).x;' });
+  M.tuft = pd(std({ vertexColors: true, roughness: 0.62, side: T.DoubleSide, sheen: 0.12, sheenRoughness: 0.5, sheenColor: C(V.tuft.tip) }), { noFlip: true, color: 'diffuseColor.rgb *= 0.9 + 0.2*pdFbm(P, 0.45, 2).x;' });
   M.flower = std({ vertexColors: true, roughness: 0.6, side: T.DoubleSide });
   M.glove = pd(std({ vertexColors: true, roughness: 0.62, sheen: 0.25, sheenRoughness: 0.5, sheenColor: C('#fff1d8') }), {
     space: 'object', color: 'diffuseColor.rgb *= 0.93 + 0.1*pdFbm(P, 45.0, 3).x;',
@@ -236,10 +237,13 @@
   // ---------------------------------------------------------------- sky and image-based light
   function skyMaterial(disc) {
     return new T.ShaderMaterial({
-      uniforms: { uZen: U(C(V.sky.zen)), uHor: U(C(V.sky.hor)), uGround: U(C(V.sky.ground)), uSun: U(sunDir), uSunCol: U(C(V.sunColor)), uDisc: U(disc ? 1 : 0) },
+      uniforms: { uZen: U(C(V.sky.zen)), uHor: U(C(V.sky.hor)), uGround: U(C(V.sky.ground)), uSun: U(sunDir), uSunCol: U(C(V.sunColor)), uDisc: U(disc ? 1 : 0), uDesat: U(disc ? 0 : 0.45), uClouds: U(V.skyClouds ? 1 : 0) },
       side: T.BackSide, depthWrite: false, fog: false,
       vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position, 1.0); }',
-      fragmentShader: `uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uGround; uniform vec3 uSun; uniform vec3 uSunCol; uniform float uDisc; varying vec3 vDir;
+      fragmentShader: `uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uGround; uniform vec3 uSun; uniform vec3 uSunCol; uniform float uDisc; uniform float uDesat; uniform float uClouds; varying vec3 vDir;
+        float h2(vec2 p){ p = fract(p*vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y)*p.x); }
+        float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f); return mix(mix(h2(i), h2(i + vec2(1.0, 0.0)), f.x), mix(h2(i + vec2(0.0, 1.0)), h2(i + vec2(1.0, 1.0)), f.x), f.y); }
+        float fb(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a*n2(p); p = p*2.03 + vec2(17.1, 9.3); a *= 0.5; } return s; }
         void main(){ vec3 d = normalize(vDir); float h = d.y;
           vec3 c = mix(uHor, uZen, pow(clamp(h, 0.0, 1.0), 0.42));
           c = mix(c, uHor, exp(-max(h, 0.0)*11.0)*0.75);
@@ -247,6 +251,14 @@
           c += uSunCol*(pow(s, 5.0)*0.10 + pow(s, 48.0)*0.30);
           c += uSunCol*uDisc*smoothstep(0.99935, 0.9997, s)*24.0;
           if (h < 0.0) c = mix(uHor, uGround, smoothstep(0.0, -0.10, h));
+          if (uClouds > 0.5 && h > 0.0) {
+            vec2 uv = d.xz/(h + 0.11)*0.55 + vec2(3.7, 1.9);
+            float dn = fb(uv*0.8), cov = smoothstep(0.56, 0.72, dn + 0.05*fb(uv*4.0));
+            float lit = clamp(0.55 + (dn - fb(uv*0.8 + normalize(uSun.xz + 1e-4)*0.2))*2.4, 0.0, 1.0);
+            vec3 cc = mix(vec3(0.80, 0.83, 0.90), vec3(1.0, 0.97, 0.92)*1.1, lit);
+            c = mix(c, cc, cov*smoothstep(0.015, 0.14, h)*0.93);
+          }
+          c = mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), uDesat);
           gl_FragColor = vec4(c, 1.0); }`
     });
   }
@@ -299,7 +311,7 @@
   const bigTrees = [[7.0, -14.0, 1.25, 0.4], [-14.5, -26, 1.05, 2.1], [15, -33, 0.95, 4.0], [-27, -52, 1.15, 1.0], [30, -70, 1.2, 3.3], [-9, -58, 0.9, 5.2]];
   for (const t of bigTrees) blocked.push([t[0], t[1], 0.75 * t[2]]);
   if (!NO.includes('trees')) {
-    const tA = A.tree(11, { lumpy: V.lumpy, leafDark: V.leaf[0], leafLight: V.leaf[1], cell: FINAL ? 0.05 : 0.09 }), tB = A.tree(23, { lumpy: V.lumpy, leafDark: V.leaf[0], leafLight: V.leaf[1], cell: FINAL ? 0.055 : 0.09 });
+    const tA = A.tree(11, { lumpy: V.lumpy, blend: V.treeBlend, leafDark: V.leaf[0], leafLight: V.leaf[1], cell: FINAL ? 0.05 : 0.09 }), tB = A.tree(23, { lumpy: V.lumpy, blend: V.treeBlend, leafDark: V.leaf[0], leafLight: V.leaf[1], cell: FINAL ? 0.055 : 0.09 });
     log('tree sculpts: ' + tA.crown.index.count / 3 + ' tris');
     const la = [], lb = []; bigTrees.forEach((t, i) => (i % 2 ? lb : la).push([t[0], terrainY(t[0], t[1]) - 0.05, t[1], t[3], t[2]]));
     inst(tA.trunk, M.bark, la); inst(tA.crown, M.crown, la); inst(tB.trunk, M.bark, lb); inst(tB.crown, M.crown, lb);
@@ -345,7 +357,7 @@
     // clouds
     const cg = [A.cloud(1), A.cloud(2), A.cloud(3), A.cloud(4)];
     const cl = [[-2500, 1000, -6000, 0.2, 150], [1100, 1250, -6600, -0.1, 190], [3400, 900, -5600, 0.3, 140], [-700, 1700, -7000, 0.05, 170], [-4600, 1150, -5200, 0.5, 150], [2300, 1900, -7200, -0.2, 160], [5200, 1300, -5400, -0.5, 150], [150, 760, -6400, 0.1, 110], [-1900, 2100, -6900, 0, 140], [-3400, 620, -6300, 0.2, 100], [4100, 2000, -6500, -0.3, 130]];
-    cg.forEach((g, gi) => inst(g, M.cloud, cl.filter((q, i) => i % 4 === gi), { cast: false, receive: false }));
+    if (!V.skyClouds) cg.forEach((g, gi) => inst(g, M.cloud, cl.filter((q, i) => i % 4 === gi), { cast: false, receive: false }));
     for (const g of cg) if (!g.getAttribute('color')) g.setAttribute('color', new T.BufferAttribute(new Float32Array(g.getAttribute('position').count * 3).fill(1), 3));
   }
   log('props placed');
@@ -361,14 +373,14 @@
       log('tufts: ' + (lists[0].length + lists[1].length + lists[2].length));
     } else {
       const geos = [0, 1, 2].map(i => A.blades(200 + i, V.tuft)), lists = [[], [], []];
-      const band = (d0, d1, per, sc) => { const step = 1 / Math.sqrt(per); for (let z = 2; z > -d1; z -= step) for (let x = -d1; x < d1; x += step) { const jx = x + (r() - 0.5) * step * 1.4, jz = z + (r() - 0.5) * step * 1.4, d = Math.hypot(jx, jz); if (d < d0 || d > d1 || !ok(jx, jz, 0.01)) continue; const n = fbm2(jx / 2.3, jz / 2.3, 2); lists[Math.floor(r() * 3)].push([jx, terrainY(jx, jz) - 0.004, jz, r() * 6.28, sc * (0.7 + r() * 0.6) * (1 + n * 0.45), (r() - 0.5) * 0.2]); } };
+      const band = (d0, d1, per, sc) => { const step = 1 / Math.sqrt(per); for (let z = 2; z > -d1; z -= step) for (let x = -d1; x < d1; x += step) { const jx = x + (r() - 0.5) * step * 1.4, jz = z + (r() - 0.5) * step * 1.4, d = Math.hypot(jx, jz); if (d < d0 || d > d1 || !ok(jx, jz, 0.01)) continue; const dh = Math.hypot(jx - HC.x, (jz - HC.z - 0.25) / 1.5); if (dh < 0.42 || (dh < 0.75 && r() < 0.75)) continue; const n = fbm2(jx / 2.3, jz / 2.3, 2); lists[Math.floor(r() * 3)].push([jx, terrainY(jx, jz) - 0.004, jz, r() * 6.28, sc * (0.7 + r() * 0.6) * (1 + n * 0.45), (r() - 0.5) * 0.2]); } };
       band(0, 6, FINAL ? 240 : 60, 1); band(6, 15, FINAL ? 70 : 16, 1.25); band(15, 34, FINAL ? 18 : 4, 1.9); if (FINAL) band(34, 70, 3.5, 3.0);
       geos.forEach((g, i) => inst(g, M.tuft, lists[i], { cast: true }));
       log('blade clumps: ' + (lists[0].length + lists[1].length + lists[2].length));
     }
     if (V.carpet) {
       const cg = [0, 1].map(i => A.blades(300 + i, Object.assign({ blades: 6, hMin: 0.028, hMax: 0.065, width: 0.0075 }, V.carpet))), cl = [[], []];
-      const patch = (cx, cz, rad, per) => { const step = 1 / Math.sqrt(per); for (let z = cz - rad; z < cz + rad; z += step) for (let x = cx - rad; x < cx + rad; x += step) { const jx = x + (r() - 0.5) * step * 1.6, jz = z + (r() - 0.5) * step * 1.6, d = Math.hypot(jx - cx, jz - cz); if (d > rad || r() < sm(rad * 0.55, rad, d)) continue; if (isBlocked(jx, jz, -0.02) || pathMask(jx, jz) > 0.35) continue; cl[r() < 0.5 ? 0 : 1].push([jx, terrainY(jx, jz) - 0.003, jz, r() * 6.28, 0.75 + r() * 0.7, (r() - 0.5) * 0.3]); } };
+      const patch = (cx, cz, rad, per) => { const step = 1 / Math.sqrt(per); for (let z = cz - rad; z < cz + rad; z += step) for (let x = cx - rad; x < cx + rad; x += step) { const jx = x + (r() - 0.5) * step * 1.6, jz = z + (r() - 0.5) * step * 1.6, d = Math.hypot(jx - cx, jz - cz); if (d > rad || r() < sm(rad * 0.55, rad, d)) continue; if (holeDepth(jx, jz) > 0 || Math.hypot(jx - BUCKET.x, jz - BUCKET.z) < 0.1 || pathMask(jx, jz) > 0.35) continue; const rim = sm(0.2, 0.34, Math.hypot((jx - HC.x) / 1.15, (jz - HC.z) / 0.95)); if (r() > 0.25 + 0.75 * rim) continue; cl[r() < 0.5 ? 0 : 1].push([jx, terrainY(jx, jz) - 0.003, jz, r() * 6.28, (0.75 + r() * 0.7) * (0.55 + 0.45 * rim), (r() - 0.5) * 0.3]); } };
       patch(HC.x, HC.z, 2.3, FINAL ? 520 : 130); patch(0.4, -1.6, 4.4, FINAL ? 260 : 50);
       cg.forEach((g, i) => inst(g, M.tuft, cl[i], { cast: false })); log('carpet clumps: ' + (cl[0].length + cl[1].length));
     }
@@ -412,6 +424,14 @@
   if (!NO.includes('ao')) { const g = new T.GTAOPass(scene, camera, W * DPR, H * DPR); g.updateGtaoMaterial({ radius: 0.32, distanceExponent: 1.5, thickness: 1.0, scale: 1.15, samples: FINAL ? 16 : 8 }); g.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 }); g.blendIntensity = 0.9; composer.addPass(g); }
   composer.addPass(new T.UnrealBloomPass(new T.Vector2(W, H), 0.16, 0.6, 0.93));
   composer.addPass(new T.OutputPass());
+  if (V.tilt) composer.addPass(new T.ShaderPass({
+    uniforms: { tDiffuse: { value: null }, uPx: U(new T.Vector2(1 / (W * DPR), 1 / (H * DPR))), uR: U(7.0 * DPR * W / 1600) },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uPx; uniform float uR; varying vec2 vUv;
+      void main(){ float k = smoothstep(0.16, 0.5, abs(vUv.y - 0.42)); float r = uR*k; vec3 acc = vec3(0.0); float wsum = 0.0;
+        for (int i = 0; i < 24; i++){ float fi = float(i); float rad = sqrt((fi + 0.5)/24.0); float th = fi*2.399963; vec2 o = vec2(cos(th), sin(th))*rad*r*uPx; acc += texture2D(tDiffuse, vUv + o).rgb; wsum += 1.0; }
+        gl_FragColor = vec4(acc/wsum, 1.0); }`
+  }));
   composer.addPass(new T.ShaderPass({
     uniforms: { tDiffuse: { value: null }, uSat: U(V.grade.sat), uCon: U(V.grade.con), uVig: U(V.grade.vig) },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position, 1.0); }',
@@ -425,17 +445,19 @@
   const SHOT = {
     wide() {
       camera.position.set(0, baseHeight(0, 0) + 1.62, 0); camera.rotation.set(0, 0, 0, 'YXZ'); camera.rotation.x = -0.215; camera.rotation.y = 0.04;
-      poseHand([0.205, -0.205, -0.44], [-0.25, 0.85, -0.46], [0, 0.3, 1]); spoonSoil.visible = false;
+      poseHand([0.185, -0.160, -0.45], [-0.25, 0.85, -0.46], [0, 0.3, 1]); spoonSoil.visible = false;
     },
     close() {
       camera.position.set(HC.x + 0.06, terrainY(HC.x, HC.z + 0.5) + 0.60, HC.z + 0.53); camera.rotation.set(0, 0, 0, 'YXZ'); camera.rotation.x = -0.92; camera.rotation.y = -0.06;
       poseHand([0.165, -0.185, -0.43], [-0.30, 0.80, -0.52], [0, 0.3, 1]); spoonSoil.visible = true;
     }
   };
+  SHOT.hand = () => { SHOT.wide(); camera.setViewOffset(W, H, W * 0.50, H * 0.46, W * 0.5, H * 0.5); };
+  SHOT.hand2 = () => { SHOT.close(); camera.setViewOffset(W, H, W * 0.42, H * 0.44, W * 0.56, H * 0.56); };
   const out2d = document.createElement('canvas'); out2d.width = W; out2d.height = H; const ctx = out2d.getContext('2d'); ctx.imageSmoothingQuality = 'high';
   window.__shots = {};
   function shoot(name) {
-    SHOT[name](); camera.updateMatrixWorld(true); sky.position.copy(camera.position);
+    camera.clearViewOffset(); SHOT[name](); camera.updateMatrixWorld(true); sky.position.copy(camera.position);
     composer.render();
     ctx.drawImage(canvas, 0, 0, W, H); window.__shots[name] = out2d.toDataURL('image/jpeg', FINAL ? 0.93 : 0.85);
     log('shot ' + name + ' done');

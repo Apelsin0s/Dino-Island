@@ -24,28 +24,47 @@
   const HAND = { w: (() => { const v = [0.10, 0.60, 0.79], l = Math.hypot(v[0], v[1], v[2]); return v.map(c => c / l); })(), Wc: [0.012, 0.022, 0.048], G: 1.16, SP: 1.32 };
   A.HAND = HAND;
   A.glove = function (pal) {
-    const fz = [-0.033, -0.011, 0.011, 0.031], fr = [0.0128, 0.0133, 0.0128, 0.0116], R = 0.0195, w = HAND.w, W0 = HAND.Wc, G = HAND.G;
-    const c0 = [W0[0] + w[0] * 0.004, W0[1] + w[1] * 0.004, W0[2] + w[2] * 0.004], c1 = [W0[0] + w[0] * 0.088, W0[1] + w[1] * 0.088, W0[2] + w[2] * 0.088];
-    const f0 = function (x, y, z) {
-      const q = sqrt(x * x + y * y) - R; let d = 0;
-      for (let i = 0; i < 4; i++) { const dz = z - fz[i], di = sqrt(q * q + dz * dz) - fr[i]; d = i ? S.smin(d, di, 0.0045) : di; }
-      d = S.smin(d, S.ellipsoid(x, y, z, 0.020, 0.010, 0.010, 0.024, 0.033, 0.046), 0.012);        // back of the hand
-      d = S.smin(d, S.sphere(x, y, z, 0.008, 0.024, 0.030, 0.021), 0.012);                           // thumb muscle
-      d = S.smin(d, S.cone(x, y, z, 0.008, 0.031, 0.026, -0.003, 0.0365, -0.040, 0.0150, 0.0120), 0.008); // thumb along the handle
-      d = S.smin(d, S.cone(x, y, z, c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], 0.034, 0.049), 0.014);  // flared cuff
-      d = S.smin(d, S.torus(x, y, z, c1[0], c1[1], c1[2], w[0], w[1], w[2], 0.049, 0.0065), 0.004);  // rolled edge
+    // fingers wrap around the handle as arcs that end in fingertips on the side facing the eye;
+    // the thumb lies along the handle, the back of the hand is a separate coloured panel, the cuff is a dark band
+    const fz = [-0.0335, -0.0112, 0.0108, 0.0312], fr = [0.0122, 0.0128, 0.0124, 0.0112], tip = [0.10, -0.04, 0.02, 0.16], R = 0.0200, w = HAND.w, W0 = HAND.Wc, G = HAND.G;
+    const A0 = -250 * PI / 180, A1 = -18 * PI / 180;
+    const c0 = [W0[0] + w[0] * 0.006, W0[1] + w[1] * 0.006, W0[2] + w[2] * 0.006], c1 = [W0[0] + w[0] * 0.088, W0[1] + w[1] * 0.088, W0[2] + w[2] * 0.088], cs = [W0[0] + w[0] * 0.04, W0[1] + w[1] * 0.04, W0[2] + w[2] * 0.04];
+    const fingers = function (x, y, z) {
+      let ph = Math.atan2(y, x); if (ph > 0.8) ph -= 6.2832;
+      let d = 0;
+      for (let i = 0; i < 4; i++) { const a0 = A0 + tip[i], pc = ph < a0 ? a0 : ph > A1 ? A1 : ph, dx = x - R * cos(pc), dy = y - R * sin(pc), dz = z - fz[i], di = sqrt(dx * dx + dy * dy + dz * dz) - fr[i]; d = i ? S.smin(d, di, 0.0028) : di; }
       return d;
     };
+    const back = (x, y, z) => S.ellipsoid(x, y, z, 0.0225, 0.010, 0.004, 0.0195, 0.031, 0.045);
+    const thumb = function (x, y, z) {
+      let d = S.cone(x, y, z, 0.010, 0.030, 0.030, 0.002, 0.0375, -0.004, 0.0150, 0.0128);
+      return S.smin(d, S.cone(x, y, z, 0.002, 0.0375, -0.004, -0.006, 0.0385, -0.040, 0.0128, 0.0112), 0.004);
+    };
+    const heel = (x, y, z) => S.smin(S.sphere(x, y, z, 0.006, 0.021, 0.030, 0.0215), S.sphere(x, y, z, 0.013, 0.003, 0.040, 0.0200), 0.012);
+    const cuff = function (x, y, z) {
+      let d = S.cone(x, y, z, c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], 0.0335, 0.0485);
+      d = S.smin(d, S.torus(x, y, z, c1[0], c1[1], c1[2], w[0], w[1], w[2], 0.0485, 0.0062), 0.004);
+      return S.smin(d, S.torus(x, y, z, cs[0], cs[1], cs[2], w[0], w[1], w[2], 0.0405, 0.0048), 0.003);   // strap
+    };
+    const f0 = function (x, y, z) {
+      let d = S.smin(fingers(x, y, z), back(x, y, z), 0.008);
+      d = S.smin(d, heel(x, y, z), 0.010);
+      d = S.smin(d, thumb(x, y, z), 0.0045);
+      for (let i = 0; i < 4; i++) d = S.smin(d, S.sphere(x, y, z, 0.0215 * cos(A1) + 0.004, 0.0215 * sin(A1) - 0.001, fz[i], 0.0118), 0.005);   // knuckles
+      return S.smin(d, cuff(x, y, z), 0.010);
+    };
     const f = (x, y, z) => f0(x / G, y / G, z / G) * G;
-    const main = C(pal.glove), cuff = C(pal.gloveCuff), pad = C(pal.glovePad || pal.glove);
-    const m = S.mesh(f, [-0.06 * G, -0.055 * G, -0.062 * G], [0.10 * G, 0.15 * G, 0.19 * G], 0.0013 * G, {
-      ao: 0.35, aoRadius: 0.006,
+    const main = C(pal.glove), cf = C(pal.gloveCuff), panel = C(pal.glovePad || pal.glove), strap = C(pal.gloveStrap || '#d9dde1');
+    const m = S.mesh(f, [-0.06 * G, -0.055 * G, -0.062 * G], [0.10 * G, 0.15 * G, 0.19 * G], 0.0012 * G, {
+      ao: 0.45, aoRadius: 0.005,
       color(x, y, z, nx, ny, nz, out) {
         x /= G; y /= G; z /= G;
         const t = (x - W0[0]) * w[0] + (y - W0[1]) * w[1] + (z - W0[2]) * w[2];
-        const k = S.sstep(0.010, 0.016, t);                       // cuff
-        const q = sqrt(x * x + y * y), tips = S.sstep(0.004, -0.006, x) * (1 - k) * S.sstep(0.012, 0.02, q); // palm side of the fingers
-        mixC(main, pad, tips * 0.85, out); out[0] = lerp(out[0], cuff.r, k); out[1] = lerp(out[1], cuff.g, k); out[2] = lerp(out[2], cuff.b, k);
+        const other = Math.min(fingers(x, y, z), thumb(x, y, z), heel(x, y, z)), kb = S.sstep(-0.0005, 0.0035, other - back(x, y, z)) * S.sstep(0.008, 0.014, x);
+        mixC(main, panel, kb, out);
+        const kc = S.sstep(0.012, 0.0165, t), ks = S.sstep(0.0325, 0.0345, t) * (1 - S.sstep(0.0455, 0.0475, t));
+        out[0] = lerp(out[0], cf.r, kc); out[1] = lerp(out[1], cf.g, kc); out[2] = lerp(out[2], cf.b, kc);
+        out[0] = lerp(out[0], strap.r, ks); out[1] = lerp(out[1], strap.g, ks); out[2] = lerp(out[2], strap.b, ks);
       }
     });
     return S.geometry(m);
