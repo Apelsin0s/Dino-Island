@@ -34,6 +34,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
 .card button.big:active { transform: translateY(3px); box-shadow: 0 2px 0 #c96a12; }
 .card button.on { background: var(--accent2); color: #fff; }
 .card button.ghost { background: transparent; color: #8a98a5; font-size: 14px; }
+.card button.ghost.warn { color: #c94f22; }
 .card button:focus-visible { outline: 3px solid var(--accent2); outline-offset: 2px; }
 .row { display: flex; gap: 8px; align-items: center; justify-content: center; font-weight: 800; }
 .keys { margin: 0; font-size: 13px; color: #5b6b79; line-height: 1.7; }

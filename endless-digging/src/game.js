@@ -15,7 +15,7 @@
     clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км',
     sign: ['ПРИЁМ ГРУНТА', '$0.10 за литр'], bucket: 'Ведро', full: 'Ведро полное — неси в приёмку у лачуги', sell: 'сдать грунт', noDig: 'Здесь копать нельзя',
     map: 'Карта мира', mapHint: 'Тяни — вращать · колесо — масштаб · M — закрыть', mapTouch: 'Тяни — вращать · два пальца — масштаб', open: 'Открыто: Украина', locked: 'Остальной мир пока закрыт', here: 'Вы здесь',
-    resetAsk: 'Точно начать заново? Ямы, деньги и ведро пропадут.'
+    resetAsk: 'Нажми ещё раз: ямы, деньги и ведро пропадут'
   } : {
     title: 'Endless Digging', sub: 'Dig out the whole Earth. Start with a spoon.', play: 'Play', cont: 'Continue',
     loading: 'Building the planet…', spoon: 'Spoon', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km', l: 'L',
@@ -24,7 +24,7 @@
     clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km',
     sign: ['SOIL WANTED', '$0.10 per litre'], bucket: 'Bucket', full: 'Bucket is full — take it to the bin by the shack', sell: 'hand in soil', noDig: "Can't dig here",
     map: 'World map', mapHint: 'Drag to turn · wheel to zoom · M to close', mapTouch: 'Drag to turn · two fingers to zoom', open: 'Open: Ukraine', locked: 'The rest of the world is locked for now', here: 'You are here',
-    resetAsk: 'Start over? Holes, money and the bucket will be lost.'
+    resetAsk: 'Press again: holes, money and the bucket will be lost'
   };
   document.documentElement.lang = RU ? 'ru' : 'en';
   const TOUCH = (root.matchMedia && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in root || /[?&]touch\b/.test(location.search);
@@ -368,7 +368,7 @@
     $('qMid').onclick = () => { S.setQuality('mid'); overlay(kind); };
     $('qLo').onclick = () => { S.setQuality('low'); overlay(kind); };
     const r = $('bReset'); if (r) r.onclick = () => {
-      if (!confirm(L.resetAsk)) return;
+      if (!r.dataset.armed) { r.dataset.armed = '1'; r.textContent = L.resetAsk; r.classList.add('warn'); return; }   // second press confirms
       W.clearHoles(); Object.assign(pl, { dug: 0, money: 0, bucket: 0, bucketValue: 0, sold: 0 }); S.resetChunks(); S.updateDeco(pl.pos, true); S.setPile(0);
       pl.pos.copy(spawnPoint()); pl.vel.set(0, 0, 0); save(); overlay(kind);
     };
