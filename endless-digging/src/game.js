@@ -13,26 +13,26 @@
     lang: 'ru', shop: 'Исследования', shopSub: 'Выбери узел дерева', buy: 'Купить', bought: 'Уже есть', soon: 'Скоро', need: 'Не хватает', openShop: 'исследования', close: 'Закрыть',
     soonLong: 'Появится в следующих обновлениях', needFirst: 'Сначала нужно',
     rows: ['Инструмент', 'Сила', 'Геология', 'Торговля', 'Автоматизация'],
-    eff: { perStroke: 'За взмах', perTrip: 'За ходку', stroke: 'Время взмаха', price: 'Цена грунта', rigs: 'Установки', rig1: '1 ручная', rig2: '2 с мотором', rig3: '3 с мотором', see: 'Видно', probe: 'породы под прицелом до 4 м', detector: 'руду вокруг до 12 м' },
+    eff: { perStroke: 'За взмах', perTrip: 'За ходку', stroke: 'Время взмаха', price: 'Цена грунта', rigs: 'Установки', rig1: '1 ручная', rig2: '2 с мотором', rig3: '3 с мотором', see: 'Видно', scanR: 'Радиус / глубина скана', probe: 'породы под прицелом до 4 м', detector: 'руду вокруг до 12 м' },
     node: {
       spoon: ['Ложка', 'С неё всё начинается. Маленькая ямка за взмах.'], scoop: ['Совок', 'Металлический совок: вдвое больше земли за взмах.'],
       trowel: ['Садовая лопатка', 'Острая лопатка, легко входит в глину.'], shovel: ['Лопата', 'Настоящая штыковая лопата. Нужны сильные руки.'],
       pick: ['Кирка', 'Разбивает камень глубже 16 м.'], b5: ['Ведро 5 л', 'Оранжевое ведро в левой руке.'], b10: ['Ведро 10 л', 'Вдвое больше земли за ходку.'],
       b20: ['Большое ведро 20 л', 'Тяжёлое, но ходить к приёмке реже.'], sack: ['Мешок за спиной 50 л', 'Прочный мешок, руки свободны.'], barrow: ['Тачка 120 л', 'Возить грунт тачкой.'],
       arms1: ['Сильные руки I', 'Взмах на 15 % быстрее.'], arms2: ['Сильные руки II', 'Ещё быстрее.'], arms3: ['Сильные руки III', 'Копаешь как машина.'],
-      probe: ['Щуп', 'Стальной щуп: показывает, какие породы под прицелом, до 4 м вглубь.'], detector: ['Металлоискатель', 'Пищит рядом с рудой и говорит, где копать: направление, расстояние, глубина.'],
+      probe: ['Щуп', 'Стальной щуп: показывает, какие породы под прицелом, до 4 м вглубь.'], detector: ['Металлоискатель', 'Нажми E: один скан вокруг — руда в радиусе 8 м и до 4 м вглубь отмечается на земле с глубиной.'], detector2: ['Мощный металлоискатель', 'Скан на 15 м вокруг и до 8 м вглубь.'],
       radar: ['Георадар', 'Карта руды под участком.'], scales1: ['Свой покупатель', 'Постоянный покупатель платит за всё на 25 % больше.'], scales2: ['Договор с заводом', 'Платят на 50 % больше.'],
       auto1: ['Ручная копалка', 'Тренога со шнеком у лачуги: сама бурит землю, деньги идут тебе.'], auto2: ['Мотобур', 'Мотор на копалке — вдвое быстрее, и вторая установка.'], auto3: ['Третья установка', 'Ещё один мотобур.'], excavator: ['Мини-экскаватор', 'Настоящая техника для котлована.']
     },
     mat: ['чернозём', 'глина', 'гранит', 'магнетитовый кварцит', 'гематитовая руда'], firstOre: 'Руда! Железная руда стоит дороже земли',
-    oreSold: 'руда сдана:', probeL: 'Щуп', detL: 'Металлоискатель', noOre: 'руды рядом нет', ahead: 'впереди', behind: 'сзади', leftS: 'слева', rightS: 'справа', depthL: 'глубина',
+    oreSold: 'руда сдана:', probeL: 'Щуп', detL: 'Металлоискатель', noOre: 'руды не найдено', found: 'найдено гнёзд:', nearest: 'ближайшее', scanB: 'скан', ahead: 'впереди', behind: 'сзади', leftS: 'слева', rightS: 'справа', depthL: 'глубина',
     status: 'Статус', priceL: 'Цена за литр', rarity: 'в земной коре', ppm: 'г/т', wells: 'добывается скважинами',
     srcUA: 'Координаты приблизительные, статус на 2026 год', srcWorld: 'Данные USGS MRDS, статус на момент их обновления',
     st: { work: 'работает', idle: 'простаивает', closed: 'закрыто', occ14: 'оккупировано с 2014', occ22: 'оккупировано с 2022', front: 'у линии фронта', expl: 'разведано, не разрабатывается',
       usgs_prod: 'добывалось', usgs_past: 'отработано', known: 'известное месторождение' },
     resTitle: 'Ресурсы на карте', lmap: 'л',
     helperPay: 'помощники', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км', l: 'л',
-    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать (деньги сразу) · <b>F</b> исследования · <b>M</b> карта · <b>Esc</b> пауза',
+    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать (деньги сразу) · <b>F</b> исследования · <b>E</b> скан металлоискателем · <b>M</b> карта · <b>Esc</b> пауза',
     pause: 'Пауза', quality: 'Графика', hi: 'Высокая', mid: 'Средняя', lo: 'Быстрая', reset: 'Начать заново', far: 'Слишком далеко',
     clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км',
     sign: ['ПРИЁМ ГРУНТА', '$0.10 за литр'], bucket: 'Ведро', full: 'Ведро полное — неси в приёмку у лачуги', sell: 'сдать грунт', noDig: 'Здесь копать нельзя', inWay: 'Мешает — камень или дерево',
@@ -44,26 +44,26 @@
     lang: 'en', shop: 'Research', shopSub: 'Pick a node of the tree', buy: 'Buy', bought: 'Owned', soon: 'Soon', need: 'Need', openShop: 'research', close: 'Close',
     soonLong: 'Coming in a later update', needFirst: 'First you need',
     rows: ['Tool', 'Strength', 'Geology', 'Trade', 'Automation'],
-    eff: { perStroke: 'Per stroke', perTrip: 'Per trip', stroke: 'Stroke time', price: 'Soil price', rigs: 'Rigs', rig1: '1 hand-crank', rig2: '2 motor', rig3: '3 motor', see: 'Shows', probe: 'the ground under the crosshair to 4 m', detector: 'ore around you to 12 m' },
+    eff: { perStroke: 'Per stroke', perTrip: 'Per trip', stroke: 'Stroke time', price: 'Soil price', rigs: 'Rigs', rig1: '1 hand-crank', rig2: '2 motor', rig3: '3 motor', see: 'Shows', scanR: 'Sweep radius / depth', probe: 'the ground under the crosshair to 4 m', detector: 'ore around you to 12 m' },
     node: {
       spoon: ['Spoon', 'Where it all starts. A tiny hole per stroke.'], scoop: ['Hand scoop', 'A metal scoop: twice the soil per stroke.'],
       trowel: ['Garden trowel', 'A sharp trowel that cuts into clay.'], shovel: ['Shovel', 'A real spade. Needs strong arms.'],
       pick: ['Pickaxe', 'Breaks rock below 16 m.'], b5: ['Bucket 5 L', 'The orange bucket in your left hand.'], b10: ['Bucket 10 L', 'Twice the soil per trip.'],
       b20: ['Big bucket 20 L', 'Heavy, but fewer trips to the bin.'], sack: ['Back sack 50 L', 'A strong sack, hands free.'], barrow: ['Wheelbarrow 120 L', 'Move soil by barrow.'],
       arms1: ['Strong arms I', 'Strokes 15 % faster.'], arms2: ['Strong arms II', 'Faster still.'], arms3: ['Strong arms III', 'You dig like a machine.'],
-      probe: ['Probe', 'A steel probe: shows the ground under the crosshair, 4 m down.'], detector: ['Metal detector', 'Beeps near ore and tells you where to dig: direction, distance, depth.'],
+      probe: ['Probe', 'A steel probe: shows the ground under the crosshair, 4 m down.'], detector: ['Metal detector', 'Press E: one sweep — ore within 8 m and 4 m down gets marks on the ground with its depth.'], detector2: ['Strong detector', 'Sweeps 15 m around and 8 m down.'],
       radar: ['Ground radar', 'A map of the ore under the site.'], scales1: ['Regular buyer', 'A regular buyer pays 25 % more for everything.'], scales2: ['Plant contract', 'Pays 50 % more.'],
       auto1: ['Hand-crank rig', 'A tripod auger by the shack bores by itself; the money is yours.'], auto2: ['Motor drill', 'A motor on the rig: twice as fast, plus a second rig.'], auto3: ['Third rig', 'One more motor drill.'], excavator: ['Mini excavator', 'Real machinery for a proper pit.']
     },
     mat: ['topsoil', 'clay', 'granite', 'magnetite quartzite', 'hematite ore'], firstOre: 'Ore! Iron ore is worth more than soil',
-    oreSold: 'ore handed in:', probeL: 'Probe', detL: 'Detector', noOre: 'no ore nearby', ahead: 'ahead', behind: 'behind', leftS: 'to the left', rightS: 'to the right', depthL: 'depth',
+    oreSold: 'ore handed in:', probeL: 'Probe', detL: 'Detector', noOre: 'no ore found', found: 'pockets found:', nearest: 'nearest', scanB: 'scan', ahead: 'ahead', behind: 'behind', leftS: 'to the left', rightS: 'to the right', depthL: 'depth',
     status: 'Status', priceL: 'Price per litre', rarity: 'in the crust', ppm: 'ppm', wells: 'extracted by wells',
     srcUA: 'Approximate coordinates, status as of 2026', srcWorld: 'USGS MRDS data, status as of its last update',
     st: { work: 'working', idle: 'idle', closed: 'closed', occ14: 'occupied since 2014', occ22: 'occupied since 2022', front: 'near the front line', expl: 'explored, not mined',
       usgs_prod: 'producer', usgs_past: 'past producer', known: 'well-known deposit' },
     resTitle: 'Resources on the map', lmap: 'L',
     helperPay: 'helpers', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km', l: 'L',
-    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig (paid at once) · <b>F</b> research · <b>M</b> map · <b>Esc</b> pause',
+    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig (paid at once) · <b>F</b> research · <b>E</b> detector sweep · <b>M</b> map · <b>Esc</b> pause',
     pause: 'Paused', quality: 'Graphics', hi: 'High', mid: 'Medium', lo: 'Fast', reset: 'Start over', far: 'Too far',
     clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km',
     sign: ['SOIL WANTED', '$0.10 per litre'], bucket: 'Bucket', full: 'Bucket is full — take it to the bin by the shack', sell: 'hand in soil', noDig: "Can't dig here", inWay: 'A rock or a tree is in the way',
@@ -97,7 +97,8 @@
     { id: 'arms3', row: 1, col: 3, icon: 'arm3', p: 70, req: ['arms2'] },
     { id: 'probe', row: 2, col: 1, icon: 'probe', p: 12, req: ['scoop'] },
     { id: 'detector', row: 2, col: 2, icon: 'detector', p: 40, req: ['probe'] },
-    { id: 'radar', row: 2, col: 3, icon: 'radar', soon: true, req: ['detector'] },
+    { id: 'detector2', row: 2, col: 3, icon: 'detector2', p: 90, req: ['detector', 'arms2'] },
+    { id: 'radar', row: 2, col: 4, icon: 'radar', soon: true, req: ['detector2'] },
     { id: 'scales1', row: 3, col: 1, icon: 'scale', p: 20, req: ['scoop'] },
     { id: 'scales2', row: 3, col: 2, icon: 'scale2', p: 90, req: ['scales1'] },
     { id: 'auto1', row: 4, col: 2, icon: 'rig', p: 30, req: ['trowel', 'scales1'] },
@@ -277,7 +278,7 @@
     const m = { scoop: [E.perStroke, sc('spoon'), sc('scoop')], trowel: [E.perStroke, sc('scoop'), sc('trowel')], shovel: [E.perStroke, sc('trowel'), sc('shovel')],
       arms1: [E.stroke, '100 %', '85 %'], arms2: [E.stroke, '85 %', '72 %'], arms3: [E.stroke, '72 %', '61 %'],
       scales1: [E.price, '×1', '×1.25'], scales2: [E.price, '×1.25', '×1.5'], auto1: [E.rigs, '0', E.rig1], auto2: [E.rigs, E.rig1, E.rig2], auto3: [E.rigs, E.rig2, E.rig3],
-      probe: [E.see, '—', E.probe], detector: [E.see, E.probe, E.detector] }[id];
+      probe: [E.see, '—', E.probe], detector: [E.scanR, '—', '8 ' + L.m + ' / 4 ' + L.m], detector2: [E.scanR, '8 ' + L.m + ' / 4 ' + L.m, '15 ' + L.m + ' / 8 ' + L.m] }[id];
     return m ? `<div class="eff"><span>${m[0]}</span><b>${m[1]}</b><i>→</i><b class="new">${m[2]}</b></div>` : '';
   }
   function treeHTML() {
@@ -365,6 +366,7 @@
     if (!playing) return;
     keys[e.code] = true;
     if (e.code === 'KeyF' && !e.repeat) toggleShop(true);
+    if (e.code === 'KeyE' && !e.repeat) scan();
     if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   });
   addEventListener('keyup', e => { keys[e.code] = false; });
@@ -429,7 +431,7 @@
       unlock() { try { ctx(); if (ac.state === 'suspended') ac.resume(); } catch (e) {} },
       dig(tool, depth) { if (!ac) return; const hard = depth > 13 ? 1 : 0; noise(0.16, 700 + hard * 900, 0.8, 0.22); tone(1900 + hard * 600, 0.05, 0.02, 0, 'triangle'); noise(0.25, 2600, 0.6, 0.04, 'highpass', 0.04); },
       thud() { if (!ac) return; noise(0.1, 220, 1, 0.12); },
-      beep(k) { if (!ac) return; tone(900 + 900 * k, 0.07, 0.04 + 0.05 * k, 0, 'square'); },
+      scan(found) { if (!ac) return; tone(600, 0.5, 0.05, 900, 'sine'); if (found) { tone(1400, 0.08, 0.06, 0, 'square', 0.55); tone(1400, 0.08, 0.06, 0, 'square', 0.7); } },
       coin() { if (!ac) return; noise(0.5, 400, 0.8, 0.25); tone(1320, 0.12, 0.12, 0, 'triangle', 0.25); tone(1760, 0.25, 0.12, 0, 'triangle', 0.36); },
       step() { if (!ac) return; noise(0.12, 380 + Math.random() * 120, 1.2, 0.1); noise(0.08, 2800, 0.7, 0.02, 'highpass'); },
       jump() { if (!ac) return; noise(0.1, 600, 1, 0.06); },
@@ -453,12 +455,48 @@
     $('pct').textContent = pct === 0 ? '0 %' : pct.toExponential(2).replace('e', ' × 10^') + ' %';
     $('money').textContent = '$' + pl.money.toFixed(2);
     $('bShop').innerHTML = (TOUCH ? '' : '<b>F</b> ') + L.openShop;
+    $('bScan').hidden = !has('detector'); if (has('detector')) { $('bScan').innerHTML = (TOUCH ? '' : '<b>E</b> ') + L.scanB; $('bScan').classList.toggle('cool', scanCool > 0); }
     if (noticeT > 0 && (noticeT -= dt) <= 0) $('notice').hidden = true;
     geology(dt);
   }
 
   // ---------- geology: the probe reads the column under the crosshair, the detector looks for ore around ----------
-  let geoT = 0, detT = 0, lastDet = '';
+  let geoT = 0, scanInfo = null, scanCool = 0;
+  // the metal detector: press E (or the button) for one sweep; ore pockets in range get marks on the ground with their depth
+  const scanRange = () => has('detector2') ? { r: 15, d: 8 } : { r: 8, d: 4 };
+  function scan() {
+    if (!has('detector') || !playing || scanCool > 0) return;
+    const { r, d } = scanRange(); scanCool = 2.5;
+    frame();
+    const cols = new Map(), step = 0.7;
+    for (let a = -r; a <= r; a += step) for (let b = -r; b <= r; b += step) {
+      if (a * a + b * b > r * r) continue;
+      const p0 = pl.pos.clone().addScaledVector(right, a).addScaledVector(pl.fwd, b), u = p0.clone().normalize();
+      const top = u.clone().multiplyScalar(W.R + W.heightDir(u.x, u.y, u.z));
+      for (let z = 0.3; z <= d; z += 0.3) {
+        const q = top.clone().addScaledVector(u, -z);
+        if (W.solid(q.x, q.y, q.z) <= 0) continue;
+        const m = W.materialAt(q.x, q.y, q.z);
+        if (m >= 3) { cols.set(Math.round(a / step) + ',' + Math.round(b / step), { a, b, z, m, top }); break; }
+      }
+    }
+    // join neighbouring columns into pockets; one mark per pocket at its shallowest point
+    const seen = new Set(), finds = [];
+    for (const [k, c] of cols) {
+      if (seen.has(k)) continue;
+      const stack = [k], pocket = []; seen.add(k);
+      while (stack.length) { const kk = stack.pop(), cc = cols.get(kk); pocket.push(cc); const [x, y] = kk.split(',').map(Number);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nk = (x + dx) + ',' + (y + dy); if (cols.has(nk) && !seen.has(nk)) { seen.add(nk); stack.push(nk); } } }
+      let best = pocket[0], hem = 0; for (const c2 of pocket) { if (c2.z < best.z) best = c2; if (c2.m === 4) hem++; }
+      finds.push({ pos: best.top, depth: best.z, mat: hem > pocket.length / 2 ? 4 : 3, size: pocket.length * step * step, dist: Math.hypot(best.a, best.b) });
+    }
+    finds.sort((x, y) => x.dist - y.dist);
+    S.showScan(pl.pos, r, finds.slice(0, 14), L.m);
+    Sound.scan(finds.length > 0);
+    const n = finds[0];
+    scanInfo = { until: t + 12, text: `<b>${L.detL}</b> ` + (n ? `${L.found} ${finds.length} · ${L.nearest} ${n.dist.toFixed(0)} ${L.m}, ${L.depthL} ${n.depth.toFixed(1)} ${L.m} · <span class="m${n.mat}">${L.mat[n.mat]}</span>` : `${L.noOre} (${r} ${L.m}, ${L.depthL} ${d} ${L.m})`) };
+    geoT = 0;
+  }
   function geology(dt) {
     const el = $('geo'); if (!has('probe')) { el.hidden = true; return; }
     if ((geoT -= dt) > 0) return; geoT = 0.25;
@@ -473,25 +511,7 @@
       if (cur >= 0) parts.push([cur, from, 4]);
       txt = `<b>${L.probeL}</b> ` + parts.slice(0, 4).map(([m, a, b]) => `<span class="m${m}">${L.mat[m]}</span> ${a.toFixed(1)}–${b.toFixed(1)} ${L.m}`).join(' · ');
     }
-    if (has('detector')) {
-      if ((detT -= 0.25) <= 0) {
-        detT = 1;
-        // nearest ore within 12 m around and 1.5..8 m down
-        let best = null;
-        const right2 = right.clone(), fwd2 = pl.fwd.clone();
-        for (let a = -12; a <= 12; a += 1) for (let b = -12; b <= 12; b += 1) {
-          const r2 = a * a + b * b; if (r2 > 144 || (best && r2 > best.r2)) continue;
-          const p0 = pl.pos.clone().addScaledVector(right2, a).addScaledVector(fwd2, b);
-          for (let d = 1.6; d <= 8; d += 0.5) { const q = p0.clone().addScaledVector(up, -d); if (W.solid(q.x, q.y, q.z) > 0 && W.materialAt(q.x, q.y, q.z) >= 3) { best = { a, b, d, r2 }; break; } }
-        }
-        if (best) {
-          const dist = Math.sqrt(best.r2), dirW = Math.abs(best.b) >= Math.abs(best.a) ? (best.b >= 0 ? L.ahead : L.behind) : (best.a > 0 ? L.rightS : L.leftS);
-          lastDet = `<b>${L.detL}</b> <span class="m3">●</span> ${dist < 1 ? '' : dist.toFixed(0) + ' ' + L.m + ' ' + dirW + ', '}${L.depthL} ~${best.d.toFixed(1)} ${L.m}`;
-          Sound.beep(1 - dist / 13);
-        } else lastDet = `<b>${L.detL}</b> ${L.noOre}`;
-      }
-      txt += (txt ? '<br>' : '') + lastDet;
-    }
+    if (has('detector') && scanInfo && t < scanInfo.until) txt += (txt ? '<br>' : '') + scanInfo.text;
     el.innerHTML = txt; el.hidden = !txt;
   }
 
@@ -553,7 +573,7 @@
   function fullscreen() { try { const d = document.documentElement, f = d.requestFullscreen || d.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(d); if (r && r.catch) r.catch(() => {}); } } catch (e) {} }
   function setupTouch() {
     const tapBtn = (el, fn) => el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); fn(); });
-    tapBtn($('bShop'), () => toggleShop(true)); tapBtn($('bMap'), () => { if (playing) toggleMap(); }); tapBtn($('mapClose'), () => { if (mapOpen) toggleMap(); });
+    tapBtn($('bShop'), () => toggleShop(true)); tapBtn($('bScan'), scan); tapBtn($('bMap'), () => { if (playing) toggleMap(); }); tapBtn($('mapClose'), () => { if (mapOpen) toggleMap(); });
     if (!TOUCH) return;
     const base = $('stick'), knob = $('knob'), R = 56;
     canvas.addEventListener('pointerdown', e => {
@@ -643,7 +663,7 @@
       if ((digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
       S.updateChunks(pl.pos, 5); S.updateFar(pl.pos); S.updateDeco(pl.pos, false, 3);
       if ((saveT += dt) > 5 && dirty) { saveT = 0; save(); }
-      updateMachines(dt);
+      updateMachines(dt); if (scanCool > 0) scanCool -= dt;
       hud(dt);
     }
     S.setFrame(up);
@@ -667,7 +687,7 @@
       setup(); setupTouch();
       requestAnimationFrame(loop);
       addEventListener('beforeunload', () => { if (dirty) save(); });
-      root.__game = { pl, W, S, owned, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach); return h ? doDig(h) : false; }, toggleMap, setTool,
+      root.__game = { pl, W, S, owned, scan, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach); return h ? doDig(h) : false; }, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },
         mapSnap(steps) { for (let i = 0; i < (steps || 1); i++) MapV.render(0.1); return canvas.toDataURL('image/jpeg', 0.9); } };
     }, 30));

@@ -183,3 +183,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
 }
 @keyframes fadeHint { 0%, 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 .mkLayer { z-index: 1; } .mapPin { z-index: 2; } .mapLegend, .mapHead, #mapClose { z-index: 3; } .mkTip { z-index: 4; }
+
+.scanBtn { top: calc(max(14px, env(safe-area-inset-top, 0px)) + 222px); }
+.scanBtn.cool { opacity: .5; }
+.touch .scanBtn { top: auto; bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + 160px); }

@@ -639,6 +639,50 @@
 
   Scene.setPile = function (k) { const d = Scene.drop; if (!d) return; d.fill = Math.min(1, k); d.pile.scale.y = 0.05 + d.fill * 0.9; d.pile.position.y = 0.1 + d.fill * 0.25; };
 
+  // ---------- metal detector sweep: a ring that runs out over the ground, then marks over the ore found ----------
+  const Scan = { ring: null, marks: [], t: 0, life: 12 };
+  function labelTex(text, color) {
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 128; const c = cv.getContext('2d');
+    c.fillStyle = "rgba(25,32,40,.82)"; c.beginPath(); if (c.roundRect) c.roundRect(28, 8, 200, 64, 32); else c.rect(28, 8, 200, 64); c.fill();
+    c.fillStyle = color; c.beginPath(); c.arc(64, 40, 18, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff'; c.font = 'bold 40px "Nunito", sans-serif'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(text, 92, 42);
+    c.fillStyle = color; c.beginPath(); c.moveTo(118, 72); c.lineTo(138, 72); c.lineTo(128, 96); c.fill();
+    const tx = new T.CanvasTexture(cv); tx.colorSpace = T.SRGBColorSpace; return tx;
+  }
+  Scene.showScan = function (center, radius, finds, mUnit) {
+    for (const m of Scan.marks) { scene.remove(m); m.material.map.dispose(); m.material.dispose(); }
+    Scan.marks = [];
+    if (!Scan.ring) {
+      Scan.ring = new T.Mesh(new T.RingGeometry(0.92, 1, 96), new T.MeshBasicMaterial({ color: col('#ffd23f'), transparent: true, opacity: 0.8, side: T.DoubleSide, depthWrite: false, fog: false }));
+      Scan.ring.renderOrder = 5; scene.add(Scan.ring);
+    }
+    const u = center.clone().normalize();
+    Scan.center = center.clone(); Scan.r = radius; Scan.t = 0;
+    Scan.ring.quaternion.setFromUnitVectors(v3(0, 0, 1), u);
+    for (const f of finds) {
+      const c = f.mat === 4 ? '#ff7a5c' : '#8fb4e0', sp = new T.Sprite(new T.SpriteMaterial({ map: labelTex(f.depth.toFixed(1) + ' ' + mUnit, c), depthTest: false, transparent: true, fog: false, sizeAttenuation: false }));
+      const fu = f.pos.clone().normalize(); sp.userData.at = f.pos.clone().addScaledVector(fu, 0.55); sp.userData.delay = f.dist / Math.max(1, radius) * 0.9;
+      sp.scale.set(0.28, 0.14, 1); sp.center.set(0.5, 0.15); sp.renderOrder = 6; sp.visible = false; scene.add(sp); Scan.marks.push(sp);
+    }
+  };
+  Scan.update = function (dt) {
+    if (!this.center) return;
+    this.t += dt;
+    const k = Math.min(1, this.t / 0.9), r = 0.5 + this.r * k;
+    this.ring.visible = this.t < 1.3;
+    if (this.ring.visible) {
+      const u = this.center.clone().normalize(), p = this.center.clone().addScaledVector(u, 0.15);
+      this.ring.position.set(p.x - O.x, p.y - O.y, p.z - O.z); this.ring.scale.setScalar(r); this.ring.material.opacity = 0.85 * (1 - Math.max(0, (this.t - 0.9) / 0.4));
+    }
+    const fade = Math.max(0, Math.min(1, (this.life - this.t) / 1.5));
+    for (const m of this.marks) {
+      m.visible = this.t > m.userData.delay && fade > 0;
+      const a = m.userData.at; m.position.set(a.x - O.x, a.y - O.y + 0, a.z - O.z);
+      m.material.opacity = fade * Math.min(1, (this.t - m.userData.delay) * 4);
+      const bob = 1 + 0.04 * Math.sin(this.t * 4); m.scale.set(0.28 * bob, 0.14 * bob, 1);   // same size on screen at any distance
+    }
+  };
+
   // ---------- particles: dirt clods and dust ----------
   const Particles = {
     MAX: 500, list: [],
@@ -807,7 +851,7 @@
     camera.updateMatrixWorld();
     handCam.quaternion.copy(q); handCam.updateMatrixWorld();
     sky.position.copy(camera.position);
-    Particles.update(dt); Rigs.update(dt, t);
+    Particles.update(dt); Rigs.update(dt, t); Scan.update(dt);
     Hand.update(info.dig, info.walk, t, dt, info.look);
     Shadow.update(eye, q);
     composer.render(dt);
