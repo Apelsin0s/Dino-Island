@@ -440,5 +440,57 @@
     return merge(parts);
   };
 
+
+  // =====================================================================================
+  // Tools after the spoon. Same frame as the spoon: the hand grips at the origin, the tool points along -Z,
+  // a scooping side faces +Y. Each returns { metal, wood } geometries (plain, for steel and wood materials).
+  // =====================================================================================
+  function handle(len, r, z0) { const g = new T.CylinderGeometry(r, r * 1.08, len, 18); g.rotateX(PI / 2); g.translate(0, 0, z0 - len / 2); const k = new T.SphereGeometry(r * 1.1, 14, 10); k.translate(0, 0, z0); return merge([g, k]); }
+  A.scoop = function () {   // a small metal hand scoop (совок)
+    const t = new T.CylinderGeometry(0.048, 0.052, 0.16, 28, 1, true, PI / 2, PI); t.rotateX(PI / 2); t.rotateZ(PI); t.translate(0, 0.012, -0.165);
+    const back = new T.CircleGeometry(0.05, 24, 0, PI); back.rotateZ(PI); back.translate(0, 0.012, -0.085);
+    const neck = new T.CylinderGeometry(0.01, 0.012, 0.03, 12); neck.rotateX(PI / 2); neck.translate(0, 0.0, -0.07);
+    return { metal: merge([t, back, neck]), wood: handle(0.13, 0.016, 0.06) };
+  };
+  A.trowel = function () {   // a garden trowel (садовая лопатка): pointed, slightly dished blade
+    const sh = new T.Shape(); sh.moveTo(-0.045, 0); sh.quadraticCurveTo(-0.05, 0.11, 0, 0.19); sh.quadraticCurveTo(0.05, 0.11, 0.045, 0); sh.lineTo(-0.045, 0);
+    const b = new T.ExtrudeGeometry(sh, { depth: 0.003, bevelEnabled: true, bevelThickness: 0.0015, bevelSize: 0.0015, bevelSegments: 2, curveSegments: 16 });
+    const p = b.getAttribute('position'); for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, p.getZ(i) + 2.2 * x * x); } b.computeVertexNormals();
+    b.rotateX(-PI / 2); b.translate(0, 0.008, -0.09);
+    const neck = new T.CylinderGeometry(0.007, 0.009, 0.06, 10); neck.rotateX(PI / 2); neck.translate(0, 0.004, -0.06);
+    return { metal: merge([b, neck]), wood: handle(0.12, 0.017, 0.07) };
+  };
+  A.shovel = function () {   // a full spade (лопата): the hand holds the shaft, blade far ahead
+    const sh = new T.Shape(); sh.moveTo(-0.105, 0); sh.lineTo(0.105, 0); sh.lineTo(0.1, 0.2); sh.quadraticCurveTo(0.07, 0.29, 0, 0.31); sh.quadraticCurveTo(-0.07, 0.29, -0.1, 0.2); sh.lineTo(-0.105, 0);
+    const b = new T.ExtrudeGeometry(sh, { depth: 0.004, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.002, bevelSegments: 2, curveSegments: 12 });
+    const p = b.getAttribute('position'); for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setZ(i, p.getZ(i) + 1.6 * x * x); } b.computeVertexNormals();
+    b.rotateX(-PI / 2); b.translate(0, 0.012, -0.5);
+    const col = new T.CylinderGeometry(0.022, 0.028, 0.1, 16); col.rotateX(PI / 2); col.translate(0, 0.006, -0.46);
+    const shaft = new T.CylinderGeometry(0.018, 0.019, 0.7, 16); shaft.rotateX(PI / 2); shaft.translate(0, 0, -0.08);
+    b.rotateZ(PI / 2);   // blade face turned toward the eye in the first-person pose
+    return { metal: merge([b, col]), wood: shaft };
+  };
+
+  // =====================================================================================
+  // A helper: a worker in an orange vest and a cap. Returns { body, arm } (vertex coloured); the arm (with a trowel)
+  // pivots at the right shoulder, at arm.userData.pivot.
+  // =====================================================================================
+  A.worker = function (seed) {
+    const r = S.rng(seed || 1), parts = [], skin = C(['#f1c7a3', '#e0a77f', '#c98b62'][Math.floor(r() * 3)]), vest = C('#f08a24'), shirt = C(['#e9e8e4', '#5b84c4', '#7a9b5b'][Math.floor(r() * 3)]), pants = C('#3b5a8a'), boots = C('#4a3424'), cap = C(['#2b3442', '#c94f22', '#e9e8e4'][Math.floor(r() * 3)]);
+    const cap2 = (rad, a, b, c) => { const v = new T.Vector3().subVectors(b, a), g = new T.CapsuleGeometry(rad, v.length(), 6, 14); g.applyQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(0, 1, 0), v.clone().normalize())); g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2); parts.push(colorize(g, c)); };
+    const V = (x, y, z) => new T.Vector3(x, y, z);
+    cap2(0.075, V(-0.1, 0.12, 0), V(-0.1, 0.82, 0), pants); cap2(0.075, V(0.1, 0.12, 0), V(0.1, 0.82, 0), pants);
+    cap2(0.08, V(-0.1, 0.05, 0.04), V(-0.1, 0.05, 0.1), boots); cap2(0.08, V(0.1, 0.05, 0.04), V(0.1, 0.05, 0.1), boots);
+    cap2(0.17, V(0, 0.98, 0), V(0, 1.3, 0), vest); cap2(0.15, V(0, 0.95, 0.01), V(0, 1.32, 0.01), shirt);
+    cap2(0.055, V(-0.24, 1.38, 0), V(-0.28, 0.95, 0.05), shirt);
+    cap2(0.045, V(0, 1.44, 0), V(0, 1.52, 0), skin);
+    { const g = new T.SphereGeometry(1, 20, 14); g.scale(0.1, 0.12, 0.11); g.translate(0, 1.64, 0); parts.push(colorize(g, skin)); }
+    { const g = new T.SphereGeometry(0.115, 20, 12, 0, PI * 2, 0, PI / 2); g.translate(0, 1.67, 0); parts.push(colorize(g, cap)); const v2 = new T.CylinderGeometry(0.09, 0.09, 0.012, 20, 1, false, -PI / 2, PI); v2.translate(0, 1.67, 0.07); parts.push(colorize(v2, cap)); }
+    const armP = [], ac = (rad, a, b, c) => { const v = new T.Vector3().subVectors(b, a), g = new T.CapsuleGeometry(rad, v.length(), 6, 12); g.applyQuaternion(new T.Quaternion().setFromUnitVectors(new T.Vector3(0, 1, 0), v.clone().normalize())); g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2); armP.push(colorize(g, c)); };
+    ac(0.055, V(0, 0, 0), V(0.02, -0.3, 0.12), shirt); ac(0.045, V(0.02, -0.3, 0.12), V(0.02, -0.42, 0.34), skin);
+    { const t = A.trowel(); const tg = merge([colorize(t.metal, C('#d6dbe0')), colorize(t.wood, C('#b07a45'))]); tg.rotateX(PI * 0.62); tg.translate(0.02, -0.44, 0.36); armP.push(tg); }
+    return { body: merge(parts), arm: merge(armP), pivot: [0.24, 1.38, 0] };
+  };
+
   root.Assets = A;
 })(window);

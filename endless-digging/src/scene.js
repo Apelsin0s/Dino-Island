@@ -122,7 +122,7 @@
         if (vDepth > 0.0003*uRim) {
           float dn = vDepth/uRim + pdFbm(P, 40.0, 2).x*0.0012;
           vec3 soilc = mix(uS1, uS2, clamp(0.5 + pdFbm(P, 5.0, 2).x*0.7, 0.0, 1.0));
-          soilc *= mix(1.0, 0.82, smoothstep(0.03, 0.11, vDepth));
+          soilc *= mix(1.0, 0.55, smoothstep(0.02, 0.3, vDepth));   // deeper is darker, so a pit reads as a pit
           soilc = mix(soilc, vColor.rgb, smoothstep(1.0, 2.5, vDepth));
           vec3 edge = mix(uS1*0.5, soilc, smoothstep(0.005, 0.013, dn));
           col = mix(lawn, edge, smoothstep(0.0008, 0.0055, dn));
@@ -388,7 +388,7 @@
         const n = (i * NA + a) * 3;
         pos[n] = dx * rr - O.x; pos[n + 1] = dy * rr - O.y; pos[n + 2] = dz * rr - O.z;
         const nz = W.noise(x / 60, y / 60, z / 60, 5), forest = W.noise(x / 260, y / 260, z / 260, 77) + 0.05;
-        if (h > 320) tmpC.copy(P.snow); else if (h > 230) tmpC.copy(P.rock).lerp(P.snow, Math.max(0, (h - 300) / 20));
+        if (h > 1900) tmpC.copy(P.snow); else if (h > 1500) tmpC.copy(P.rock).lerp(P.snow, Math.max(0, (h - 1800) / 100));
         else tmpC.copy(lawnMid).lerp(P.grassDry, Math.max(0, nz * 0.6)).lerp(P.forest, Math.min(1, Math.max(0, forest * 2.2)) * Math.min(1, r / 400));
         cols[n] = tmpC.r; cols[n + 1] = tmpC.g; cols[n + 2] = tmpC.b;
       }
@@ -481,13 +481,13 @@
       return W.solid(x - x / l * 0.15, y - y / l * 0.15, z - z / l * 0.15) > 0 && W.solid(x + x / l * 0.25, y + y / l * 0.25, z + z / l * 0.25) < 0;
     },
     *placeBig(p) {
-      for (const k of this.big) this.kinds[k].sn = 0; const items = [];
+      for (const k of this.big) this.kinds[k].sn = 0; const items = [], obst = [];
       const spawn = Scene.spawnPoint, near2 = M.nearR * M.nearR;
       yield* this.scatter(p, M.treeR, 9, (X, Y, Z) => {
         const r = W.hash01(X, Y, Z), jx = W.hash01(X, Y, Z + 7), jy = W.hash01(X + 3, Y, Z), jz = W.hash01(X, Y + 5, Z);
         let x = (X + jx) * 9, y = (Y + jy) * 9, z = (Z + jz) * 9; const l = Math.hypot(x, y, z);
         const forest = W.noise(x / 260, y / 260, z / 260, 77) + 0.05;
-        const h = W.heightDir(x / l, y / l, z / l); if (h > 225) return;
+        const h = W.heightDir(x / l, y / l, z / l); if (h > 1700) return;
         const rr = W.R + h - 0.08; x = x / l * rr; y = y / l * rr; z = z / l * rr;
         if (spawn && Math.hypot(x - spawn.x, y - spawn.y, z - spawn.z) < 12) return;
         if (isBlocked(x, y, z, 1.5) || !this.alive(x, y, z)) return;
@@ -501,8 +501,9 @@
         else if (r > 0.91) { kind = near ? (r > 0.922 ? 'rock1' : 'rock2') : 'rockfar'; sc = 0.4 + s * 0.6; }
         if (!kind) return;
         this.add(kind, x, y, z, sc, yaw, 0, items);
+        const ob = OBST[kind]; if (ob) { const ul = Math.hypot(x, y, z); obst.push({ x, y, z, ux: x / ul, uy: y / ul, uz: z / ul, r: ob[0] * sc, h: ob[1] * sc }); }
       });
-      this.finish(this.big); this.bigItems = items;
+      this.finish(this.big); this.bigItems = items; W.setObstacles(obst);
     },
     *placeSmall(p) {
       for (const k of this.small) this.kinds[k].sn = 0; const items = [];
@@ -510,7 +511,7 @@
       yield* this.scatter(p, M.grassR, 0.6, (X, Y, Z) => {
         const r = W.hash01(X, Y, Z); if (r > 0.42) return;
         let x = (X + W.hash01(X, Y, Z + 7)) * 0.6, y = (Y + W.hash01(X + 3, Y, Z)) * 0.6, z = (Z + W.hash01(X, Y + 5, Z)) * 0.6;
-        const l = Math.hypot(x, y, z), h = W.heightDir(x / l, y / l, z / l); if (h > 215) return;
+        const l = Math.hypot(x, y, z), h = W.heightDir(x / l, y / l, z / l); if (h > 1900) return;
         const rr = W.R + h; x = x / l * rr; y = y / l * rr; z = z / l * rr;
         if (isBlocked(x, y, z, 0.1) || !this.alive(x, y, z)) return;
         // keep things off steep slopes
@@ -543,6 +544,9 @@
     }
   };
   const Y_AX = v3(0, 1, 0), X_AX = v3(1, 0, 0);
+  // solid size of each scenery kind at scale 1: [radius, height] of a vertical cylinder from its base
+  const OBST = { treeA: [0.3, 3.2], treeB: [0.3, 3.2], treeAfar: [0.3, 3.2], treeBfar: [0.3, 3.2], spruce: [0.28, 1.6], spruceFar: [0.2, 1.2],
+    bush: [0.6, 0.75], bushfar: [0.6, 0.75], rock1: [0.62, 0.55], rock2: [0.62, 0.55], rockfar: [0.62, 0.55] };
   Scene.updateDeco = (p, force, budget) => Deco.update(p, force, budget);
   Scene._deco = Deco;
   Scene.buildClouds = function () {};     // the chosen look has a clear sky with the moon instead of clouds
@@ -589,6 +593,39 @@
     Scene.drop = { point: worldAt(BX, groundAt(BX, BZ) + 0.5, BZ), pile, fill: 0 };
     scene.add(g); Scene.props = g;
   };
+  // helpers: worker figures at fixed stations near the shack; they swing a trowel, the game digs where they point
+  const Workers = { list: [] };
+  const STATIONS = [[-7.9, -5.6, 2.4], [-0.6, -9.8, -0.9], [-6.2, -11.4, 0.4]];
+  Scene.addWorker = function (i) {
+    if (Workers.list[i] || !Scene.props) return;
+    const st = STATIONS[i], w = A.worker(i + 3), g = new T.Group(), body = new T.Mesh(w.body, MAT.flower), arm = new T.Group(), armM = new T.Mesh(w.arm, MAT.flower);
+    arm.position.set(w.pivot[0], w.pivot[1], w.pivot[2]); arm.add(armM); g.add(body, arm);
+    g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const lx = st[0], lz = st[1], gy = W.heightDir(...anchorDir(lx, lz));
+    g.position.set(lx, gy - 0.02, lz); g.rotation.y = st[2]; Scene.props.add(g);
+    const fwd = v3(Math.sin(st[2]), 0, Math.cos(st[2])), spot = { lx: lx + fwd.x * 0.75, lz: lz + fwd.z * 0.75 };
+    Workers.list[i] = { g, arm, swing: 0, spot, fwd };
+    { const w2 = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).addScaledVector(LY, gy); W.blockers.push([w2.x, w2.y, w2.z, 0.3, 0.3]); }
+  };
+  function anchorDir(lx, lz) { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).normalize(); return [w.x, w.y, w.z]; }
+  // a point on the ground near worker i's digging spot (planet metres), jittered
+  Scene.workerSpot = function (i, jx, jz) {
+    const wk = Workers.list[i]; if (!wk) return null;
+    const lx = wk.spot.lx + jx, lz = wk.spot.lz + jz, d = anchorDir(lx, lz), h = W.heightDir(d[0], d[1], d[2]);
+    return v3(d[0], d[1], d[2]).multiplyScalar(W.R + h);
+  };
+  Scene.workerSwing = i => { const wk = Workers.list[i]; if (wk) wk.swing = 1; };
+  Scene.workerCount = () => Workers.list.filter(Boolean).length;
+  Workers.update = function (dt, t) {
+    for (const wk of this.list) {
+      if (!wk) continue;
+      wk.swing = Math.max(0, wk.swing - dt * 1.6);
+      const k = wk.swing, a = k > 0.5 ? (1 - k) * 2 : k * 2;   // down then back up
+      wk.arm.rotation.x = -0.2 + a * 1.1 + Math.sin(t * 1.3 + wk.spot.lx) * 0.04;
+      wk.g.children[0].position.y = Math.sin(t * 2 + wk.spot.lz) * 0.005 - a * 0.04;
+    }
+  };
+
   Scene.setPile = function (k) { const d = Scene.drop; if (!d) return; d.fill = Math.min(1, k); d.pile.scale.y = 0.05 + d.fill * 0.9; d.pile.position.y = 0.1 + d.fill * 0.25; };
 
   // ---------- particles: dirt clods and dust ----------
@@ -660,10 +697,19 @@
       this.hand.add(skin, sleeve, spoon, soil); this.hold.add(this.hand); handCam.add(this.hold);
       for (const m of [skin, sleeve, spoon, soil]) m.frustumCulled = false;
       // the base pose from the approved frame
-      const h = v3(-0.25, 0.85, -0.46).normalize(), hint = v3(0, 0.3, 1), u = hint.clone().addScaledVector(h, -hint.dot(h)).normalize(), s = new T.Vector3().crossVectors(h, u).normalize();
-      this.hand.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(s, u, h.clone().negate()));
-      this.base = v3(0.185, -0.160, -0.45);
+      this.pose(v3(-0.25, 0.85, -0.46), v3(0.185, -0.160, -0.45));
       Shadow.build(skin.geometry, spoon.geometry, this.hand.quaternion);
+      // the other tools: same grip, different heads; a lump of soil rides on whichever one is in hand
+      this.tools = { spoon: { meshes: [spoon], soil: soil } };
+      const wood = std({ color: col('#b07a45'), roughness: 0.6 }), steelD = MAT.steel.clone(); steelD.side = T.DoubleSide;
+      const lump = new T.SphereGeometry(1, 20, 12); lump.scale(1, 0.45, 1.3);
+      for (const [k, geo, sp2] of [['scoop', A.scoop(), [0, 0.016, -0.165, 0.038]], ['trowel', A.trowel(), [0, 0.02, -0.17, 0.034]], ['shovel', A.shovel(), [-0.03, 0, -0.64, 0.085]]]) {
+        const ms = [new T.Mesh(geo.metal, steelD), new T.Mesh(geo.wood, wood)], so = new T.Mesh(lump, MAT.soilObj);
+        so.position.set(sp2[0], sp2[1], sp2[2]); so.scale.multiplyScalar(sp2[3]);
+        for (const m of ms.concat([so])) { m.frustumCulled = false; m.visible = false; this.hand.add(m); }
+        this.tools[k] = { meshes: ms, soil: so, metalGeo: geo.metal };
+      }
+      this.tool = 'spoon';
       // the bucket, held low on the left; its soil rises as it fills
       const b = A.bucket(); this.bucket = new T.Group();
       const bb = new T.Mesh(b.body, MAT.bucket), bs = new T.Mesh(b.soil, MAT.soilObj); bs.position.y = -0.158; this.bucketSoil = bs;
@@ -672,6 +718,20 @@
       handCam.add(this.bucket); this.setFill(0);
       console.log('[scene] hand built in ' + Math.round(performance.now() - t0) + ' ms');
     },
+    pose(h, base, hint) {
+      h = h.clone().normalize(); hint = hint || v3(0, 0.3, 1); const u = hint.clone().addScaledVector(h, -hint.dot(h)).normalize(), s = new T.Vector3().crossVectors(h, u).normalize();
+      this.hand.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(s, u, h.clone().negate()));
+      this.base = base.clone();
+    },
+    setTool(k) {
+      if (!this.tools || !this.tools[k]) return;
+      for (const n in this.tools) { const tl = this.tools[n]; for (const m of tl.meshes) m.visible = n === k; tl.soil.visible = false; }
+      this.tool = k; this.soil = this.tools[k].soil;
+      // the spade points ahead and down, the hand tools keep the spoon's pose
+      if (k === 'shovel') this.pose(v3(-0.3, -0.45, -0.84), v3(0.28, -0.13, -0.42), v3(0.1, -1, 0.5)); else this.pose(v3(-0.25, 0.85, -0.46), v3(0.185, -0.160, -0.45));
+      Shadow.setTool(this.hand.quaternion, k === 'spoon' ? null : this.tools[k].metalGeo);
+    },
+    setContainer(scale) { this.bucketScale = scale; this.bucket.scale.setScalar(0.95 * scale); },
     setFill(k) { this.fill = k; this.bucketSoil.visible = k > 0.01; this.bucketSoil.position.y = -0.155 + k * 0.155; this.bucketSoil.scale.setScalar(0.86 + 0.14 * k); },
     // the scoop stroke as keyframes over its progress k: [k, dx, dy, dz, rotation about camera x]
     KEYS: [[0, 0, 0, 0, 0], [0.3, 0.005, 0.035, 0.02, 0.32], [0.48, -0.02, -0.09, -0.15, -0.75], [0.62, -0.015, -0.07, -0.12, -0.55], [0.8, -0.005, -0.02, -0.04, 0.3], [1, 0, 0, 0, 0]],
@@ -694,7 +754,8 @@
   Scene.setSpoonFull = on => { Hand.full = !!on; };
   Scene.setBucket = k => Hand.setFill(Math.max(0, Math.min(1, k)));
   Scene.setTip = k => { Hand.tip = k; };   // 0..1: tipping the bucket out at the bin
-  Scene.setTool = function () {};
+  Scene.setTool = k => Hand.setTool(k);
+  Scene.setContainer = s => Hand.setContainer(s);
   Scene._hand = Hand;
 
   // ---------- the digger's shadow: an unseen body and hand that only cast shadows ----------
@@ -712,9 +773,10 @@
       cap(0.045, v3(0, 1.45, 0), v3(0, 1.53, 0));
       const head = new T.Mesh(new T.SphereGeometry(1, 16, 12), mat); head.scale.set(0.095, 0.12, 0.105); head.position.set(0, 1.64, 0); add(this.body, head);
       const bucket = new T.Mesh(new T.CylinderGeometry(0.12, 0.09, 0.22, 16), mat); bucket.position.set(-0.29, 0.72, 0.03); add(this.body, bucket);
-      const hd = new T.Group(); hd.quaternion.copy(handQ); add(hd, new T.Mesh(handGeo, mat)); add(hd, new T.Mesh(spoonGeo, mat)); this.hold.add(hd);
+      const hd = new T.Group(); hd.quaternion.copy(handQ); add(hd, new T.Mesh(handGeo, mat)); this.toolMesh = new T.Mesh(spoonGeo, mat); this.spoonGeo = spoonGeo; add(hd, this.toolMesh); this.hold.add(hd); this.hd = hd;
       this.group.add(this.body); scene.add(this.group); camera.add(this.hold);
     },
+    setTool(q, geo) { this.hd.quaternion.copy(q); this.toolMesh.geometry = geo || this.spoonGeo; },
     update(eye, q) {
       // body stands under the eye, facing where the camera looks (projected on the ground)
       const fwd = v3(0, 0, -1).applyQuaternion(q); fwd.addScaledVector(up, -fwd.dot(up)); if (fwd.lengthSq() < 1e-6) fwd.set(1, 0, 0).addScaledVector(up, -up.x); fwd.normalize();
@@ -734,7 +796,7 @@
     camera.updateMatrixWorld();
     handCam.quaternion.copy(q); handCam.updateMatrixWorld();
     sky.position.copy(camera.position);
-    Particles.update(dt);
+    Particles.update(dt); Workers.update(dt, t);
     Hand.update(info.dig, info.walk, t, dt, info.look);
     Shadow.update(eye, q);
     composer.render(dt);

@@ -1,4 +1,5 @@
 require('../src/world.js'); const W = globalThis.World;
+require('./load-dem-node.js')(W);
 const d = W.fromLatLon(48, 12); const h = W.heightDir(...d); const P = d.map(v => v * (W.R + h));
 console.log('spawn height', h.toFixed(2));
 const cx = Math.floor(P[0] / W.CH), cy = Math.floor(P[1] / W.CH), cz = Math.floor(P[2] / W.CH);

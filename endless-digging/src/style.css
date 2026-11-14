@@ -61,6 +61,27 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
 .tmap span { position: absolute; bottom: 3px; right: 6px; font: 900 10px var(--font); color: var(--ink); opacity: .55; }
 .touch .tmap span { display: none; }
 
+/* ---------- shop ---------- */
+.shopBtn { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); top: calc(max(14px, env(safe-area-inset-top, 0px)) + 172px); pointer-events: auto; border: 0; border-radius: 14px;
+  background: #fff; color: var(--ink); font: 800 15px var(--font); padding: 10px 14px; box-shadow: 0 6px 18px rgba(30, 50, 70, .2); cursor: pointer; }
+.shopBtn b { background: #eef3f7; padding: 1px 7px; border-radius: 6px; margin-right: 4px; }
+#shop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(20, 30, 40, .45); padding: 16px; overflow: auto; }
+.shopCard { background: var(--paper); border-radius: 24px; width: min(760px, 100%); max-height: calc(100% - 8px); overflow: auto; padding: 22px; box-shadow: 0 20px 60px rgba(10, 30, 50, .35); display: flex; flex-direction: column; gap: 14px; }
+.shopHead { display: flex; align-items: center; gap: 14px; }
+.shopHead h2 { margin: 0; font: 900 28px var(--font); } .shopHead p { margin: 0; color: #5b6b79; font-weight: 700; font-size: 13px; }
+.shopHead > div:first-child { flex: 1; }
+.shopMoney { font: 900 24px var(--font); color: #2f8a3a; }
+#shopClose { width: 42px; height: 42px; border-radius: 50%; border: 0; background: #eef3f7; font: 900 16px var(--font); cursor: pointer; color: var(--ink); }
+.shopGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.shopItem { border: 2px solid #eef3f7; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.si { display: flex; gap: 10px; align-items: center; } .si b { display: block; font-size: 15px; } .si small { color: #5b6b79; font-size: 12px; font-weight: 700; }
+.sIcon { font-size: 28px; }
+.sNow { font-weight: 800; font-size: 14px; } .sNext { font-size: 13px; color: #5b6b79; } .sNext.done { color: #2f8a3a; font-weight: 800; }
+.sBuy { border: 0; border-radius: 12px; padding: 9px; font: 800 15px var(--font); background: var(--accent); color: #fff; box-shadow: 0 4px 0 #c96a12; cursor: pointer; }
+.sBuy:disabled { background: #e3e9ee; color: #8a98a5; box-shadow: none; cursor: default; }
+.shopSoon { font-size: 13px; color: #5b6b79; border-top: 2px dashed #eef3f7; padding-top: 10px; }
+.touch .shopBtn { top: auto; bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + 110px); }
+
 /* ---------- world map ---------- */
 #mapUI { position: fixed; inset: 0; touch-action: none; cursor: grab; opacity: 0; transition: opacity .35s; }
 #mapUI.on { opacity: 1; }

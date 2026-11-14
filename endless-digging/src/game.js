@@ -9,20 +9,30 @@
   const RU = /^(ru|uk|be|kk)/i.test(navigator.language || '');
   const L = RU ? {
     title: 'Endless Digging', sub: 'Выкопай всю Землю. Начни с ложки.', play: 'Играть', cont: 'Продолжить',
-    loading: 'Строим планету…', spoon: 'Ложка', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км', l: 'л',
-    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать · <b>E</b> сдать грунт · <b>M</b> карта · <b>Esc</b> пауза',
+    loading: 'Строим планету…', spoon: 'Ложка',
+    shop: 'Магазин', shopSub: 'Лачуга копателя', buy: 'Купить', bought: 'Есть', next: 'Дальше', soon: 'Скоро', need: 'Не хватает', openShop: 'магазин', close: 'Закрыть',
+    up: { tool: ['Инструмент', 'Больше земли за один взмах'], bag: ['Ёмкость', 'Больше земли за одну ходку'], speed: ['Сильные руки', 'Быстрее копаешь'], scale: ['Весы в приёмке', 'Дороже принимают грунт'], help: ['Помощники', 'Копают у лачуги и сдают сами'] },
+    names: { spoon: 'Ложка', scoop: 'Совок', trowel: 'Садовая лопатка', shovel: 'Лопата', 5: 'Ведро 5 л', 10: 'Ведро 10 л', 20: 'Большое ведро 20 л', 50: 'Мешок за спиной 50 л', speed: 'Уровень', scale: 'Цена ×', help: 'Помощников' },
+    soonN: { pick: 'Кирка — для камня', barrow: 'Тачка 120 л', trailer: 'Вагончик — новая база', probe: 'Щуп — искать руду' },
+    helperPay: 'помощники', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км', l: 'л',
+    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать · <b>E</b> сдать грунт · <b>F</b> магазин у лачуги · <b>M</b> карта · <b>Esc</b> пауза',
     pause: 'Пауза', quality: 'Графика', hi: 'Высокая', mid: 'Средняя', lo: 'Быстрая', reset: 'Начать заново', far: 'Слишком далеко',
     clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км',
-    sign: ['ПРИЁМ ГРУНТА', '$0.10 за литр'], bucket: 'Ведро', full: 'Ведро полное — неси в приёмку у лачуги', sell: 'сдать грунт', noDig: 'Здесь копать нельзя',
+    sign: ['ПРИЁМ ГРУНТА', '$0.10 за литр'], bucket: 'Ведро', full: 'Ведро полное — неси в приёмку у лачуги', sell: 'сдать грунт', noDig: 'Здесь копать нельзя', inWay: 'Мешает — камень или дерево',
     map: 'Карта мира', mapHint: 'Тяни — вращать · колесо — масштаб · M — закрыть', mapTouch: 'Тяни — вращать · два пальца — масштаб', open: 'Открыто: Украина', locked: 'Остальной мир пока закрыт', here: 'Вы здесь',
     resetAsk: 'Нажми ещё раз: ямы, деньги и ведро пропадут'
   } : {
     title: 'Endless Digging', sub: 'Dig out the whole Earth. Start with a spoon.', play: 'Play', cont: 'Continue',
-    loading: 'Building the planet…', spoon: 'Spoon', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km', l: 'L',
-    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig · <b>E</b> hand in soil · <b>M</b> map · <b>Esc</b> pause',
+    loading: 'Building the planet…', spoon: 'Spoon',
+    shop: 'Shop', shopSub: "The digger's shack", buy: 'Buy', bought: 'Owned', next: 'Next', soon: 'Soon', need: 'Need', openShop: 'shop', close: 'Close',
+    up: { tool: ['Tool', 'More soil per stroke'], bag: ['Container', 'More soil per trip'], speed: ['Strong arms', 'Dig faster'], scale: ['Scales at the bin', 'Better price for soil'], help: ['Helpers', 'Dig by the shack and hand in themselves'] },
+    names: { spoon: 'Spoon', scoop: 'Hand scoop', trowel: 'Garden trowel', shovel: 'Shovel', 5: 'Bucket 5 L', 10: 'Bucket 10 L', 20: 'Big bucket 20 L', 50: 'Back sack 50 L', speed: 'Level', scale: 'Price ×', help: 'Helpers' },
+    soonN: { pick: 'Pickaxe — for rock', barrow: 'Wheelbarrow 120 L', trailer: 'Site cabin — a new base', probe: 'Probe — find ore' },
+    helperPay: 'helpers', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km', l: 'L',
+    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig · <b>E</b> hand in soil · <b>F</b> shop at the shack · <b>M</b> map · <b>Esc</b> pause',
     pause: 'Paused', quality: 'Graphics', hi: 'High', mid: 'Medium', lo: 'Fast', reset: 'Start over', far: 'Too far',
     clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km',
-    sign: ['SOIL WANTED', '$0.10 per litre'], bucket: 'Bucket', full: 'Bucket is full — take it to the bin by the shack', sell: 'hand in soil', noDig: "Can't dig here",
+    sign: ['SOIL WANTED', '$0.10 per litre'], bucket: 'Bucket', full: 'Bucket is full — take it to the bin by the shack', sell: 'hand in soil', noDig: "Can't dig here", inWay: 'A rock or a tree is in the way',
     map: 'World map', mapHint: 'Drag to turn · wheel to zoom · M to close', mapTouch: 'Drag to turn · two fingers to zoom', open: 'Open: Ukraine', locked: 'The rest of the world is locked for now', here: 'You are here',
     resetAsk: 'Press again: holes, money and the bucket will be lost'
   };
@@ -33,8 +43,26 @@
     : { tkeys: '<b>Left thumb</b> walk (push further to run) · <b>right</b> look · <b>⛏</b> dig · <b>⤒</b> jump · <b>🗺</b> map · <b>Ⅱ</b> pause', dig: 'Dig', jumpB: 'Jump', turn: 'Turn your phone sideways for a better view' });
 
   // ---------- tools and economy ----------
-  const TOOLS = { spoon: { r: 0.045, time: 0.5, reach: 2.3, parts: 4, size: 0.3 } };
-  const BUCKET_L = 5;                                    // litres
+  // the tool ladder (variant 1 of the progression page): each step digs a bigger scoop
+  const TOOLS = {
+    spoon: { r: 0.045, time: 0.5, reach: 2.3, parts: 4, size: 0.3 },
+    scoop: { r: 0.065, time: 0.5, reach: 2.3, parts: 5, size: 0.4 },
+    trowel: { r: 0.085, time: 0.55, reach: 2.4, parts: 6, size: 0.5 },
+    shovel: { r: 0.12, time: 0.65, reach: 2.6, parts: 9, size: 0.75 }
+  };
+  // the shop: lines of upgrades, each bought in order. price, value (what it sets)
+  const SHOP = [
+    { id: 'tool', icon: '🥄', levels: [{ v: 'spoon' }, { v: 'scoop', p: 2 }, { v: 'trowel', p: 15 }, { v: 'shovel', p: 60 }] },
+    { id: 'bag', icon: '🪣', levels: [{ v: 5 }, { v: 10, p: 5 }, { v: 20, p: 15 }, { v: 50, p: 45 }] },
+    { id: 'speed', icon: '💪', levels: [{ v: 1 }, { v: 0.85, p: 8 }, { v: 0.72, p: 25 }, { v: 0.61, p: 70 }] },
+    { id: 'scale', icon: '⚖️', levels: [{ v: 1 }, { v: 1.25, p: 20 }, { v: 1.5, p: 90 }] },
+    { id: 'help', icon: '👷', levels: [{ v: 0 }, { v: 1, p: 30 }, { v: 2, p: 90 }, { v: 3, p: 250 }] }
+  ];
+  const SOON = ['pick', 'barrow', 'trailer', 'probe'];
+  const up_ = { tool: 0, bag: 0, speed: 0, scale: 0, help: 0 };
+  const lvl = id => SHOP.find(x => x.id === id).levels[up_[id]].v;
+  let BUCKET_L = 5;                                      // litres (grows with the shop)
+  const HELPER_L = 1.0, HELPER_T = 2.5;                  // a helper scoops 1 L every 2.5 s and hands it in himself
   const PRICE = d => d < 1.4 ? 0.10 : d < 6 ? 0.14 : d < 16 ? 0.2 : 0.35;   // $ per litre: topsoil, clay, deeper clay, rock
   const EARTH_VOL = 4 / 3 * Math.PI * Math.pow(W.R, 3);
 
@@ -85,6 +113,17 @@
       tmp.set(dx, dy, dz).addScaledVector(up, -along); const d = tmp.length(), r = b[4] + RAD;
       if (d < r && d > 1e-4) { tmp.multiplyScalar(1 / d); pl.pos.addScaledVector(tmp, r - d); const vn = pl.vel.dot(tmp); if (vn < 0) pl.vel.addScaledVector(tmp, -vn); }
     }
+    for (const o of W.obstacles) {
+      const dx = pl.pos.x - o.x, dy = pl.pos.y - o.y, dz = pl.pos.z - o.z;
+      if (dx * dx + dy * dy + dz * dz > (o.r + o.h + 3) * (o.r + o.h + 3)) continue;
+      const along = dx * o.ux + dy * o.uy + dz * o.uz;
+      if (along > o.h + 0.05 || along < -1.7) continue;
+      tmp.set(dx - o.ux * along, dy - o.uy * along, dz - o.uz * along); const d = tmp.length(), r = o.r + RAD * 0.8;
+      if (d >= r) continue;
+      if (along > o.h - 0.4 && d < o.r + 0.1 && pl.vel.dot(up) <= 0.5) {   // low rock: step up onto it
+        pl.pos.addScaledVector(up, o.h - along); ground = true; const vu = pl.vel.dot(up); if (vu < 0) pl.vel.addScaledVector(up, -vu);
+      } else if (d > 1e-4) { tmp.multiplyScalar(1 / d); pl.pos.addScaledVector(tmp, r - d); const vn = pl.vel.dot(tmp); if (vn < 0) pl.vel.addScaledVector(tmp, -vn); }
+    }
     return ground;
   }
   function step(dt) {
@@ -120,6 +159,9 @@
   // ---------- digging ----------
   function rayHit(reach) {
     const eye = pl.pos.clone().addScaledVector(up, EYE), d = lookDir();
+    // rocks, trunks and bushes are in the way: the spoon hits them, not the ground behind
+    const tob = W.rayObstacle(eye.x, eye.y, eye.z, d.x, d.y, d.z, reach);
+    reach = Math.min(reach, tob);
     let prev = 0;
     for (let t = 0.05; t <= reach; t += 0.02) {
       const p = eye.clone().addScaledVector(d, t);
@@ -130,10 +172,11 @@
       }
       prev = t;
     }
-    return null;
+    return tob < Infinity ? { p: eye.clone().addScaledVector(d, tob), d, t: tob, obstacle: true } : null;
   }
   function doDig(hit) {
     const tool = TOOLS[pl.tool];
+    if (hit.obstacle) { notice(L.inWay); Sound.thud(); return false; }
     if (pl.bucket >= BUCKET_L - 1e-6) { notice(L.full); Sound.thud(); return false; }
     const c = hit.p.clone().addScaledVector(hit.d, tool.r * 0.45);
     if (W.blocked(c.x, c.y, c.z, tool.r + 0.05)) { notice(L.noDig); Sound.thud(); return false; }
@@ -162,11 +205,79 @@
   function nearBin() { const d = S.drop; return d && pl.pos.distanceTo(d.point) < 2.7; }
   function sell() {
     if (!nearBin() || pl.bucket < 0.01 || tipT > 0) return;
-    const got = Math.round(pl.bucketValue * 100) / 100, litres = pl.bucket;
+    const got = Math.round(pl.bucketValue * lvl('scale') * 100) / 100, litres = pl.bucket;
     pl.money += got; pl.sold += litres; pl.bucket = 0; pl.bucketValue = 0; tipT = 0.9;
     const d = S.drop; S.burst(d.point.x, d.point.y, d.point.z, S.groundColor(0.6, 0, 0), 10, null, 0.5);
     S.setPile(Math.min(1, pl.sold / 400));
     floater('+$' + got.toFixed(2)); Sound.coin(); dirty = true;
+  }
+
+  // ---------- shop (at the shack) ----------
+  let shopOpen = false;
+  function nearShop() { const d = S.drop; return d && pl.pos.distanceTo(d.point) < 4.5; }
+  function applyUpgrades() {
+    pl.tool = lvl('tool'); S.setTool(pl.tool);
+    BUCKET_L = lvl('bag'); S.setContainer({ 5: 1, 10: 1.15, 20: 1.32, 50: 1.32 }[BUCKET_L] || 1);
+    for (let i = 0; i < lvl('help'); i++) S.addWorker(i);
+  }
+  function shopHTML() {
+    const nm = (id, v) => id === 'tool' || id === 'bag' ? L.names[v] : id === 'speed' ? L.names.speed + ' ' + (SHOP[2].levels.findIndex(l => l.v === v) + 1) : id === 'scale' ? L.names.scale + v : L.names.help + ': ' + v;
+    let h = `<div class="shopHead"><div><h2>${L.shop}</h2><p>${L.shopSub}</p></div><div class="shopMoney">$${pl.money.toFixed(2)}</div><button id="shopClose" aria-label="${L.close}">✕</button></div><div class="shopGrid">`;
+    for (const line of SHOP) {
+      const cur = line.levels[up_[line.id]], nx = line.levels[up_[line.id] + 1], t = L.up[line.id];
+      h += `<div class="shopItem"><div class="si"><span class="sIcon">${line.icon}</span><div><b>${t[0]}</b><small>${t[1]}</small></div></div>
+        <div class="sNow">${nm(line.id, cur.v)}</div>`;
+      if (nx) { const can = pl.money >= nx.p; h += `<div class="sNext">${L.next}: <b>${nm(line.id, nx.v)}</b></div><button class="sBuy" data-id="${line.id}" ${can ? '' : 'disabled'}>${can ? L.buy : L.need} · $${nx.p}</button>`; }
+      else h += `<div class="sNext done">✓ ${L.bought}</div>`;
+      h += '</div>';
+    }
+    h += `</div><div class="shopSoon"><b>${L.soon}:</b> ${SOON.map(k => L.soonN[k]).join(' · ')}</div>`;
+    return h;
+  }
+  function renderShop() {
+    const el = $('shop'); el.innerHTML = '<div class="shopCard">' + shopHTML() + '</div>';
+    $('shopClose').addEventListener('click', () => toggleShop(false));
+    for (const b of el.querySelectorAll('.sBuy')) b.addEventListener('click', () => buy(b.dataset.id));
+  }
+  function buy(id) {
+    const line = SHOP.find(x => x.id === id), nx = line.levels[up_[id] + 1];
+    if (!nx || pl.money < nx.p) return;
+    pl.money -= nx.p; up_[id]++; applyUpgrades(); Sound.coin(); dirty = true; save(); renderShop();
+  }
+  function toggleShop(on) {
+    if (on === shopOpen) return;
+    if (on) {
+      if (!playing || !nearShop()) return;
+      shopOpen = true; playing = false; mouseDown = false; for (const k in keys) keys[k] = false;
+      if (locked) { pausedByUs = true; document.exitPointerLock(); }
+      renderShop(); $('shop').hidden = false;
+    } else {
+      shopOpen = false; $('shop').hidden = true; playing = true; if (!TOUCH) lock();
+    }
+  }
+  // helpers dig real little holes at their spots and hand the soil in themselves
+  const helpers = [];
+  function updateHelpers(dt) {
+    const n = lvl('help');
+    for (let i = 0; i < n; i++) {
+      const hp = helpers[i] || (helpers[i] = { t: 0.6 * i });
+      if ((hp.t += dt) < HELPER_T) continue;
+      hp.t = 0; S.workerSwing(i);
+      setTimeout(() => {
+        for (let tries = 0; tries < 4; tries++) {
+          const p = S.workerSpot(i, (Math.random() - 0.5) * 0.9, (Math.random() - 0.5) * 0.9); if (!p) return;
+          const u = p.clone().normalize(); let q = p.clone().addScaledVector(u, 0.8);
+          for (let k = 0; k < 200 && W.solid(q.x, q.y, q.z) <= 0; k++) q.addScaledVector(u, -0.02);   // down to the ground (also inside earlier holes)
+          if (W.blocked(q.x, q.y, q.z, 0.12)) continue;
+          const c = q.clone().addScaledVector(u, -0.03), r = 0.075;
+          S.applyHole([c.x, c.y, c.z, r], W.addHole(c.x, c.y, c.z, r));
+          S.burst(q.x, q.y, q.z, S.groundColor(0.6, 0, 0), 3, null, 0.35);
+          const depth = W.depthAt(q.x, q.y, q.z), got = HELPER_L * PRICE(depth) * lvl('scale');
+          pl.money += got; pl.dug += HELPER_L / 1000; pl.helperEarned = (pl.helperEarned || 0) + got; dirty = true;
+          return;
+        }
+      }, 300);
+    }
   }
 
   // ---------- input ----------
@@ -174,9 +285,11 @@
   addEventListener('keydown', e => {
     if (e.code === 'KeyM' && (playing || mapOpen) && !e.repeat) { toggleMap(); e.preventDefault(); return; }
     if (mapOpen) { if (e.code === 'Escape') toggleMap(); return; }
+    if (shopOpen) { if (e.code === 'Escape' || e.code === 'KeyF') toggleShop(false); return; }
     if (!playing) return;
     keys[e.code] = true;
     if (e.code === 'KeyE' && !e.repeat) sell();
+    if (e.code === 'KeyF' && !e.repeat) toggleShop(true);
     if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   });
   addEventListener('keyup', e => { keys[e.code] = false; });
@@ -202,7 +315,7 @@
   let pausedByUs = false;
   document.addEventListener('pointerlockchange', () => {
     locked = document.pointerLockElement === canvas;
-    if (!locked && playing && !pausedByUs && !mapOpen) pause(true);
+    if (!locked && playing && !pausedByUs && !mapOpen && !shopOpen) pause(true);
     pausedByUs = false;
     $('clickHint').hidden = locked || !playing || TOUCH;
   });
@@ -266,20 +379,27 @@
     const f = pl.bucket / BUCKET_L;
     $('bucketFill').style.width = (f * 100).toFixed(1) + '%'; $('bucketFill').classList.toggle('full', f > 0.999);
     $('bucketTxt').textContent = pl.bucket.toFixed(2) + ' / ' + BUCKET_L + ' ' + L.l;
+    $('bShop').hidden = !nearShop(); if (!$('bShop').hidden) $('bShop').innerHTML = (TOUCH ? '🛒 ' : '<b>F</b> ') + L.openShop;
     const canSell = nearBin() && pl.bucket > 0.01;
-    $('bSell').hidden = !canSell; if (canSell) $('bSell').innerHTML = (TOUCH ? '' : '<b>E</b> ') + L.sell + ' · +$' + (Math.round(pl.bucketValue * 100) / 100).toFixed(2);
+    $('bSell').hidden = !canSell; if (canSell) $('bSell').innerHTML = (TOUCH ? '' : '<b>E</b> ') + L.sell + ' · +$' + (Math.round(pl.bucketValue * lvl('scale') * 100) / 100).toFixed(2);
     if (noticeT > 0 && (noticeT -= dt) <= 0) $('notice').hidden = true;
     S.setBucket(f);
   }
 
   // ---------- save ----------
-  const SAVE = 'endlessdigging.v2';
+  const SAVE = 'endlessdigging.v3', OLD_SAVE = 'endlessdigging.v2';   // v3: real relief (v2 holes no longer fit; money is kept)
   let dirty = false, saveT = 0;
   function save() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ holes: W.holes.map(h => h.map(v => Math.round(v * 1000) / 1000)), pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, bucket: pl.bucket, bucketValue: pl.bucketValue, sold: pl.sold })); } catch (e) {}
+    try { localStorage.setItem(SAVE, JSON.stringify({ holes: W.holes.map(h => h.map(v => Math.round(v * 1000) / 1000)), pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, bucket: pl.bucket, bucketValue: pl.bucketValue, sold: pl.sold, up: up_ })); } catch (e) {}
     dirty = false;
   }
-  function load() { try { return JSON.parse(localStorage.getItem(SAVE) || 'null'); } catch (e) { return null; } }
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SAVE) || 'null'); if (s) return s;
+      const o = JSON.parse(localStorage.getItem(OLD_SAVE) || 'null'); if (o) return { money: o.money || 0, sold: o.sold || 0, fresh: true };
+    } catch (e) {}
+    return null;
+  }
 
   // ---------- start: Kryvyi Rih, Ukraine ----------
   const SPAWN_LAT = 47.9105, SPAWN_LON = 33.3918;
@@ -293,10 +413,12 @@
     const sp = spawnPoint(); S.spawnPoint = sp;
     const saved = load();
     const u0 = sp.clone().normalize(), n0 = v3(0, 1, 0).addScaledVector(u0, -u0.y).normalize(), fwd0 = n0.clone().applyAxisAngle(u0, -0.6);
-    if (saved) {
+    if (saved && saved.fresh) { pl.money = saved.money; pl.sold = saved.sold; }
+    if (saved && !saved.fresh) {
       for (const h of saved.holes || []) W.addHole(h[0], h[1], h[2], h[3]);
       pl.pos.fromArray(saved.pos); pl.fwd.fromArray(saved.fwd); pl.pitch = saved.pitch || 0; pl.dug = saved.dug || 0;
       pl.money = saved.money || 0; pl.bucket = saved.bucket || 0; pl.bucketValue = saved.bucketValue || 0; pl.sold = saved.sold || 0;
+      if (saved.up) for (const k in up_) up_[k] = Math.min(saved.up[k] || 0, SHOP.find(x => x.id === k).levels.length - 1);
     } else { pl.pos.copy(sp); pl.fwd.copy(fwd0); pl.pitch = -0.12; }
     frame();
     S.setOrigin(pl.pos);
@@ -304,6 +426,7 @@
     S.setFrame(up);
     S.addProps({ sign: L.sign });
     S.setPile(Math.min(1, pl.sold / 400));
+    applyUpgrades();
     S.updateFar(pl.pos, true); S.updateDeco(pl.pos, true);
     MapV.init(S.renderer(), $('mapUI'), L);
     addEventListener('resize', () => S.resize());
@@ -314,7 +437,7 @@
   function fullscreen() { try { const d = document.documentElement, f = d.requestFullscreen || d.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(d); if (r && r.catch) r.catch(() => {}); } } catch (e) {} }
   function setupTouch() {
     const tapBtn = (el, fn) => el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); fn(); });
-    tapBtn($('bSell'), sell); tapBtn($('bMap'), () => { if (playing) toggleMap(); }); tapBtn($('mapClose'), () => { if (mapOpen) toggleMap(); });
+    tapBtn($('bSell'), sell); tapBtn($('bShop'), () => toggleShop(true)); tapBtn($('bMap'), () => { if (playing) toggleMap(); }); tapBtn($('mapClose'), () => { if (mapOpen) toggleMap(); });
     if (!TOUCH) return;
     const base = $('stick'), knob = $('knob'), R = 56;
     canvas.addEventListener('pointerdown', e => {
@@ -347,7 +470,7 @@
     hold($('bDig'), () => { mouseDown = true; }, () => { mouseDown = false; });
     hold($('bJump'), () => { keys.Space = true; }, () => { keys.Space = false; });
     $('bPause').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); pause(true); });
-    for (const ev of ['touchstart', 'touchmove', 'gesturestart']) document.addEventListener(ev, e => { if ((playing || mapOpen) && e.cancelable) e.preventDefault(); }, { passive: false });
+    for (const ev of ['touchstart', 'touchmove', 'gesturestart']) document.addEventListener(ev, e => { if ((playing || mapOpen) && !shopOpen && e.cancelable) e.preventDefault(); }, { passive: false });
     $('bDig').querySelector('span').textContent = L.dig; $('bJump').querySelector('span').textContent = L.jumpB; $('turnHint').textContent = L.turn;
   }
 
@@ -369,7 +492,7 @@
     $('qLo').onclick = () => { S.setQuality('low'); overlay(kind); };
     const r = $('bReset'); if (r) r.onclick = () => {
       if (!r.dataset.armed) { r.dataset.armed = '1'; r.textContent = L.resetAsk; r.classList.add('warn'); return; }   // second press confirms
-      W.clearHoles(); Object.assign(pl, { dug: 0, money: 0, bucket: 0, bucketValue: 0, sold: 0 }); S.resetChunks(); S.updateDeco(pl.pos, true); S.setPile(0);
+      W.clearHoles(); Object.assign(pl, { dug: 0, money: 0, bucket: 0, bucketValue: 0, sold: 0 }); for (const k in up_) up_[k] = 0; applyUpgrades(); S.resetChunks(); S.updateDeco(pl.pos, true); S.setPile(0);
       pl.pos.copy(spawnPoint()); pl.vel.set(0, 0, 0); save(); overlay(kind);
     };
   }
@@ -397,14 +520,15 @@
       const tool = TOOLS[pl.tool];
       if (pl.dig < 0 && mouseDown && (locked || rmb || TOUCH) && tipT <= 0) { pl.dig = 0; pl.didHit = false; S.setSpoonFull(false); }
       if (pl.dig >= 0) {
-        const prev = pl.dig; pl.dig += dt / tool.time;
+        const prev = pl.dig; pl.dig += dt / (tool.time * lvl('speed'));
         if (prev < 0.45 && pl.dig >= 0.45 && !pl.didHit) { pl.didHit = true; const h = rayHit(tool.reach); if (h) doDig(h); }
         if (pl.dig >= 1) { pl.dig = mouseDown ? 0 : -1; pl.didHit = false; if (mouseDown) S.setSpoonFull(false); }
       }
       if (tipT > 0) { tipT = Math.max(0, tipT - dt); S.setTip(Math.sin((1 - tipT / 0.9) * Math.PI)); } else S.setTip(0);
-      if ((digT += dt) > 0.08) { digT = 0; $('cross').classList.toggle('hit', !!rayHit(tool.reach)); }
+      if ((digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
       S.updateChunks(pl.pos, 5); S.updateFar(pl.pos); S.updateDeco(pl.pos, false, 3);
       if ((saveT += dt) > 5 && dirty) { saveT = 0; save(); }
+      updateHelpers(dt);
       hud(dt);
     }
     S.setFrame(up);
@@ -418,13 +542,17 @@
     document.title = L.title;
     overlay('loading');
     // build the world after the loading screen has been painted
-    setTimeout(() => {
+    // the real relief has to be loaded before the world is built
+    const D = root.DemInfo, get = f => fetch(f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.arrayBuffer(); });
+    const dem = D ? Promise.all(['local', 'ukraine'].map(k => get(D[k].file).then(b => [k, Object.assign({}, D[k], { data: new Int16Array(b) })])))
+      .then(list => W.setDem(Object.fromEntries(list))).catch(e => console.warn('relief not loaded, using invented ground:', e.message)) : Promise.resolve();
+    dem.then(() => setTimeout(() => {
       setup(); setupTouch();
       requestAnimationFrame(loop);
       addEventListener('beforeunload', () => { if (dirty) save(); });
-      root.__game = { pl, W, S, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach); return h ? doDig(h) : false; }, sell, toggleMap, setTool,
+      root.__game = { pl, W, S, up: up_, applyUpgrades, toggleShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach); return h ? doDig(h) : false; }, sell, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },
         mapSnap(steps) { for (let i = 0; i < (steps || 1); i++) MapV.render(0.1); return canvas.toDataURL('image/jpeg', 0.9); } };
-    }, 30);
+    }, 30));
   });
 })(window);

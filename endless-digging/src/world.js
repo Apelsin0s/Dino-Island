@@ -33,8 +33,34 @@
   }
 
   // ---------- terrain height above sea level (sea level = R) ----------
-  // Gentle steppe-like relief for now (real relief comes from elevation data later).
+  // Real relief: a ~20 m grid around the start and a ~2 km grid over Ukraine (tools/build-dem.py), smooth bicubic
+  // interpolation, plus small bumps for the ground near the player. Outside the grids: invented gentle relief.
+  let DEM = null;
+  function setDem(d) { DEM = d; }   // { local: { box, w, h, data: Int16Array (dm) }, ukraine: {...} }
+  const cr = (p0, p1, p2, p3, t) => p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)));
+  function demAt(g, lat, lon) {   // metres, or NaN outside; also returns the edge fade in g.fade
+    const b = g.box, fx = (lon - b[0]) / (b[1] - b[0]) * (g.w - 1), fy = (b[3] - lat) / (b[3] - b[2]) * (g.h - 1);
+    if (fx < 1 || fy < 1 || fx > g.w - 3 || fy > g.h - 3) { g.fade = 0; return NaN; }
+    const x = Math.floor(fx), y = Math.floor(fy), tx = fx - x, ty = fy - y, d = g.data, w = g.w;
+    const row = j => { const o = j * w + x; return cr(d[o - 1], d[o], d[o + 1], d[o + 2], tx); };
+    g.fade = Math.min(1, Math.min(fx, fy, g.w - 1 - fx, g.h - 1 - fy) / 25);
+    return cr(row(y - 1), row(y), row(y + 1), row(y + 2), ty) * 0.1;
+  }
   function height(qx, qy, qz) {
+    if (DEM) {
+      const lat = Math.asin(Math.max(-1, Math.min(1, qy / R))) * 57.29577951308232, lon = Math.atan2(-qz, qx) * 57.29577951308232;
+      let h = demAt(DEM.ukraine, lat, lon);
+      if (h === h) {
+        const fu = DEM.ukraine.fade;
+        if (fu < 1) h = h * fu + inventedHeight(qx, qy, qz) * (1 - fu);
+        const hl = demAt(DEM.local, lat, lon);
+        if (hl === hl) { const f = DEM.local.fade, k = f * f * (3 - 2 * f); h = h + (hl - h) * k; }
+        return h + noise(qx / 35, qy / 35, qz / 35, 41) * 0.35 + noise(qx / 9, qy / 9, qz / 9, 53) * 0.1;
+      }
+    }
+    return inventedHeight(qx, qy, qz);
+  }
+  function inventedHeight(qx, qy, qz) {
     const m = noise(qx / 6000, qy / 6000, qz / 6000, 11);
     const mount = Math.max(0, m + 0.15) * 45;
     const hills = noise(qx / 700, qy / 700, qz / 700, 23) * 8 + noise(qx / 180, qy / 180, qz / 180, 37) * 2.5;
@@ -55,6 +81,9 @@
   const holes = [];
   const holeIndex = new Map();      // coarse chunk key -> [hole, ...]
   const fineSet = new Set();        // fine box keys that exist
+  const bigIndex = new Map();       // coarse chunk key -> big holes only
+  const smallIndex = new Map();     // fine box key -> small holes that reach into it (keeps solid() fast with thousands of scoops)
+  const push = (m, k, h) => { let l = m.get(k); if (!l) m.set(k, l = []); l.push(h); };
   function boxesTouching(L, x, y, z, pad) {
     const out = [], c = L.CH;
     const x0 = Math.floor((x - pad) / c), x1 = Math.floor((x + pad) / c), y0 = Math.floor((y - pad) / c), y1 = Math.floor((y + pad) / c), z0 = Math.floor((z - pad) / c), z1 = Math.floor((z + pad) / c);
@@ -64,7 +93,8 @@
   // Returns what has to be re-meshed: { coarse: [keys], fine: [keys] }
   function addHole(x, y, z, r) {
     const h = [x, y, z, r]; holes.push(h);
-    for (const [a, b, c] of boxesTouching(LC, x, y, z, r + VOX * 2)) { const k = key(a, b, c); let l = holeIndex.get(k); if (!l) holeIndex.set(k, l = []); l.push(h); }
+    for (const [a, b, c] of boxesTouching(LC, x, y, z, r + VOX * 2)) { const k = key(a, b, c); push(holeIndex, k, h); if (r >= BIG) push(bigIndex, k, h); }
+    if (r < BIG) for (const [a, b, c] of boxesTouching(LF, x, y, z, r + LF.VOX * 2)) push(smallIndex, key(a, b, c), h);
     const coarse = new Set(), fine = [];
     if (r >= BIG) for (const [a, b, c] of boxesTouching(LC, x, y, z, r + VOX * 1.5)) coarse.add(key(a, b, c));
     // fine boxes around the hole, with a margin so its edge never meets the coarse mesh
@@ -79,15 +109,17 @@
   }
   function fineTouches(a, b, c, h) { const p = h[3] + LF.VOX * 2, c0 = LF.CH; return h[0] + p > a * c0 && h[0] - p < (a + 1) * c0 && h[1] + p > b * c0 && h[1] - p < (b + 1) * c0 && h[2] + p > c * c0 && h[2] - p < (c + 1) * c0; }
   function holeNear(x, y, z, pad) { const l = holeIndex.get(key(Math.floor(x / CH), Math.floor(y / CH), Math.floor(z / CH))); if (l) for (const h of l) if (Math.hypot(x - h[0], y - h[1], z - h[2]) < h[3] + pad) return true; return false; }
-  function clearHoles() { holes.length = 0; holeIndex.clear(); fineSet.clear(); }
+  function clearHoles() { holes.length = 0; holeIndex.clear(); bigIndex.clear(); smallIndex.clear(); fineSet.clear(); }
   const isFineCell = (x, y, z) => fineSet.has(key(Math.floor(x / LF.CH), Math.floor(y / LF.CH), Math.floor(z / LF.CH)));
 
   // Solid-ness at any point (≈ signed distance to the surface, positive inside the ground).
   function solid(px, py, pz) {
     const l = Math.hypot(px, py, pz);
     let s = R + heightDir(px / l, py / l, pz / l) - l;
-    const list = holeIndex.get(key(Math.floor(px / CH), Math.floor(py / CH), Math.floor(pz / CH)));
+    const list = bigIndex.get(key(Math.floor(px / CH), Math.floor(py / CH), Math.floor(pz / CH)));
     if (list) for (const h of list) { const d = Math.hypot(px - h[0], py - h[1], pz - h[2]) - h[3]; if (d < s) s = d; }
+    const sl = smallIndex.get(key(Math.floor(px / LF.CH), Math.floor(py / LF.CH), Math.floor(pz / LF.CH)));
+    if (sl) for (const h of sl) { const d = Math.hypot(px - h[0], py - h[1], pz - h[2]) - h[3]; if (d < s) s = d; }
     return s;
   }
   // How deep a point is under the untouched surface (m). Negative = above it.
@@ -119,9 +151,9 @@
     if (holeList) for (const h of holeList) if (!holeFilter || holeFilter(h)) carve(c, h);
     return c;
   }
-  const sampleChunk = (cx, cy, cz) => sampleBox(LC, cx, cy, cz, holeIndex.get(key(cx, cy, cz)), h => h[3] >= BIG);
+  const sampleChunk = (cx, cy, cz) => sampleBox(LC, cx, cy, cz, bigIndex.get(key(cx, cy, cz)));
   function sampleFine(a, b, c) {
-    const list = holeIndex.get(key(Math.floor(a / FPC), Math.floor(b / FPC), Math.floor(c / FPC)));
+    const list = (bigIndex.get(key(Math.floor(a / FPC), Math.floor(b / FPC), Math.floor(c / FPC))) || []).concat(smallIndex.get(key(a, b, c)) || []);
     return sampleBox(LF, a, b, c, list, h => fineTouches(a, b, c, h));
   }
   // Apply one hole to sampled density (only the samples in its box).
@@ -208,6 +240,36 @@
       const hx = dx - ux * along, hy = dy - uy * along, hz = dz - uz * along;
       if (along < 6 && hx * hx + hy * hy + hz * hz < (b[3] + pad) * (b[3] + pad)) return b;
     }
+    return obstacleAt(x, y, z, pad);
+  }
+
+  // ---------- scenery obstacles: rocks, tree trunks, bushes ----------
+  // { x, y, z: base point, ux, uy, uz: local up, r: radius, h: height } — vertical cylinders, refreshed by the scene
+  // for what stands around the player. They stop the dig ray, protect the ground under them and stop the player.
+  const obstacles = [];
+  function setObstacles(list) { obstacles.length = 0; for (const o of list) obstacles.push(o); }
+  // distance along the ray to the first obstacle, or Infinity
+  function rayObstacle(ox, oy, oz, dx, dy, dz, maxT) {
+    let best = Infinity;
+    for (const o of obstacles) {
+      const wx = ox - o.x, wy = oy - o.y, wz = oz - o.z, wu = wx * o.ux + wy * o.uy + wz * o.uz, du = dx * o.ux + dy * o.uy + dz * o.uz;
+      const px = wx - o.ux * wu, py = wy - o.uy * wu, pz = wz - o.uz * wu, qx = dx - o.ux * du, qy = dy - o.uy * du, qz = dz - o.uz * du;
+      const cc = px * px + py * py + pz * pz - o.r * o.r;
+      if (cc > (maxT + o.r) * (maxT + o.r) * 4) continue;
+      const a = qx * qx + qy * qy + qz * qz, b = 2 * (px * qx + py * qy + pz * qz);
+      if (a > 1e-9) { const disc = b * b - 4 * a * cc; if (disc >= 0) { const t = (-b - Math.sqrt(disc)) / (2 * a); const hu = wu + t * du; if (t > 0 && t < best && hu >= 0 && hu <= o.h) best = t; } }
+      if (du < -1e-6) { const t = (o.h - wu) / du; if (t > 0 && t < best) { const ex = px + qx * t, ey = py + qy * t, ez = pz + qz * t; if (ex * ex + ey * ey + ez * ez <= o.r * o.r) best = t; } }
+    }
+    return best <= maxT ? best : Infinity;
+  }
+  // an obstacle whose footprint (radius r + pad) covers this point, at any depth below its top
+  function obstacleAt(x, y, z, pad) {
+    for (const o of obstacles) {
+      const dx = x - o.x, dy = y - o.y, dz = z - o.z, along = dx * o.ux + dy * o.uy + dz * o.uz;
+      if (along > o.h + pad || along < -30) continue;
+      const hx = dx - o.ux * along, hy = dy - o.uy * along, hz = dz - o.uz * along, r = o.r + pad;
+      if (hx * hx + hy * hy + hz * hz < r * r) return o;
+    }
     return null;
   }
 
@@ -215,6 +277,6 @@
   function fromLatLon(lat, lon) { const a = lat * Math.PI / 180, b = lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), -Math.cos(a) * Math.sin(b)]; }
   function toLatLon(x, y, z) { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; }
 
-  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, heightAt, solid, depthAt, addHole, clearHoles, holes, key,
-    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, fineSet, blockers, blocked, fromLatLon, toLatLon };
+  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, heightAt, solid, depthAt, addHole, clearHoles, holes, key,
+    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, fineSet, blockers, blocked, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
 })(typeof window !== 'undefined' ? window : globalThis);
