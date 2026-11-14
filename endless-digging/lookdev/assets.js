@@ -24,58 +24,54 @@
   const HAND = { w: (() => { const v = [0.10, 0.60, 0.79], l = Math.hypot(v[0], v[1], v[2]); return v.map(c => c / l); })(), Wc: [0.012, 0.022, 0.048], G: 1.16, SP: 1.32 };
   A.HAND = HAND;
   A.glove = function (pal) {
-    // fingers wrap around the handle as arcs that end in fingertips on the side facing the eye;
-    // the thumb lies along the handle, the back of the hand is a separate coloured panel, the cuff is a dark band
-    const fz = [-0.0335, -0.0112, 0.0108, 0.0312], fr = [0.0122, 0.0128, 0.0124, 0.0112], tip = [0.10, -0.04, 0.02, 0.16], R = 0.0200, w = HAND.w, W0 = HAND.Wc, G = HAND.G;
-    const A0 = -250 * PI / 180, A1 = -18 * PI / 180;
-    const c0 = [W0[0] + w[0] * 0.006, W0[1] + w[1] * 0.006, W0[2] + w[2] * 0.006], c1 = [W0[0] + w[0] * 0.088, W0[1] + w[1] * 0.088, W0[2] + w[2] * 0.088], cs = [W0[0] + w[0] * 0.04, W0[1] + w[1] * 0.04, W0[2] + w[2] * 0.04];
+    // a bare hand gripping the spoon: fingers wrap round the handle and stop short, so the handle shows in the gap
+    // between the fingertips and the ball of the thumb; the thumb crosses over the handle and rests on the index finger
+    const fz = [-0.0335, -0.0112, 0.0108, 0.0312], fr = [0.0118, 0.0124, 0.0120, 0.0108], tip = [0.0, -0.06, -0.02, 0.10], R = 0.0200, w = HAND.w, W0 = HAND.Wc, G = HAND.G;
+    const A0 = -212 * PI / 180, A1 = -18 * PI / 180;
+    const c0 = [W0[0] + w[0] * 0.0, W0[1] + w[1] * 0.0, W0[2] + w[2] * 0.0], c1 = [W0[0] + w[0] * 0.11, W0[1] + w[1] * 0.11, W0[2] + w[2] * 0.11];
     const fingers = function (x, y, z) {
-      let ph = Math.atan2(y, x); if (ph > 0.8) ph -= 6.2832;
+      let ph = Math.atan2(y, x); if (ph > 1.2) ph -= 6.2832;
       let d = 0;
-      for (let i = 0; i < 4; i++) { const a0 = A0 + tip[i], pc = ph < a0 ? a0 : ph > A1 ? A1 : ph, dx = x - R * cos(pc), dy = y - R * sin(pc), dz = z - fz[i], di = sqrt(dx * dx + dy * dy + dz * dz) - fr[i]; d = i ? S.smin(d, di, 0.0028) : di; }
+      for (let i = 0; i < 4; i++) { const a0 = A0 + tip[i], pc = ph < a0 ? a0 : ph > A1 ? A1 : ph, dx = x - R * cos(pc), dy = y - R * sin(pc), dz = z - fz[i], di = sqrt(dx * dx + dy * dy + dz * dz) - fr[i]; d = i ? S.smin(d, di, 0.0026) : di; }
       return d;
     };
-    const back = (x, y, z) => S.ellipsoid(x, y, z, 0.0225, 0.010, 0.004, 0.0195, 0.031, 0.045);
+    const back = (x, y, z) => S.ellipsoid(x, y, z, 0.0235, 0.008, 0.004, 0.0185, 0.029, 0.045);
     const thumb = function (x, y, z) {
-      let d = S.cone(x, y, z, 0.010, 0.030, 0.030, 0.002, 0.0375, -0.004, 0.0150, 0.0128);
-      return S.smin(d, S.cone(x, y, z, 0.002, 0.0375, -0.004, -0.006, 0.0385, -0.040, 0.0128, 0.0112), 0.004);
+      let d = S.cone(x, y, z, 0.026, 0.020, 0.034, 0.012, 0.0285, 0.000, 0.0150, 0.0125);
+      return S.smin(d, S.cone(x, y, z, 0.012, 0.0285, 0.000, -0.012, 0.0265, -0.030, 0.0125, 0.0108), 0.004);
     };
-    const heel = (x, y, z) => S.smin(S.sphere(x, y, z, 0.006, 0.021, 0.030, 0.0215), S.sphere(x, y, z, 0.013, 0.003, 0.040, 0.0200), 0.012);
-    const cuff = function (x, y, z) {
-      let d = S.cone(x, y, z, c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], 0.0335, 0.0485);
-      d = S.smin(d, S.torus(x, y, z, c1[0], c1[1], c1[2], w[0], w[1], w[2], 0.0485, 0.0062), 0.004);
-      return S.smin(d, S.torus(x, y, z, cs[0], cs[1], cs[2], w[0], w[1], w[2], 0.0405, 0.0048), 0.003);   // strap
-    };
+    const heel = (x, y, z) => S.smin(S.sphere(x, y, z, 0.027, 0.014, 0.034, 0.0200), S.sphere(x, y, z, 0.016, -0.002, 0.042, 0.0190), 0.012);
+    const wrist = (x, y, z) => S.cone(x, y, z, c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], 0.0285, 0.0320);
     const f0 = function (x, y, z) {
       let d = S.smin(fingers(x, y, z), back(x, y, z), 0.008);
       d = S.smin(d, heel(x, y, z), 0.010);
       d = S.smin(d, thumb(x, y, z), 0.0045);
-      for (let i = 0; i < 4; i++) d = S.smin(d, S.sphere(x, y, z, 0.0215 * cos(A1) + 0.004, 0.0215 * sin(A1) - 0.001, fz[i], 0.0118), 0.005);   // knuckles
-      return S.smin(d, cuff(x, y, z), 0.010);
+      for (let i = 0; i < 4; i++) d = S.smin(d, S.sphere(x, y, z, 0.0215 * cos(A1) + 0.004, 0.0215 * sin(A1) - 0.001, fz[i], 0.0112), 0.005);   // knuckles
+      return S.smin(d, wrist(x, y, z), 0.012);
     };
     const f = (x, y, z) => f0(x / G, y / G, z / G) * G;
-    const main = C(pal.glove), cf = C(pal.gloveCuff), panel = C(pal.glovePad || pal.glove), strap = C(pal.gloveStrap || '#d9dde1');
+    const skin = C(pal.skin || '#eebd98'), nail = C(pal.nail || '#f9dfd2'), blush = C(pal.skinWarm || '#e3a184');
     const m = S.mesh(f, [-0.06 * G, -0.055 * G, -0.062 * G], [0.10 * G, 0.15 * G, 0.19 * G], 0.0012 * G, {
-      ao: 0.45, aoRadius: 0.005,
+      ao: 0.5, aoRadius: 0.005,
       color(x, y, z, nx, ny, nz, out) {
         x /= G; y /= G; z /= G;
-        const t = (x - W0[0]) * w[0] + (y - W0[1]) * w[1] + (z - W0[2]) * w[2];
-        const other = Math.min(fingers(x, y, z), thumb(x, y, z), heel(x, y, z)), kb = S.sstep(-0.0005, 0.0035, other - back(x, y, z)) * S.sstep(0.008, 0.014, x);
-        mixC(main, panel, kb, out);
-        const kc = S.sstep(0.012, 0.0165, t), ks = S.sstep(0.0325, 0.0345, t) * (1 - S.sstep(0.0455, 0.0475, t));
-        out[0] = lerp(out[0], cf.r, kc); out[1] = lerp(out[1], cf.g, kc); out[2] = lerp(out[2], cf.b, kc);
-        out[0] = lerp(out[0], strap.r, ks); out[1] = lerp(out[1], strap.g, ks); out[2] = lerp(out[2], strap.b, ks);
+        // warmer knuckles and fingertips, a pale thumbnail
+        const kn = S.sstep(0.012, 0.0, Math.abs(fingers(x, y, z))) * S.sstep(0.4, 0.9, Math.atan2(y, x) > 1.2 ? 0 : 1) * 0.0;
+        mixC(skin, blush, 0.35 * S.sstep(0.0, 0.9, -ny) + kn, out);
+        const tn = S.sstep(0.0105, 0.007, sqrt((x + 0.008) * (x + 0.008) + (z + 0.024) * (z + 0.024) * 0.55)) * S.sstep(0.3, 0.75, ny) * S.sstep(0.02, 0.03, y);
+        out[0] = lerp(out[0], nail.r, tn); out[1] = lerp(out[1], nail.g, tn); out[2] = lerp(out[2], nail.b, tn);
       }
     });
     return S.geometry(m);
   };
   A.sleeve = function (pal) {
     const w = HAND.w, W0 = HAND.Wc, G = HAND.G, at = t => [W0[0] + w[0] * t, W0[1] + w[1] * t, W0[2] + w[2] * t];
-    const s0 = at(0.045), s1 = at(0.62), folds = [[0.108, 0.02, 0.0], [0.142, -0.03, 0.02], [0.186, 0.015, -0.03]].map(([t, tx, tz]) => {
+    const s0 = at(0.075), s1 = at(0.62), cf = at(0.078), folds = [[0.108, 0.02, 0.0], [0.142, -0.03, 0.02], [0.186, 0.015, -0.03]].map(([t, tx, tz]) => {
       const c = at(t), ax = [w[0] + tx, w[1], w[2] + tz], l = Math.hypot(ax[0], ax[1], ax[2]); return { c, ax: ax.map(v => v / l), R: lerp(0.037, 0.060, (t - 0.045) / 0.575) + 0.001 };
     });
     const f0 = function (x, y, z) {
       let d = S.cone(x, y, z, s0[0], s0[1], s0[2], s1[0], s1[1], s1[2], 0.037, 0.060);
+      d = S.smin(d, S.torus(x, y, z, cf[0], cf[1], cf[2], w[0], w[1], w[2], 0.0375, 0.0065), 0.006);
       for (const fo of folds) d = S.smin(d, S.torus(x, y, z, fo.c[0], fo.c[1], fo.c[2], fo.ax[0], fo.ax[1], fo.ax[2], fo.R, 0.0075), 0.016);
       return d;
     };
@@ -89,7 +85,7 @@
   };
   // Table spoon (scaled up a little, cartoon-style). Returns { spoon, soil } geometries.
   A.spoon = function () {
-    const SP = HAND.SP, a1 = -0.049, r1 = 0.0092, a2 = 0.082, r2 = 0.0036, th = 0.0017, a0 = 0.118, rz = 0.031, rx0 = 0.0212, ry = 0.0125, yr = -0.011;
+    const SP = HAND.SP, a1 = -0.066, r1 = 0.0098, a2 = 0.082, r2 = 0.0036, th = 0.0017, a0 = 0.118, rz = 0.031, rx0 = 0.0212, ry = 0.0125, yr = -0.011;
     const f = function (X, Y, Z) {
       const x = X / SP, y = Y / SP, a = -Z / SP;
       const yc = -0.0125 * S.sstep(0.02, 0.09, a) + 0.0015;
@@ -100,7 +96,7 @@
       const db = S.smax(abs(E) - 0.0011, y - yr, 0.0010);
       return S.smin(dh, db, 0.0045) * SP;
     };
-    const spoon = S.geometry(S.mesh(f, [-0.0245 * SP, -0.0275 * SP, -0.153 * SP], [0.0245 * SP, 0.0065 * SP, 0.061 * SP], 0.00065 * SP, { project: 3 }));
+    const spoon = S.geometry(S.mesh(f, [-0.0245 * SP, -0.0275 * SP, -0.153 * SP], [0.0245 * SP, 0.0065 * SP, 0.080 * SP], 0.00065 * SP, { project: 3 }));
     const fs = function (X, Y, Z) {
       const x = X / SP, y = Y / SP, a = -Z / SP;
       const E = S.ellipsoid(x, y, a, 0.001, yr - 0.0015, a0 + 0.001, 0.0165, 0.0095, 0.0245);

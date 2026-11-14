@@ -262,10 +262,8 @@
   });
   M.tuft = pd(std({ vertexColors: true, roughness: 0.62, side: T.DoubleSide, sheen: 0.12, sheenRoughness: 0.5, sheenColor: C(V.tuft.tip) }), { noFlip: true, color: 'diffuseColor.rgb *= 0.9 + 0.2*pdFbm(P, 0.45, 2).x;' });
   M.flower = std({ vertexColors: true, roughness: 0.6, side: T.DoubleSide });
-  M.glove = pd(std({ vertexColors: true, roughness: 0.62, sheen: 0.25, sheenRoughness: 0.5, sheenColor: C('#fff1d8') }), {
-    space: 'object', color: 'diffuseColor.rgb *= 0.93 + 0.1*pdFbm(P, 45.0, 3).x;',
-    normal: 'vec4 cl = pdCell(P*600.0); G += -2.0*cl.xyz*600.0*0.00012; vec4 n = pdFbm(P, 80.0, 3); G += n.yzw*0.0004;',
-    rough: 'roughnessFactor = clamp(0.6 + 0.12*pdFbm(P, 120.0, 2).x, 0.3, 1.0);'
+  M.glove = pd(std({ vertexColors: true, roughness: 0.55, sheen: 0.35, sheenRoughness: 0.4, sheenColor: C('#ffd9c4') }), {
+    space: 'object', color: 'diffuseColor.rgb *= 0.97 + 0.04*pdFbm(P, 60.0, 2).x;', normal: 'vec4 n = pdFbm(P, 140.0, 2); G += n.yzw*0.00012;'
   });
   M.sleeve = pd(std({ vertexColors: true, roughness: 0.8, sheen: 0.6, sheenRoughness: 0.45, sheenColor: C('#ffd9b0') }), {
     space: 'object', color: 'diffuseColor.rgb *= 0.94 + 0.08*pdFbm(P, 30.0, 2).x;',
