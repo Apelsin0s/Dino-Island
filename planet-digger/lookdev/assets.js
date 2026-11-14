@@ -311,5 +311,70 @@
     return merge(parts);
   };
 
+  // =====================================================================================
+  // "Clean worksite" props (variant 4): stylised flat stones, a white-orange depot and a van
+  // =====================================================================================
+  // a flat faceted pebble: light top, shaded sides (drawn with flat shading)
+  A.pebbleFlat = function (seed) {
+    const g = new T.IcosahedronGeometry(1, 0), p = g.getAttribute('position');
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), k = 0.7 + 0.6 * S.hash(Math.round(x * 10) + seed * 7, Math.round(y * 10), Math.round(z * 10)); p.setXYZ(i, x * k, Math.max(-0.12, y * k * 0.42), z * k); }
+    g.computeVertexNormals(); g.deleteAttribute('uv'); return g;
+  };
+  // the depot where dug-up material is handed in: white modules, orange lines, blue glass
+  A.depot = function () {
+    const parts = [], white = C('#e9e8e4'), orange = C('#f08a24'), navy = C('#2b3442'), glass = C('#4d9fe8'), dark = C('#3a424d'), grey = C('#c9cdd1');
+    const box = (w, h, d, x, y, z, c, r, seg) => { const g = new T.RoundedBoxGeometry(w, h, d, seg || 4, r === undefined ? 0.04 : r); g.translate(x, y, z); parts.push(colorize(g, c)); };
+    box(4.5, 0.16, 3.3, 0, 0.08, 0, navy, 0.05);                       // plinth
+    box(4.2, 2.6, 3.0, 0, 1.46, 0, white, 0.24, 6);                    // main module
+    box(4.23, 0.075, 3.03, 0, 2.36, 0, orange, 0.03); box(4.23, 0.05, 3.03, 0, 0.62, 0, orange, 0.02);   // stripes
+    for (const x of [-1.55, -1.05, 1.2]) box(0.3, 1.25, 0.06, x, 1.5, 1.5, glass, 0.03);                 // tall windows
+    box(0.95, 1.9, 0.07, 0.15, 1.12, 1.5, grey, 0.04); box(0.8, 0.07, 0.08, 0.15, 2.1, 1.5, dark, 0.02); box(0.34, 0.2, 0.08, 0.15, 1.62, 1.51, glass, 0.03);   // door
+    box(1.0, 0.26, 0.06, -1.3, 2.52, 1.5, dark, 0.03); box(1.0, 0.26, 0.06, 1.25, 2.52, 1.5, dark, 0.03); box(0.06, 0.3, 1.2, 2.1, 2.5, 0, dark, 0.02);         // vents
+    box(1.7, 0.5, 1.3, -0.9, 3.0, -0.3, white, 0.12); box(1.73, 0.05, 1.33, -0.9, 3.1, -0.3, orange, 0.02);                                                       // roof unit
+    { const g = new T.CylinderGeometry(0.02, 0.02, 1.3, 8); g.translate(1.3, 3.4, -0.8); parts.push(colorize(g, grey)); const b = new T.SphereGeometry(0.07, 14, 10); b.translate(1.3, 4.05, -0.8); parts.push(colorize(b, orange)); }
+    // the hopper: tip your bucket in here
+    { const g = new T.CylinderGeometry(0.75, 0.42, 0.7, 4, 1, true); g.rotateY(PI / 4); g.translate(-2.75, 1.05, 0.7); parts.push(colorize(g, orange));
+      box(0.9, 0.7, 0.9, -2.75, 0.35, 0.7, navy, 0.06); box(0.7, 0.12, 2.2, -2.75, 0.5, -0.7, dark, 0.04); }
+    box(0.5, 0.36, 0.4, 2.7, 0.18, 1.0, white, 0.05); box(0.52, 0.05, 0.42, 2.7, 0.3, 1.0, orange, 0.02);   // crate
+    return merge(parts);
+  };
+  // a rounded work van (front is +Z)
+  A.van = function () {
+    const f = function (x, y, z) {
+      let d = S.box(x, y - 1.06, z, 0.86, 0.66, 1.98, 0.30);
+      d = S.smax(d, (z - 1.66) * 0.83 + (y - 1.2) * 0.55, 0.14);                       // windscreen slope
+      d = S.smin(d, S.box(x, y - 0.74, z - 1.72, 0.80, 0.32, 0.30, 0.22), 0.14);       // nose
+      for (const wz of [-1.25, 1.2]) for (const sx of [-1, 1]) { const cy = y - 0.40, cz = z - wz, cyl = Math.max(sqrt(cy * cy + cz * cz) - 0.47, 0.60 - sx * x); d = S.smax(d, -cyl, 0.04); }
+      return d;
+    };
+    const white = C('#e9e8e4'), orange = C('#f08a24'), navy = C('#2b3442'), glass = C('#31465f');
+    const body = S.geometry(S.mesh(f, [-0.95, 0.3, -2.1], [0.95, 1.85, 2.15], 0.025, {
+      ao: 0.25, aoRadius: 0.08,
+      color(x, y, z, nx, ny, nz, out) {
+        let c = white; const st = S.sstep;
+        mixC(navy, white, st(0.70, 0.73, y), out);
+        const k1 = st(1.03, 1.045, y) * (1 - st(1.115, 1.13, y)); out[0] = lerp(out[0], orange.r, k1); out[1] = lerp(out[1], orange.g, k1); out[2] = lerp(out[2], orange.b, k1);
+        const k2 = st(1.60, 1.615, y); out[0] = lerp(out[0], orange.r, k2); out[1] = lerp(out[1], orange.g, k2); out[2] = lerp(out[2], orange.b, k2);
+        // glass: side windows with pillars, windscreen, rear window
+        const band = st(1.2, 1.215, y) * (1 - st(1.52, 1.535, y));
+        let zz = (z + 1.72) % 0.98; if (zz < 0) zz += 0.98;
+        const side = st(0.6, 0.75, Math.abs(nx)) * st(-1.72, -1.70, z) * (1 - st(1.16, 1.18, z)) * st(0.11, 0.125, zz);
+        const front = st(0.35, 0.5, nz) * st(1.3, 1.35, z) * (1 - st(0.66, 0.68, Math.abs(x)));
+        const rear = st(0.5, 0.7, -nz) * (1 - st(0.6, 0.62, Math.abs(x)));
+        const kg = Math.min(1, band * Math.max(side, front, rear));
+        out[0] = lerp(out[0], glass.r, kg); out[1] = lerp(out[1], glass.g, kg); out[2] = lerp(out[2], glass.b, kg);
+      }
+    }));
+    const parts = [];
+    for (const wz of [-1.25, 1.2]) for (const sx of [-1, 1]) {
+      const t = new T.CylinderGeometry(0.40, 0.40, 0.26, 32); t.rotateZ(PI / 2); t.translate(sx * 0.74, 0.40, wz); parts.push(colorize(t, C('#24272c')));
+      const h = new T.CylinderGeometry(0.22, 0.22, 0.28, 24); h.rotateZ(PI / 2); h.translate(sx * 0.74, 0.40, wz); parts.push(colorize(h, C('#cfd3d6')));
+      const c = new T.CylinderGeometry(0.07, 0.07, 0.30, 16); c.rotateZ(PI / 2); c.translate(sx * 0.74, 0.40, wz); parts.push(colorize(c, orange));
+    }
+    for (const sx of [-1, 1]) { const g = new T.SphereGeometry(0.095, 18, 12); g.scale(1, 1, 0.5); g.translate(sx * 0.52, 0.93, 2.03); parts.push(colorize(g, C('#fff6d8'))); }
+    for (const z of [2.06, -2.0]) { const g = new T.RoundedBoxGeometry(1.66, 0.13, 0.14, 3, 0.05); g.translate(0, 0.52, z); parts.push(colorize(g, navy)); }
+    return { body, extras: merge(parts) };
+  };
+
   root.Assets = A;
 })(window);

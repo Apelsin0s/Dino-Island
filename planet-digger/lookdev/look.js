@@ -43,6 +43,16 @@
       leaf: ['#35792f', '#8ec652'], spruce: ['#1b5437', '#4f9552'],
       pal: { glove: '#d9b684', gloveCuff: '#4a4038', glovePad: '#b9753a', gloveStrap: '#c9c2b6', sleeve: '#35517a', band: '#d9dde0', awning1: '#d9772c', awning2: '#f6ead6' },
       grade: { sat: 1.08, con: 1.06, vig: 0.28 }
+    },
+    '4': {   // clean worksite: smooth plain ground, sparse stylised details, crisp long shadows, white-orange equipment
+      sun: [0.30, 0.40, 0.87], sunColor: '#fff2dc', sunI: 3.1, envI: 1.15, exposure: 1.0,
+      sky: { zen: '#4a80e6', hor: '#d3e4f8', ground: '#aac48f' }, fog: ['#d8e7f7', 0.00028], skyDesat: 0.3, moon: [-0.30, 0.19, -0.93],
+      lawn: ['#a9d07e', '#b6da8b', '#c6df95'], soil: ['#8d6c4f', '#a58463'], pathC: '#e2ded3', forestC: '#6aa56f',
+      grass: 'sparse', tuft: { root: '#93c56c', tip: '#c9e89d', width: 0.03, blades: 6, hMin: 0.05, hMax: 0.11 }, tuftK: 1, flowerK: 0.22,
+      lumpy: 0, sheen: 0, leafBump: 0, gloss: 0, clean: 1, noClouds: 1, shadowRadius: 1.3, bodyShadow: 1, handShadow: 1,
+      leaf: ['#6db56a', '#b4e09a'], spruce: ['#4a8c66', '#8cc892'],
+      pal: { glove: '#f4f2ee', gloveCuff: '#4b5563', glovePad: '#f08a24', gloveStrap: '#f08a24', sleeve: '#f5f4f0', band: '#f08a24' },
+      grade: { sat: 1.0, con: 1.03, vig: 0.12 }
     }
   };
   const V = VARIANTS[VAR];
@@ -156,12 +166,39 @@
   const soilNormal = `vec4 n3 = pdFbm(P, 62.0, 3); G += n3.yzw*0.0042*pdFade(px*250.0);`;
   const soilDecl = 'uniform vec3 uS1; uniform vec3 uS2; uniform vec3 uPeb;\n';
   const M = {};
+  // variant 4: plain, softly painted ground; a dug place has a neat dark rim; the service track is pale with a yellow line
+  const CLEAN_COLOR = `
+      float patch1 = pdFbm(P, 0.16, 2).x, patch2 = pdFbm(P + 7.3, 0.035, 2).x;
+      vec3 lawn = mix(uG1, uG2, clamp(0.5 + patch1*0.9, 0.0, 1.0));
+      lawn = mix(lawn, uG3, clamp(patch2*1.4, 0.0, 1.0)*0.5);
+      lawn = mix(lawn, uForestC, smoothstep(0.0, 0.35, vForest));
+      { float pxc = length(fwidth(P)); lawn *= 1.0 + 0.045*pdFbm(P, 1.4, 2).x + 0.03*pdFbm(P, 9.0, 2).x*pdFade(pxc*18.0); vec4 fl = pdCell(P*vec3(70.0, 20.0, 70.0)); lawn *= 1.0 + (fl.w - 0.5)*0.09*smoothstep(0.45, 0.2, length(fl.xyz))*pdFade(pxc*70.0); }
+      vec3 col = lawn;
+      if (vDepth > 0.0003) {
+        float dn = vDepth + pdFbm(P, 40.0, 2).x*0.0012;
+        vec3 soilc = mix(uS1, uS2, clamp(0.5 + pdFbm(P, 5.0, 2).x*0.7, 0.0, 1.0));
+        soilc *= mix(1.0, 0.82, smoothstep(0.03, 0.11, vDepth));
+        vec3 edge = mix(uS1*0.5, soilc, smoothstep(0.005, 0.013, dn));
+        col = mix(lawn, edge, smoothstep(0.0008, 0.0055, dn));
+      }
+      float pm = smoothstep(0.50, 0.56, vPathV);
+      if (pm > 0.005) {
+        vec3 pc = uPathC*(0.95 + 0.06*pdFbm(P, 1.2, 2).x);
+        float line = smoothstep(0.585, 0.60, vPathV)*(1.0 - smoothstep(0.69, 0.705, vPathV));
+        pc = mix(pc, vec3(0.93, 0.66, 0.16), line*0.92);
+        col = mix(col, pc, pm);
+      }
+      diffuseColor.rgb = col;`;
+  const CLEAN_NORMAL = `
+      float soilK = smoothstep(0.0012, 0.004, vDepth), pmN = smoothstep(0.50, 0.56, vPathV);
+      vec4 n1 = pdFbm(P, 2.2, 2); G += n1.yzw*0.012*(1.0 - soilK)*(1.0 - pmN)*pdFade(px*4.4);
+      if (soilK > 0.0) { vec4 n3 = pdFbm(P, 26.0, 2); G += n3.yzw*0.0016*soilK*pdFade(px*52.0); vec4 n6 = pdFbm(P, 7.0, 2); G += n6.yzw*0.004*soilK; }`;
   M.terrain = pd(new T.MeshPhysicalMaterial({ roughness: 0.88, metalness: 0, sheen: V.sheen, sheenRoughness: 0.55, sheenColor: C(V.lawn[1]).multiplyScalar(0.9), clearcoat: gloss ? 0.2 : 0, clearcoatRoughness: 0.5 }), {
     uniforms: Object.assign({ uG1: U(C(V.lawn[0])), uG2: U(C(V.lawn[1])), uG3: U(C(V.lawn[2])), uPathC: U(C(V.pathC)), uForestC: U(C(V.forestC)) }, soilU),
     vdecl: 'attribute float aDepth; attribute float aPath; attribute float aForest; varying float vDepth; varying float vPathV; varying float vForest;\n',
     vertex: 'vDepth = aDepth; vPathV = aPath; vForest = aForest;',
     fdecl: 'varying float vDepth; varying float vPathV; varying float vForest; uniform vec3 uG1; uniform vec3 uG2; uniform vec3 uG3; uniform vec3 uPathC; uniform vec3 uForestC;\n' + soilDecl,
-    color: `
+    color: V.clean ? CLEAN_COLOR : `
       float patch1 = pdFbm(P, 0.33, 3).x, patch2 = pdFbm(P + 7.3, 0.045, 2).x;
       vec3 lawn = mix(uG1, uG2, clamp(0.5 + patch1*1.1, 0.0, 1.0));
       lawn = mix(lawn, uG3, clamp(patch2*1.6 - 0.15, 0.0, 1.0)*0.55);
@@ -184,7 +221,7 @@
       }
       diffuseColor.rgb = col;`,
     rough: 'roughnessFactor = mix(0.88, 1.0, max(smoothstep(0.003, 0.012, vDepth), smoothstep(0.42, 0.62, vPathV)));',
-    normal: `
+    normal: V.clean ? CLEAN_NORMAL : `
       float soilK = smoothstep(0.003, 0.012, vDepth), pmN = smoothstep(0.42, 0.62, vPathV);
       vec4 n1 = pdFbm(P, 7.0, 3); G += n1.yzw*0.015*(1.0 - soilK)*(1.0 - pmN)*pdFade(px*28.0);
       vec4 n5 = pdFbm(P, 30.0, 2); G += n5.yzw*0.0026*(1.0 - soilK)*(1.0 - pmN)*pdFade(px*60.0);
@@ -193,8 +230,8 @@
       if (pmN > 0.0) { vec4 n4 = pdFbm(P, 30.0, 3); G += n4.yzw*0.004*pmN*pdFade(px*120.0); }`,
     post: '#ifdef USE_SHEEN\n material.sheenColor *= (1.0 - smoothstep(0.003, 0.012, vDepth))*(1.0 - smoothstep(0.42, 0.62, vPathV));\n#endif'
   });
-  M.soil = pd(std({ roughness: 1 }), { uniforms: soilU, fdecl: soilDecl, color: soilColor, normal: soilNormal });
-  M.soilObj = pd(std({ roughness: 1 }), { space: 'object', uniforms: soilU, fdecl: soilDecl, color: soilColor.replace(/16\.0/, '60.0').replace(/44\.0/, '160.0'), normal: 'vec4 n3 = pdFbm(P, 220.0, 3); G += n3.yzw*0.0011;' });
+  M.soil = pd(std({ roughness: 1 }), { uniforms: soilU, fdecl: soilDecl, color: V.clean ? 'diffuseColor.rgb = mix(uS1, uS2, clamp(0.5 + pdFbm(P, 5.0, 2).x*0.7, 0.0, 1.0));' : soilColor, normal: V.clean ? 'vec4 n3 = pdFbm(P, 26.0, 2); G += n3.yzw*0.0016;' : soilNormal });
+  M.soilObj = pd(std({ roughness: 1 }), { space: 'object', uniforms: soilU, fdecl: soilDecl, color: V.clean ? 'diffuseColor.rgb = mix(uS1, uS2, clamp(0.5 + pdFbm(P, 20.0, 2).x*0.7, 0.0, 1.0));' : soilColor.replace(/16\.0/, '60.0').replace(/44\.0/, '160.0'), normal: V.clean ? 'vec4 n3 = pdFbm(P, 90.0, 2); G += n3.yzw*0.0006;' : 'vec4 n3 = pdFbm(P, 220.0, 3); G += n3.yzw*0.0011;' });
   M.crown = pd(std({ vertexColors: true, roughness: 0.78, sheen: 0.35, sheenRoughness: 0.6, sheenColor: C(V.leaf[1]) }), {
     color: 'diffuseColor.rgb *= 0.92 + 0.18*pdFbm(P, 0.9, 2).x;',
     normal: `vec4 cl = pdCell(P*5.2); G += -2.0*cl.xyz*5.2*${V.leafBump.toFixed(4)}*pdFade(px*10.0); vec4 n = pdFbm(P, 26.0, 2); G += n.yzw*0.0018*pdFade(px*52.0);`
@@ -209,11 +246,11 @@
     normal: 'vec4 n = pdFbm(P*vec3(13.0, 2.2, 13.0), 1.0, 3); G += n.yzw*vec3(13.0, 2.2, 13.0)*0.006*pdFade(px*52.0);'
   });
   M.rock = pd(std({ vertexColors: true, roughness: 0.85 }), {
-    uniforms: { uRock: U(C('#b3aa9a')), uMoss: U(C(V.lawn[0]).multiplyScalar(0.85)) }, fdecl: 'uniform vec3 uRock; uniform vec3 uMoss;\n',
+    uniforms: { uRock: U(C(V.clean ? '#cfccd6' : '#b3aa9a')), uMoss: U(C(V.lawn[0]).multiplyScalar(0.85)) }, fdecl: 'uniform vec3 uRock; uniform vec3 uMoss;\n',
     color: `vec3 Nw = normalize((vec4(normalize(vNormal), 0.0)*viewMatrix).xyz); float sp = pdCell(P*110.0).w;
       vec3 rc = uRock*(0.84 + 0.3*pdFbm(P, 3.0, 3).x)*(0.9 + 0.2*sp)*diffuseColor.rgb;
       float moss = smoothstep(0.42, 0.72, Nw.y + pdFbm(P, 4.0, 3).x*0.4);
-      diffuseColor.rgb = mix(rc, uMoss, moss*0.8);`,
+      diffuseColor.rgb = mix(rc, uMoss, moss*${V.clean ? '0.0' : '0.8'});`,
     normal: 'vec4 n = pdFbm(P, 13.0, 3); G += n.yzw*0.004*pdFade(px*52.0);'
   });
   M.tuft = pd(std({ vertexColors: true, roughness: 0.62, side: T.DoubleSide, sheen: 0.12, sheenRoughness: 0.5, sheenColor: C(V.tuft.tip) }), { noFlip: true, color: 'diffuseColor.rgb *= 0.9 + 0.2*pdFbm(P, 0.45, 2).x;' });
@@ -232,15 +269,17 @@
   M.wood = pd(std({ vertexColors: true, roughness: 0.75, side: T.DoubleSide }), { color: 'diffuseColor.rgb *= 0.86 + 0.22*pdFbm(P*vec3(5.0, 26.0, 5.0), 1.0, 2).x;', normal: 'vec4 n = pdFbm(P*vec3(8.0, 40.0, 8.0), 1.0, 2); G += n.yzw*vec3(8.0, 40.0, 8.0)*0.0006*pdFade(px*80.0);' });
   M.house = std({ vertexColors: true, roughness: 0.85 });
   M.cloud = new T.MeshStandardMaterial({ color: C('#ffffff'), roughness: 1, emissive: C('#e6eef8'), emissiveIntensity: 0.62, fog: false, vertexColors: true });
+  M.paint = new T.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.42, metalness: 0, clearcoat: 0.45, clearcoatRoughness: 0.25 });
+  M.stone = new T.MeshStandardMaterial({ color: C('#d9d1c0'), roughness: 0.95, flatShading: true });
   M.silver = new T.MeshPhysicalMaterial({ color: C('#f1f1ee'), metalness: 1, roughness: 0.28, envMapIntensity: 1.6 });
 
   // ---------------------------------------------------------------- sky and image-based light
   function skyMaterial(disc) {
     return new T.ShaderMaterial({
-      uniforms: { uZen: U(C(V.sky.zen)), uHor: U(C(V.sky.hor)), uGround: U(C(V.sky.ground)), uSun: U(sunDir), uSunCol: U(C(V.sunColor)), uDisc: U(disc ? 1 : 0), uDesat: U(disc ? 0 : 0.45), uClouds: U(V.skyClouds ? 1 : 0) },
+      uniforms: { uZen: U(C(V.sky.zen)), uHor: U(C(V.sky.hor)), uGround: U(C(V.sky.ground)), uSun: U(sunDir), uSunCol: U(C(V.sunColor)), uDisc: U(disc ? 1 : 0), uDesat: U(disc ? 0 : (V.skyDesat === undefined ? 0.45 : V.skyDesat)), uClouds: U(V.skyClouds ? 1 : 0), uMoonOn: U(V.moon && disc ? 1 : 0), uMoon: U(V.moon ? V3(V.moon[0], V.moon[1], V.moon[2]).normalize() : V3(0, 1, 0)) },
       side: T.BackSide, depthWrite: false, fog: false,
       vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position, 1.0); }',
-      fragmentShader: `uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uGround; uniform vec3 uSun; uniform vec3 uSunCol; uniform float uDisc; uniform float uDesat; uniform float uClouds; varying vec3 vDir;
+      fragmentShader: `uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uGround; uniform vec3 uSun; uniform vec3 uSunCol; uniform float uDisc; uniform float uDesat; uniform float uClouds; uniform float uMoonOn; uniform vec3 uMoon; varying vec3 vDir;
         float h2(vec2 p){ p = fract(p*vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y)*p.x); }
         float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f); return mix(mix(h2(i), h2(i + vec2(1.0, 0.0)), f.x), mix(h2(i + vec2(0.0, 1.0)), h2(i + vec2(1.0, 1.0)), f.x), f.y); }
         float fb(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a*n2(p); p = p*2.03 + vec2(17.1, 9.3); a *= 0.5; } return s; }
@@ -258,6 +297,14 @@
             vec3 cc = mix(vec3(0.80, 0.83, 0.90), vec3(1.0, 0.97, 0.92)*1.1, lit);
             c = mix(c, cc, cov*smoothstep(0.015, 0.14, h)*0.93);
           }
+          if (uMoonOn > 0.5) {
+            float m = dot(d, uMoon); vec3 v = (d - uMoon*m)/0.030;                       // offset on the disc, radius about 1.7 degrees
+            float r2 = dot(v, v), disc2 = 1.0 - smoothstep(0.92, 1.0, r2);
+            vec3 s2 = normalize(uSun - uMoon*dot(uSun, uMoon));
+            float lit = smoothstep(-0.06, 0.06, dot(v, s2) + 0.5*sqrt(max(0.0, 1.0 - r2)));
+            vec3 mc = mix(vec3(0.96, 0.97, 1.0), vec3(0.80, 0.85, 0.95), smoothstep(0.42, 0.62, fb(v.xy*2.3 + v.z*1.7 + 4.0)));
+            c = mix(c, mc, disc2*lit*0.62*step(0.0, m));
+          }
           c = mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), uDesat);
           gl_FragColor = vec4(c, 1.0); }`
     });
@@ -265,7 +312,7 @@
   const sky = new T.Mesh(new T.SphereGeometry(8800, 48, 24), skyMaterial(true)); sky.renderOrder = -10; sky.frustumCulled = false; scene.add(sky);
   { const es = new T.Scene(); es.add(new T.Mesh(new T.SphereGeometry(40, 32, 16), skyMaterial(false))); const pm = new T.PMREMGenerator(renderer); scene.environment = pm.fromScene(es, 0.01).texture; scene.environmentIntensity = V.envI; pm.dispose(); }
   const sun = new T.SunLight(C(V.sunColor), V.sunI); sun.position.copy(sunDir).multiplyScalar(100); sun.castShadow = true;
-  sun.shadow.mapSize.set(FINAL ? 4096 : 2048, FINAL ? 4096 : 2048); sun.shadow.camera.far = 110; sun.shadow.radius = FINAL ? 3.2 : 2.2; sun.shadow.bias = -0.00035; sun.shadow.normalBias = 0.02;
+  sun.shadow.mapSize.set(FINAL ? 4096 : 2048, FINAL ? 4096 : 2048); sun.shadow.camera.far = 110; sun.shadow.radius = V.shadowRadius ? V.shadowRadius * (FINAL ? 1 : 0.7) : (FINAL ? 3.2 : 2.2); sun.shadow.bias = -0.00035; sun.shadow.normalBias = 0.02;
   scene.add(sun);
   log('renderer + sky ready');
 
@@ -286,7 +333,7 @@
     g.setAttribute('aDepth', new T.BufferAttribute(dep, 1)); g.setAttribute('aPath', new T.BufferAttribute(pth, 1)); g.setAttribute('aForest', new T.BufferAttribute(fr, 1)); g.setIndex(new T.BufferAttribute(idx, 1));
     const m = new T.Mesh(g, M.terrain); m.receiveShadow = true; m.castShadow = false; m.frustumCulled = false; scene.add(m); return m;
   }
-  const L0 = { cx: HC.x, cz: HC.z, size: FINAL ? 3.2 : 2.0, cell: FINAL ? 0.01 : 0.02 }, L1 = { cx: 0, cz: -9, size: 30, cell: FINAL ? 0.08 : 0.16 }, L2 = { cx: 0, cz: -180, size: 520, cell: FINAL ? 1.3 : 2.6 }, L3 = { cx: 0, cz: -2600, size: 6400, cell: FINAL ? 20 : 32 };
+  const L0 = { cx: HC.x, cz: HC.z, size: FINAL ? 3.2 : 2.0, cell: FINAL ? (V.clean ? 0.0075 : 0.01) : 0.02 }, L1 = { cx: 0, cz: -9, size: 30, cell: FINAL ? 0.08 : 0.16 }, L2 = { cx: 0, cz: -180, size: 520, cell: FINAL ? 1.3 : 2.6 }, L3 = { cx: 0, cz: -2600, size: 6400, cell: FINAL ? 20 : 32 };
   const rect = (L, pad) => [L.cx - L.size / 2 + pad, L.cx + L.size / 2 - pad, L.cz - L.size / 2 + pad, L.cz + L.size / 2 - pad];
   level(L0.cx, L0.cz, L0.size, L0.cell, null, 0, 0.004, false);
   level(L1.cx, L1.cz, L1.size, L1.cell, rect(L0, 0.02).concat(0.12), 0.03, 0.03, false);
@@ -337,8 +384,17 @@
   // ---------------------------------------------------------------- props: bucket, stall, fence, village, clouds
   if (!NO.includes('props')) {
     const b = A.bucket(), by = terrainY(BUCKET.x, BUCKET.z) - 0.004, grp = new T.Group();
-    const body = new T.Mesh(b.body, M.zinc), soil = new T.Mesh(b.soil, M.soilObj); body.castShadow = body.receiveShadow = soil.receiveShadow = true; grp.add(body, soil);
+    const body = new T.Mesh(b.body, V.clean ? new T.MeshPhysicalMaterial({ color: C('#f08a24'), roughness: 0.45, clearcoat: 0.4, clearcoatRoughness: 0.3, side: T.DoubleSide }) : M.zinc), soil = new T.Mesh(b.soil, M.soilObj); body.castShadow = body.receiveShadow = soil.receiveShadow = true; grp.add(body, soil);
     grp.position.set(BUCKET.x, by, BUCKET.z); grp.rotation.set(0.03, 0.6, -0.04); scene.add(grp);
+    if (V.clean) {
+      const dp = new T.Mesh(A.depot(), M.paint), dx = -7.4, dz = -20.4; dp.position.set(dx, terrainY(dx, dz) - 0.04, dz); dp.rotation.y = 0.42; dp.castShadow = dp.receiveShadow = true; scene.add(dp); blocked.push([dx, dz, 3.4], [dx - 2.4, dz + 1.6, 1.4]);
+      const van = A.van(), vg = new T.Group(), vx = -0.9, vz = -17.2; for (const g of [van.body, van.extras]) { const m = new T.Mesh(g, M.paint); m.castShadow = m.receiveShadow = true; vg.add(m); }
+      vg.position.set(vx, terrainY(vx, vz) - 0.02, vz); vg.rotation.y = 2.25; scene.add(vg); blocked.push([vx, vz, 2.5]);
+      // bollards along the track
+      const bparts = [A.colorize(new T.CapsuleGeometry(0.07, 0.5, 6, 18).translate(0, 0.3, 0), C('#e9e8e4')), A.colorize(new T.CylinderGeometry(0.074, 0.074, 0.1, 18).translate(0, 0.52, 0), C('#f08a24')), A.colorize(new T.CylinderGeometry(0.1, 0.11, 0.05, 18).translate(0, 0.025, 0), C('#2b3442'))];
+      const bl = []; for (let i = 0; i < 7; i++) { const t = i / 6, x = lerp(-3.55, -8.5, t) - 0.15 * Math.sin(t * 3.1), z = lerp(-3.4, -13.8, t); bl.push([x, terrainY(x, z), z, 0, 1]); blocked.push([x, z, 0.16]); }
+      inst(A.merge(bparts), M.paint, bl);
+    } else {
     // stall
     const st = new T.Mesh(A.stall(V.pal), M.wood); st.position.set(STALL.x, terrainY(STALL.x, STALL.z) - 0.03, STALL.z); st.rotation.y = STALL.yaw; st.castShadow = st.receiveShadow = true; scene.add(st); blocked.push([STALL.x, STALL.z, 1.9]);
     // fence along the path
@@ -350,6 +406,7 @@
       const g = A.colorize(new T.CapsuleGeometry(0.036, len + 0.16, 6, 12), C('#a67c4e')), mesh = new T.Mesh(g, M.wood);
       mesh.position.copy(a).add(b2).multiplyScalar(0.5); mesh.quaternion.setFromUnitVectors(YAX, b2.clone().sub(a).normalize()); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh);
     }
+    }
     // village on the far hillside
     const r = S.rng(9), houses = [];
     for (let i = 0; i < 16; i++) { const x = VILLAGE.x + (r() - 0.5) * 190, z = VILLAGE.z + (r() - 0.5) * 110, g = A.house(i + 1), m = new T.Mesh(g, M.house); m.position.set(x, terrainY(x, z) - 0.5, z); m.rotation.y = r() * 3; m.scale.setScalar(1.7); m.castShadow = false; scene.add(m); houses.push(m); }
@@ -357,7 +414,7 @@
     // clouds
     const cg = [A.cloud(1), A.cloud(2), A.cloud(3), A.cloud(4)];
     const cl = [[-2500, 1000, -6000, 0.2, 150], [1100, 1250, -6600, -0.1, 190], [3400, 900, -5600, 0.3, 140], [-700, 1700, -7000, 0.05, 170], [-4600, 1150, -5200, 0.5, 150], [2300, 1900, -7200, -0.2, 160], [5200, 1300, -5400, -0.5, 150], [150, 760, -6400, 0.1, 110], [-1900, 2100, -6900, 0, 140], [-3400, 620, -6300, 0.2, 100], [4100, 2000, -6500, -0.3, 130]];
-    if (!V.skyClouds) cg.forEach((g, gi) => inst(g, M.cloud, cl.filter((q, i) => i % 4 === gi), { cast: false, receive: false }));
+    if (!V.skyClouds && !V.noClouds) cg.forEach((g, gi) => inst(g, M.cloud, cl.filter((q, i) => i % 4 === gi), { cast: false, receive: false }));
     for (const g of cg) if (!g.getAttribute('color')) g.setAttribute('color', new T.BufferAttribute(new Float32Array(g.getAttribute('position').count * 3).fill(1), 3));
   }
   log('props placed');
@@ -365,7 +422,21 @@
   // ---------------------------------------------------------------- grass, flowers, pebbles
   if (!NO.includes('grass')) {
     const r = S.rng(41), ok = (x, z, pad) => inView(x, z, 2) && !isBlocked(x, z, pad) && pathMask(x, z) < 0.25;
-    if (V.grass === 'tufts') {
+    if (V.grass === 'sparse') {
+      // flat stylised stones in small groups + a few chunky tufts: the ground stays calm and readable
+      const sg = [0, 1, 2].map(i => A.pebbleFlat(i + 1)), sl = [[], [], []], tg = [0, 1].map(i => A.tuft(400 + i, V.tuft)), tl = [[], []];
+      const groups = FINAL ? 950 : 380;
+      for (let i = 0; i < groups; i++) {
+        const d = 0.8 + Math.pow(r(), 1.35) * 46, a = (r() - 0.5) * 1.8, cx = Math.sin(a) * d, cz = -Math.cos(a) * d, n = 1 + Math.floor(r() * r() * 5), big = 0.016 + r() * 0.034 + (r() < 0.03 ? 0.05 : 0);
+        for (let k = 0; k < n; k++) { const x = cx + (r() - 0.5) * 0.4 * (k ? 1 : 0), z = cz + (r() - 0.5) * 0.4 * (k ? 1 : 0); if (!ok(x, z, 0.03) || holeDepth(x, z) > 0) continue; const sc = big * (k ? 0.35 + r() * 0.5 : 1); sl[Math.floor(r() * 3)].push([x, terrainY(x, z) + sc * 0.08, z, r() * 6.28, sc, (r() - 0.5) * 0.25]); }
+      }
+      sg.forEach((g, i) => inst(g, M.stone, sl[i]));
+      const tn = FINAL ? 1500 : 600;
+      for (let i = 0; i < tn; i++) { const d = 0.7 + Math.pow(r(), 1.5) * 42, a = (r() - 0.5) * 1.8, x = Math.sin(a) * d, z = -Math.cos(a) * d; if (!ok(x, z, 0.05) || fbm2(x / 4 + 9, z / 4, 2) < -0.05) continue; tl[r() < 0.5 ? 0 : 1].push([x, terrainY(x, z) - 0.004, z, r() * 6.28, (0.8 + r() * 0.7) * (1 + d / 40), (r() - 0.5) * 0.1]); }
+      for (let i = 0; i < 70; i++) { const a = r() * 6.283, d = 0.3 + r() * 1.5, x = HC.x + Math.cos(a) * d, z = HC.z + Math.sin(a) * d; if (!ok(x, z, 0.05) || holeDepth(x, z) > 0) continue; tl[r() < 0.5 ? 0 : 1].push([x, terrainY(x, z) - 0.004, z, r() * 6.28, 0.6 + r() * 0.6, (r() - 0.5) * 0.1]); }
+      tg.forEach((g, i) => inst(g, M.tuft, tl[i], { cast: true }));
+      log('stones: ' + (sl[0].length + sl[1].length + sl[2].length) + ', tufts: ' + (tl[0].length + tl[1].length));
+    } else if (V.grass === 'tufts') {
       const geos = [0, 1, 2].map(i => A.tuft(100 + i, V.tuft)), lists = [[], [], []];
       const band = (d0, d1, per, sc) => { const step = 1 / Math.sqrt(per * V.tuftK); for (let z = 2; z > -d1; z -= step) for (let x = -d1; x < d1; x += step) { const jx = x + (r() - 0.5) * step, jz = z + (r() - 0.5) * step, d = Math.hypot(jx, jz); if (d < d0 || d > d1 || !ok(jx, jz, 0.02)) continue; const n = fbm2(jx / 1.7, jz / 1.7, 2); if (n < -0.25 && r() < 0.6) continue; lists[Math.floor(r() * 3)].push([jx, terrainY(jx, jz) - 0.006, jz, r() * 6.28, sc * (0.75 + r() * 0.6) * (1 + n * 0.3), (r() - 0.5) * 0.12]); } };
       band(0, 7, FINAL ? 15 : 8, 1); band(7, 16, FINAL ? 7 : 3, 1.2); band(16, 34, FINAL ? 2.6 : 1, 1.6); if (FINAL) band(34, 60, 0.7, 2.3);
@@ -385,7 +456,7 @@
       cg.forEach((g, i) => inst(g, M.tuft, cl[i], { cast: false })); log('carpet clumps: ' + (cl[0].length + cl[1].length));
     }
     // flowers in drifts
-    const kinds = [[A.flower('#ffffff'), 150, 1.1], [A.flower('#ffd83a', { petals: 6, len: 0.011, wid: 0.008, h: 0.13, centre: '#f0a020' }), 90, 2.7], [A.flower('#b79cff', { petals: 5, len: 0.012, wid: 0.007, h: 0.11, centre: '#fff2a8' }), 55, 4.9]];
+    const fk = V.flowerK === undefined ? 1 : V.flowerK, kinds = [[A.flower('#ffffff'), Math.round(150 * fk), 1.1], [A.flower('#ffd83a', { petals: 6, len: 0.011, wid: 0.008, h: 0.13, centre: '#f0a020' }), Math.round(90 * fk), 2.7], [A.flower('#b79cff', { petals: 5, len: 0.012, wid: 0.007, h: 0.11, centre: '#fff2a8' }), Math.round(55 * fk), 4.9]];
     for (const [g, n, seedOff] of kinds) { const l = []; let tries = 0; while (l.length < n && tries++ < n * 40) { const d = 0.6 + Math.pow(r(), 1.6) * 20, a = (r() - 0.5) * 1.7, x = Math.sin(a) * d, z = -Math.cos(a) * d; if (!ok(x, z, 0.06) || fbm2(x / 3 + seedOff, z / 3, 2) < 0.05) continue; l.push([x, terrainY(x, z) - 0.004, z, r() * 6.28, 0.85 + r() * 0.5, (r() - 0.5) * 0.25]); } inst(g, M.flower, l, { cast: true }); }
     // close to the hole: a few flowers and mushrooms for the close-up
     inst(kinds[0][0], M.flower, [[HC.x - 0.34, 0, HC.z + 0.12], [HC.x - 0.42, 0, HC.z - 0.1], [HC.x + 0.1, 0, HC.z - 0.4], [HC.x + 0.3, 0, HC.z + 0.33], [HC.x - 0.2, 0, HC.z - 0.42]].map((p, i) => [p[0], terrainY(p[0], p[2]) - 0.004, p[2], i * 1.7, 1 + i * 0.07, 0.1]));
@@ -393,10 +464,10 @@
     // pebbles on the path and crumbs of soil around the hole
     const lump = A.lump(1), lump2 = A.lump(2, 0.5), pl = [], cr = [];
     for (let i = 0; i < (FINAL ? 420 : 150); i++) { const t = r(), seg = Math.min(PATH.length - 2, Math.floor(Math.pow(t, 1.5) * 5)), u = r(), x = lerp(PATH[seg][0], PATH[seg + 1][0], u) + (r() - 0.5) * 0.9, z = lerp(PATH[seg][1], PATH[seg + 1][1], u) + (r() - 0.5) * 0.9; if (pathMask(x, z) < 0.5) continue; pl.push([x, terrainY(x, z) + 0.002, z, r() * 6.28, 0.012 + r() * 0.03]); }
-    inst(lump, std({ color: C('#c2b6a2'), roughness: 0.85 }), pl.map(q => q.concat([0, 0.6])));
+    if (!V.clean) inst(lump, std({ color: C('#c2b6a2'), roughness: 0.85 }), pl.map(q => q.concat([0, 0.6])));
     for (let i = 0; i < 110; i++) { const a = r() * 6.28, d = 0.17 + Math.pow(r(), 2.4) * 0.17, x = HC.x + Math.cos(a) * d * 1.15, z = HC.z + Math.sin(a) * d * 0.95; if (holeDepth(x, z) > 0.002) continue; cr.push([x, terrainY(x, z) + 0.0005, z, r() * 6.28, 0.0025 + Math.pow(r(), 2) * 0.008, r() * 3, 0.55 + r() * 0.3]); }
     for (let i = 0; i < 22; i++) { const a = r() * 6.28, d = Math.sqrt(r()) * 0.13, x = HC.x + Math.cos(a) * d, z = HC.z + Math.sin(a) * d; cr.push([x, terrainY(x, z) + 0.0005, z, r() * 6.28, 0.003 + r() * 0.007, r() * 3, 0.6]); }
-    inst(lump2, M.soil, cr);
+    inst(lump2, M.soil, V.clean ? cr.filter((q, i) => i % 3 === 0) : cr);
     inst(lump, std({ color: C('#bdb19c'), roughness: 0.8 }), [[HC.x + 0.05, 0, HC.z + 0.04, 0.02], [HC.x - 0.08, 0, HC.z - 0.03, 0.014], [HC.x + 0.21, 0, HC.z + 0.2, 0.018], [HC.x - 0.24, 0, HC.z + 0.13, 0.025]].map((p, i) => [p[0], terrainY(p[0], p[2]) + 0.003, p[2], i, p[3]]));
     // something shiny in the hole: the first find
     const nug = new T.Mesh(A.lump(7, 0.35), M.silver); nug.scale.setScalar(0.013); nug.position.set(HC.x - 0.03, terrainY(HC.x - 0.03, HC.z + 0.05) + 0.006, HC.z + 0.05); nug.castShadow = true; scene.add(nug);
@@ -412,6 +483,19 @@
     for (const m of [glove, sleeve, spoon, soil]) { m.castShadow = false; m.receiveShadow = true; m.frustumCulled = false; }
     spoonSoil.add(soil); hand.add(glove, sleeve, spoon, spoonSoil); camera.add(hand);
   }
+  // the digger's own shadow: an unseen body under the camera that only casts a shadow
+  const bodyProxy = new T.Group(); bodyProxy.visible = false; scene.add(bodyProxy);
+  if (V.bodyShadow) {
+    const mat = new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+    const add = m => { m.castShadow = true; m.frustumCulled = false; bodyProxy.add(m); };
+    const cap = (rad, a, b) => { const m = new T.Mesh(new T.CapsuleGeometry(rad, a.distanceTo(b), 4, 12), mat); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(YAX, b.clone().sub(a).normalize()); add(m); };
+    cap(0.09, V3(-0.11, 0.1, 0), V3(-0.1, 0.9, 0)); cap(0.09, V3(0.11, 0.1, 0), V3(0.1, 0.9, 0)); cap(0.2, V3(0, 1.02, 0), V3(0, 1.34, 0));
+    cap(0.075, V3(-0.25, 1.42, 0), V3(-0.31, 0.98, 0.02)); cap(0.08, V3(0.25, 1.42, 0), V3(0.39, 1.16, 0.09));
+    const head = new T.Mesh(new T.SphereGeometry(0.125, 16, 12), mat); head.position.set(0, 1.63, 0.03); add(head);
+    const helmet = new T.Mesh(new T.SphereGeometry(0.165, 18, 12, 0, 6.2832, 0, 1.7), mat); helmet.position.set(0, 1.66, 0.03); add(helmet);
+    const brim = new T.Mesh(new T.CylinderGeometry(0.215, 0.215, 0.03, 22), mat); brim.position.set(0, 1.665, -0.03); add(brim);
+    const lamp = new T.Mesh(new T.SphereGeometry(0.05, 10, 8), mat); lamp.position.set(0, 1.75, -0.15); add(lamp);
+  }
   function poseHand(pos, hdir, upHint) {
     const h = V3(hdir[0], hdir[1], hdir[2]).normalize(), up = V3(upHint[0], upHint[1], upHint[2]), u = up.clone().addScaledVector(h, -up.dot(h)).normalize(), s = new T.Vector3().crossVectors(h, u).normalize();
     hand.position.set(pos[0], pos[1], pos[2]); hand.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(s, u, h.clone().negate()));
@@ -422,7 +506,7 @@
   const composer = new T.EffectComposer(renderer, rt); composer.setPixelRatio(DPR); composer.setSize(W, H);
   composer.addPass(new T.RenderPass(scene, camera));
   if (!NO.includes('ao')) { const g = new T.GTAOPass(scene, camera, W * DPR, H * DPR); g.updateGtaoMaterial({ radius: 0.32, distanceExponent: 1.5, thickness: 1.0, scale: 1.15, samples: FINAL ? 16 : 8 }); g.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 }); g.blendIntensity = 0.9; composer.addPass(g); }
-  composer.addPass(new T.UnrealBloomPass(new T.Vector2(W, H), 0.16, 0.6, 0.93));
+  composer.addPass(V.clean ? new T.UnrealBloomPass(new T.Vector2(W, H), 0.07, 0.5, 1.2) : new T.UnrealBloomPass(new T.Vector2(W, H), 0.16, 0.6, 0.93));
   composer.addPass(new T.OutputPass());
   if (V.tilt) composer.addPass(new T.ShaderPass({
     uniforms: { tDiffuse: { value: null }, uPx: U(new T.Vector2(1 / (W * DPR), 1 / (H * DPR))), uR: U(7.0 * DPR * W / 1600) },
@@ -446,10 +530,12 @@
     wide() {
       camera.position.set(0, baseHeight(0, 0) + 1.62, 0); camera.rotation.set(0, 0, 0, 'YXZ'); camera.rotation.x = -0.215; camera.rotation.y = 0.04;
       poseHand([0.185, -0.160, -0.45], [-0.25, 0.85, -0.46], [0, 0.3, 1]); spoonSoil.visible = false;
+      bodyProxy.visible = !!V.bodyShadow; bodyProxy.position.set(0, baseHeight(0, 0), 0); hand.traverse(o => { if (o.isMesh) o.castShadow = !!V.handShadow; });
     },
     close() {
       camera.position.set(HC.x + 0.06, terrainY(HC.x, HC.z + 0.5) + 0.60, HC.z + 0.53); camera.rotation.set(0, 0, 0, 'YXZ'); camera.rotation.x = -0.92; camera.rotation.y = -0.06;
       poseHand([0.165, -0.185, -0.43], [-0.30, 0.80, -0.52], [0, 0.3, 1]); spoonSoil.visible = true;
+      bodyProxy.visible = false; hand.traverse(o => { if (o.isMesh) o.castShadow = false; });
     }
   };
   SHOT.hand = () => { SHOT.wide(); camera.setViewOffset(W, H, W * 0.50, H * 0.46, W * 0.5, H * 0.5); };
