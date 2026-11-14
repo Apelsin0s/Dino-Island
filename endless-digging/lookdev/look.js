@@ -55,6 +55,13 @@
       grade: { sat: 1.0, con: 1.03, vig: 0.12 }
     }
   };
+  // the chosen look: the clean worksite of variant 4 with the saturated colours of variant 2
+  VARIANTS['5'] = Object.assign({}, VARIANTS['4'], {
+    sky: { zen: '#3a86e0', hor: '#d6ecfb', ground: '#8fb060' }, fog: ['#d4e9f7', 0.00028],
+    lawn: ['#6fb848', '#90cc56', '#bbd65e'], soil: ['#6b3f1f', '#93602f'], forestC: '#3a8440',
+    tuft: { root: '#62b23c', tip: '#b6e04a', width: 0.03, blades: 6, hMin: 0.05, hMax: 0.11 },
+    leaf: ['#3f9a2f', '#a4d845'], spruce: ['#1f6f3a', '#5fb44c'], grade: { sat: 1.1, con: 1.05, vig: 0.14 }
+  });
   const V = VARIANTS[VAR];
   const sunDir = V3(V.sun[0], V.sun[1], V.sun[2]).normalize();
 

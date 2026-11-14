@@ -1,6 +1,6 @@
 {
-  "name": "planet-digger",
-  "productName": "Planet Digger",
+  "name": "endless-digging",
+  "productName": "Endless Digging",
   "version": "0.0.1",
   "description": "First-person incremental digging game on a 1:1 scale planet Earth.",
   "private": true,

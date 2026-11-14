@@ -8,13 +8,13 @@
   // ---------- language ----------
   const RU = /^(ru|uk|be|kk)/i.test(navigator.language || '');
   const L = RU ? {
-    title: 'Копатель планеты', sub: 'Тестовая сцена графики · Земля в масштабе 1:1', play: 'Играть', cont: 'Продолжить',
+    title: 'Endless Digging', sub: 'Тестовая сцена графики · Земля в масштабе 1:1', play: 'Играть', cont: 'Продолжить',
     loading: 'Строим планету…', hands: 'Руки', shovel: 'Лопата', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км',
     keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать · <b>1</b> руки · <b>2</b> лопата · <b>Esc</b> пауза',
     pause: 'Пауза', quality: 'Графика', hi: 'Высокая', lo: 'Быстрая', reset: 'Засыпать все ямы', far: 'Слишком далеко', sign: '↓ ЯДРО 6 371 км',
     clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км'
   } : {
-    title: 'Planet Digger', sub: 'Graphics test scene · Earth at 1:1 scale', play: 'Play', cont: 'Continue',
+    title: 'Endless Digging', sub: 'Graphics test scene · Earth at 1:1 scale', play: 'Play', cont: 'Continue',
     loading: 'Building the planet…', hands: 'Hands', shovel: 'Shovel', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km',
     keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig · <b>1</b> hands · <b>2</b> shovel · <b>Esc</b> pause',
     pause: 'Paused', quality: 'Graphics', hi: 'High', lo: 'Fast', reset: 'Fill in all holes', far: 'Too far', sign: '↓ CORE 6,371 km',
@@ -228,7 +228,7 @@
   }
 
   // ---------- save ----------
-  const SAVE = 'planetdigger.test.v1';
+  const SAVE = 'endlessdigging.test.v1';
   let dirty = false, saveT = 0;
   function save() {
     try { localStorage.setItem(SAVE, JSON.stringify({ holes: W.holes.map(h => h.map(v => Math.round(v * 1000) / 1000)), pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, tool: pl.tool })); } catch (e) {}
