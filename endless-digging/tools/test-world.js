@@ -16,3 +16,14 @@ for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (let c = -2; c <
 }
 console.log('chunks', chunks, 'tris', tot, 'ms/chunk', ((performance.now() - t) / chunks).toFixed(1), 'good', good, 'bad', bad);
 W.addHole(P[0], P[1], P[2], 0.5); console.log('solid at hole', W.solid(...P).toFixed(2), 'below', W.solid(...d.map(v => v * (W.R + h - 2))).toFixed(2));
+// fine grid: a few spoon scoops, then mesh the fine boxes and the coarse chunk around them
+W.clearHoles();
+const Q = W.fromLatLon(47.9105, 33.3918), hq = W.heightDir(...Q), S0 = Q.map(v => v * (W.R + hq - 0.02));
+let res = { coarse: new Set(), fine: new Set() };
+for (let i = 0; i < 20; i++) { const r = W.addHole(S0[0] + (i % 5) * 0.03, S0[1] - Math.floor(i / 5) * 0.03, S0[2], 0.045); r.coarse.forEach(k => res.coarse.add(k)); r.fine.forEach(k => res.fine.add(k)); }
+t = performance.now(); let ft = 0;
+for (const k of res.fine) { const [a, b, c] = k.split(',').map(Number); ft += W.meshChunk(W.sampleFine(a, b, c)).idx.length / 3; }
+console.log('fine boxes', W.fineSet.size, 'remeshed', res.fine.size, 'tris', ft, 'ms/box', ((performance.now() - t) / res.fine.size).toFixed(1));
+t = performance.now(); let ct = 0;
+for (const k of res.coarse) { const [a, b, c] = k.split(',').map(Number); ct += W.meshChunk(W.sampleChunk(a, b, c)).idx.length / 3; }
+console.log('coarse chunks to remesh', res.coarse.size, 'tris', ct, 'ms', (performance.now() - t).toFixed(0), 'solid in hole', W.solid(...S0).toFixed(3));

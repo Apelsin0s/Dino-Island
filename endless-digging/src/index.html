@@ -12,10 +12,13 @@
 <body>
 <canvas id="view"></canvas>
 <div id="hud" hidden>
-  <div class="panel tl"><div id="coords"></div><div id="alt"></div><div id="core"></div></div>
+  <div class="panel tl"><div id="money" class="money">$0.00</div><div id="coords"></div><div id="alt"></div><div id="core"></div></div>
   <div class="panel tr"><div id="dug"></div><small id="leftLbl"></small><div id="left" class="mono"></div><div id="pct" class="mono dim"></div></div>
   <div id="cross"></div>
-  <div class="slots"><button class="slot on" data-t="spoon" id="slotSpoon"></button></div>
+  <div class="bucketBox"><span class="bIcon">🪣</span><div><small id="bucketLbl"></small><div class="bbar"><i id="bucketFill"></i></div></div><span id="bucketTxt" class="mono"></span></div>
+  <button id="bSell" class="sellBtn" hidden></button>
+  <div id="notice" hidden></div>
+  <button id="bMap" class="tmap" aria-label="Map">🗺<span>M</span></button>
   <div id="floaters"></div>
   <div id="clickHint" hidden></div>
   <div id="stick" hidden><div id="knob"></div></div>
@@ -23,12 +26,16 @@
   <button id="bPause" class="tpause" aria-label="Pause">Ⅱ</button>
   <div id="turnHint"></div>
 </div>
+<div id="mapUI" hidden><div class="mapHead"><h2 id="mapTitle"></h2><p id="mapHint"></p></div><button id="mapClose" aria-label="Close">✕</button>
+  <div class="mapLegend"><span class="lg open"></span><b id="mapOpen"></b><span class="lg locked"></span><b id="mapLocked"></b></div></div>
 <div id="overlay" hidden></div>
 <script src="vendor/three.min.js"></script>
 <script src="world.js"></script>
 <script src="sdf.js"></script>
 <script src="assets.js"></script>
 <script src="scene.js"></script>
+<script src="map/regions.js"></script>
+<script src="map.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

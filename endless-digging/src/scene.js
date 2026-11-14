@@ -14,11 +14,12 @@
   const O = v3(0, 0, 0);                         // floating origin (planet metres)
   const up = v3(0, 1, 0), sunDir = v3(0, 1, 0);
   const timeU = { value: 0 };
-  let quality = 'high';
+  let quality = 'mid';     // high: + ambient occlusion; mid: default on computers; low: phones
   // phone: smaller streaming radius, coarser sculpts, no ambient occlusion, no shadows from grass, smaller shadow map
-  const M = { load: 54, farIn: 44, grassR: 26, treeR: 330, nearR: 55, samples: 4, maxDpr: 1.5, detail: 1, smallShadow: true, shadow: 2048, rich: true };
-  Scene.setMobile = on => { if (on) Object.assign(M, { load: 40, farIn: 32, grassR: 16, treeR: 210, nearR: 30, samples: 0, maxDpr: 1.25, detail: 2, smallShadow: false, shadow: 1024, rich: false }); quality = on ? 'low' : 'high'; };
+  const M = { load: 54, farIn: 44, grassR: 26, treeR: 330, nearR: 55, samples: 4, maxDpr: 1.5, detail: 1, smallShadow: true, shadow: 2048, rich: false };   // rich: extra shading noise (subtle, heavy on weak GPUs)
+  Scene.setMobile = on => { if (on) Object.assign(M, { load: 40, farIn: 32, grassR: 16, treeR: 210, nearR: 30, samples: 0, maxDpr: 1.25, detail: 2, smallShadow: false, shadow: 1024, rich: false }); quality = on ? 'low' : 'mid'; };
 
+  { const q = new URLSearchParams(root.location ? location.search : ''); for (const k of ['samples', 'detail', 'shadow', 'load', 'nearR', 'grassR']) if (q.has(k)) M[k] = +q.get(k); if (q.has('small')) M.smallShadow = q.get('small') === '1'; }   // debug overrides
   // ---------- the look (variant 5) ----------
   const V = {
     sun: [0.30, 0.40, 0.87], moon: [-0.30, 0.19, -0.93], sunColor: '#fff2dc', sunI: 3.1, envI: 1.15, exposure: 1.0,
@@ -87,7 +88,7 @@
       if (o.uniforms) Object.assign(sh.uniforms, o.uniforms);
       sh.vertexShader = 'varying vec3 vPd; uniform mat3 uLF; uniform vec3 uOff; uniform float uTime;\n' + (o.vdecl || '') + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n' + (o.vertex || '') +
         (world ? '\n{ vec4 pdW = vec4(transformed, 1.0);\n#ifdef USE_INSTANCING\n pdW = instanceMatrix * pdW;\n#endif\n vPd = uLF * ((modelMatrix * pdW).xyz + uOff); }\n' : '\n vPd = position;\n'));
-      let fs = 'varying vec3 vPd; uniform mat3 uLF;\n' + (world ? '#define PD_TOVIEW (mat3(viewMatrix) * transpose(uLF))\n' : 'uniform mat3 normalMatrix;\n#define PD_TOVIEW normalMatrix\n') + NOISE + (o.fdecl || '') + sh.fragmentShader;
+      let fs = (M.rich ? '#define PD_RICH\n' : '') + 'varying vec3 vPd; uniform mat3 uLF;\n' + (world ? '#define PD_TOVIEW (mat3(viewMatrix) * transpose(uLF))\n' : 'uniform mat3 normalMatrix;\n#define PD_TOVIEW normalMatrix\n') + NOISE + (o.fdecl || '') + sh.fragmentShader;
       if (o.color) fs = fs.replace('#include <color_fragment>', '#include <color_fragment>\n{ vec3 P = vPd;\n' + o.color + '\n}');
       if (o.rough) fs = fs.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n{ vec3 P = vPd;\n' + o.rough + '\n}');
       if (o.normal) fs = fs.replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n{ vec3 P = vPd; vec3 G = vec3(0.0); float px = length(fwidth(P));\n' + o.normal + '\n vec3 gv = PD_TOVIEW * G; gv -= normal * dot(gv, normal); normal = normalize(normal - gv); }');
@@ -100,18 +101,22 @@
   const U = v => ({ value: v });
   const std = p => new T.MeshStandardMaterial(Object.assign({ roughness: 0.8, metalness: 0 }, p));
   const MAT = {};
-  function buildMaterials() {
-    const soilU = { uS1: U(col(V.soil[0])), uS2: U(col(V.soil[1])) };
-    // ground: plain softly painted lawn; a dug place shows soil with a neat dark rim; deeper down the layer colours
-    MAT.terrain = pd(new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 }), {
-      uniforms: Object.assign({ uG1: U(col(V.lawn[0])), uG2: U(col(V.lawn[1])), uG3: U(col(V.lawn[2])), uRim: U(Math.max(1, W.VOX / 0.03)) }, soilU),
+  function makeTerrain(soilU, rim, back) {
+    const m = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 });
+    if (back) { m.polygonOffset = true; m.polygonOffsetFactor = 1; m.polygonOffsetUnits = 2; }
+    return pd(m, {
+      uniforms: Object.assign({ uG1: U(col(V.lawn[0])), uG2: U(col(V.lawn[1])), uG3: U(col(V.lawn[2])), uRim: U(rim) }, soilU),
       vdecl: 'attribute float aDepth; varying float vDepth;\n', vertex: 'vDepth = aDepth;',
       fdecl: 'varying float vDepth; uniform float uRim; uniform vec3 uG1; uniform vec3 uG2; uniform vec3 uG3; uniform vec3 uS1; uniform vec3 uS2;\n',
       color: `
         float patch1 = pdFbm(P, 0.16, 2).x, patch2 = pdFbm(P + 7.3, 0.035, 2).x;
         vec3 lawn = mix(uG1, uG2, clamp(0.5 + patch1*0.9, 0.0, 1.0));
         lawn = mix(lawn, uG3, clamp(patch2*1.4, 0.0, 1.0)*0.5);
-        { float pxc = length(fwidth(P)); lawn *= 1.0 + 0.045*pdFbm(P, 1.4, 2).x + 0.03*pdFbm(P, 9.0, 2).x*pdFade(pxc*18.0); vec4 fl = pdCell(P*vec3(70.0, 20.0, 70.0)); lawn *= 1.0 + (fl.w - 0.5)*0.09*smoothstep(0.45, 0.2, length(fl.xyz))*pdFade(pxc*70.0); }
+        { float pxc = length(fwidth(P)); lawn *= 1.0 + 0.045*pdFbm(P, 1.4, 2).x + 0.03*pdFbm(P, 9.0, 2).x*pdFade(pxc*18.0);
+          #ifdef PD_RICH
+          vec4 fl = pdCell(P*vec3(70.0, 20.0, 70.0)); lawn *= 1.0 + (fl.w - 0.5)*0.09*smoothstep(0.45, 0.2, length(fl.xyz))*pdFade(pxc*70.0);
+          #endif
+        }
         vec3 col = lawn;
         // uRim widens the soil edge to match the ground grid: depth is only known at the grid's vertices
         if (vDepth > 0.0003*uRim) {
@@ -129,6 +134,13 @@
         vec4 n1 = pdFbm(P, 2.2, 2); G += n1.yzw*0.012*(1.0 - soilK)*pdFade(px*4.4);
         if (soilK > 0.0) { vec4 n3 = pdFbm(P, 26.0, 2); G += n3.yzw*0.0016*soilK*pdFade(px*52.0); vec4 n6 = pdFbm(P, 7.0, 2); G += n6.yzw*0.004*soilK; }` : null
     });
+  }
+  function buildMaterials() {
+    const soilU = { uS1: U(col(V.soil[0])), uS2: U(col(V.soil[1])) };
+    // ground: plain softly painted lawn; a dug place shows soil with a neat dark rim; deeper down the layer colours
+    // coarse ground is pushed back in depth so the fine boxes (2.5 cm grid, where it was dug) always draw on top of it
+    MAT.terrain = makeTerrain(soilU, Math.max(1, W.LC.VOX / 0.03), true);
+    MAT.terrainFine = makeTerrain(soilU, 1, false);
     MAT.far = std({ vertexColors: true, roughness: 0.95 });
     MAT.soil = pd(std({ roughness: 1 }), { uniforms: soilU, fdecl: 'uniform vec3 uS1; uniform vec3 uS2;\n', color: 'diffuseColor.rgb = mix(uS1, uS2, clamp(0.5 + pdFbm(P, 5.0, 2).x*0.7, 0.0, 1.0));' });
     MAT.soilObj = pd(std({ roughness: 1 }), { space: 'object', uniforms: soilU, fdecl: 'uniform vec3 uS1; uniform vec3 uS2;\n', color: 'diffuseColor.rgb = mix(uS1, uS2, clamp(0.5 + pdFbm(P, 20.0, 2).x*0.7, 0.0, 1.0));', normal: 'vec4 n3 = pdFbm(P, 90.0, 2); G += n3.yzw*0.0006;' });
@@ -255,9 +267,10 @@
     applyQuality();
   }
   function applyQuality() {
-    const hi = quality === 'high';
-    if (gtao) gtao.enabled = hi;
-    if (renderer) renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, hi ? M.maxDpr : 1));
+    if (gtao) gtao.enabled = quality === 'high';
+    // multisampling: x4 on high, x2 on medium, none on fast (phones)
+    if (composer) { const n = Math.min(M.samples, quality === 'high' ? 4 : quality === 'mid' ? 2 : 0); for (const rt of [composer.renderTarget1, composer.renderTarget2]) if (rt.samples !== n) { rt.samples = n; rt.dispose(); } }
+    if (renderer) renderer.setPixelRatio(Math.min(root.devicePixelRatio || 1, quality === 'high' ? M.maxDpr : quality === 'mid' ? Math.min(M.maxDpr, 1.25) : 1));
     Scene.resize();
   }
   Scene.setQuality = q => { quality = q; applyQuality(); };
@@ -277,17 +290,16 @@
   Scene.setSun = function () {};          // the sun is fixed by the region (setRegion)
   Scene.rel = (x, y, z, out) => (out || new T.Vector3()).set(x - O.x, y - O.y, z - O.z);
 
-  // ---------- terrain chunks ----------
+  // ---------- terrain: coarse chunks (0.4 m grid) and fine boxes (2.5 cm grid where it was dug) ----------
   const chunks = new Map();     // key -> { cx, cy, cz, data, mesh }
-  let lastCenter = '', buildQueue = [];
-  function buildMesh(ch) {
-    const m = W.meshChunk(ch.data);
-    if (ch.mesh) { ch.mesh.geometry.dispose(); scene.remove(ch.mesh); ch.mesh = null; }
-    if (!m.idx.length) return;
+  const fines = new Map();      // key -> mesh
+  let lastCenter = '', buildQueue = [], fineScan = 0;
+  function makeMesh(m, bx, by, bz, mat, cast) {
+    if (!m.idx.length) return null;
     const g = new T.BufferGeometry();
     g.setAttribute('position', new T.BufferAttribute(m.pos, 3));
     g.setAttribute('normal', new T.BufferAttribute(m.nrm, 3));
-    const cols = new Float32Array(m.pos.length), bx = ch.cx * W.CH, by = ch.cy * W.CH, bz = ch.cz * W.CH;
+    const cols = new Float32Array(m.pos.length);
     for (let i = 0, n = m.pos.length / 3; i < n; i++) {
       if (m.depth[i] < 0.9) { cols[i * 3] = P.soil.r; cols[i * 3 + 1] = P.soil.g; cols[i * 3 + 2] = P.soil.b; continue; }
       const x = bx + m.pos[i * 3], y = by + m.pos[i * 3 + 1], z = bz + m.pos[i * 3 + 2];
@@ -299,10 +311,20 @@
     g.setAttribute('aDepth', new T.BufferAttribute(m.depth, 1));
     g.setIndex(new T.BufferAttribute(m.idx, 1));
     g.computeBoundingSphere();
-    const mesh = new T.Mesh(g, MAT.terrain);
-    mesh.castShadow = true; mesh.receiveShadow = true;
+    const mesh = new T.Mesh(g, mat);
+    mesh.castShadow = cast; mesh.receiveShadow = true; mesh.userData.base = [bx, by, bz];
     mesh.position.set(bx - O.x, by - O.y, bz - O.z);
-    scene.add(mesh); ch.mesh = mesh;
+    scene.add(mesh); return mesh;
+  }
+  function drop(mesh) { if (mesh) { mesh.geometry.dispose(); scene.remove(mesh); } }
+  function buildMesh(ch) {
+    drop(ch.mesh);
+    ch.mesh = makeMesh(W.meshChunk(ch.data), ch.cx * W.CH, ch.cy * W.CH, ch.cz * W.CH, MAT.terrain, false);
+  }
+  function buildFine(k) {
+    const [a, b, c] = k.split(',').map(Number), F = W.LF.CH;
+    drop(fines.get(k));
+    fines.set(k, makeMesh(W.meshChunk(W.sampleFine(a, b, c)), a * F, b * F, c * F, MAT.terrainFine, true));
   }
   // Decide which chunks should exist around the player; returns how many are still waiting to be built.
   Scene.updateChunks = function (p, budgetMs) {
@@ -318,28 +340,35 @@
         const k = W.key(X, Y, Z); want.add(k);
         if (!chunks.has(k)) list.push({ k, X, Y, Z, dist });
       }
-      for (const [k, ch] of chunks) if (!want.has(k)) { if (ch.mesh) { ch.mesh.geometry.dispose(); scene.remove(ch.mesh); } chunks.delete(k); }
+      for (const [k, ch] of chunks) if (!want.has(k)) { drop(ch.mesh); chunks.delete(k); }
+      // fine boxes: keep those in range, queue the missing ones
+      const F = W.LF.CH, lim = M.load + 4;
+      for (const [k, m] of fines) { const [a, b, c] = k.split(',').map(Number); if (Math.hypot((a + 0.5) * F - p.x, (b + 0.5) * F - p.y, (c + 0.5) * F - p.z) > lim + 6) { drop(m); fines.delete(k); } }
+      for (const k of W.fineSet) if (!fines.has(k)) { const [a, b, c] = k.split(',').map(Number), dist = Math.hypot((a + 0.5) * F - p.x, (b + 0.5) * F - p.y, (c + 0.5) * F - p.z); if (dist < lim) list.push({ k, fine: true, dist: dist * 0.5 }); }
       list.sort((a, b) => a.dist - b.dist); buildQueue = list;
     }
     const t0 = performance.now();
     while (buildQueue.length && performance.now() - t0 < budgetMs) {
-      const q = buildQueue.shift(); if (chunks.has(q.k)) continue;
+      const q = buildQueue.shift();
+      if (q.fine) { if (!fines.has(q.k)) buildFine(q.k); continue; }
+      if (chunks.has(q.k)) continue;
       const ch = { cx: q.X, cy: q.Y, cz: q.Z, data: W.sampleChunk(q.X, q.Y, q.Z), mesh: null };
       chunks.set(q.k, ch); buildMesh(ch);
     }
     return buildQueue.length;
   };
-  // A hole was dug: re-carve and re-mesh the touched chunks right away.
-  Scene.applyHole = function (h, keys) {
-    for (const k of keys) {
+  // A hole was dug: re-mesh what it touched right away. res = { coarse: [keys], fine: [keys] } from World.addHole.
+  Scene.applyHole = function (h, res) {
+    for (const k of res.fine) buildFine(k);
+    for (const k of res.coarse) {
       const ch = chunks.get(k);
-      if (ch) { W.carve(ch.data.d, ch.data.ox, ch.data.oy, ch.data.oz, h); buildMesh(ch); }
-      else { const [X, Y, Z] = k.split(',').map(Number); const c = { cx: X, cy: Y, cz: Z, data: W.sampleChunk(X, Y, Z), mesh: null }; chunks.set(k, c); buildMesh(c); }
+      if (ch) { if (h[3] >= W.BIG) W.carve(ch.data, h); buildMesh(ch); }
+      else if (h[3] >= W.BIG) { const [X, Y, Z] = k.split(',').map(Number); const c = { cx: X, cy: Y, cz: Z, data: W.sampleChunk(X, Y, Z), mesh: null }; chunks.set(k, c); buildMesh(c); }
     }
     Deco.hole(h);
   };
   Scene.chunkCount = () => chunks.size;
-  Scene.resetChunks = function () { for (const ch of chunks.values()) if (ch.mesh) { ch.mesh.geometry.dispose(); scene.remove(ch.mesh); } chunks.clear(); lastCenter = ''; buildQueue = []; };
+  Scene.resetChunks = function () { for (const ch of chunks.values()) drop(ch.mesh); chunks.clear(); for (const m of fines.values()) drop(m); fines.clear(); lastCenter = ''; buildQueue = []; };
 
   // ---------- far terrain (non-diggable ring out to the horizon) ----------
   let far = null, farAnchor = null;
@@ -389,7 +418,7 @@
       const t0 = performance.now(), d = M.detail;
       const mk = (geos, mats, max, cast) => {
         const list = geos.map((g, i) => { if (!g.getAttribute('color')) g.setAttribute('color', new T.BufferAttribute(new Float32Array(g.getAttribute('position').count * 3).fill(1), 3)); const m = new T.InstancedMesh(g, mats[i], max); m.count = 0; m.castShadow = cast; m.receiveShadow = true; m.frustumCulled = false; scene.add(m); return m; });
-        return { meshes: list, n: 0, max };
+        return { meshes: list, n: 0, max, stage: new Float32Array(max * 16), sn: 0 };
       };
       const treeO = (cell, trunkCell) => ({ leafDark: V.leaf[0], leafLight: V.leaf[1], cell, trunkCell });
       // near: smooth sculpts; far: the same shapes sculpted coarsely (a few hundred triangles)
@@ -401,10 +430,10 @@
       const bush = A.bush(4, bo(0.05 * d)), bushF = A.bush(4, bo(0.14)), rock1 = A.rock(1, { cell: 0.045 * d }), rock2 = A.rock(2, { cell: 0.045 * d }), rockF = A.rock(1, { cell: 0.13 });
       this.kinds = {
         treeA: mk([tA.trunk, tA.crown], [MAT.bark, MAT.crown], 400, true), treeB: mk([tB.trunk, tB.crown], [MAT.bark, MAT.crown], 400, true),
-        treeAfar: mk([fA.trunk, fA.crown], [MAT.bark, MAT.crown], 2000, true), treeBfar: mk([fB.trunk, fB.crown], [MAT.bark, MAT.crown], 2000, true),
-        spruce: mk([sp.geo], [MAT.spruce], 400, true), spruceFar: mk([spFar], [MAT.spruceFar], 2500, true),
-        bush: mk([bush], [MAT.crown], 400, true), bushfar: mk([bushF], [MAT.crown], 1500, true),
-        rock1: mk([rock1], [MAT.rock], 300, true), rock2: mk([rock2], [MAT.rock], 300, true), rockfar: mk([rockF], [MAT.rock], 1000, true),
+        treeAfar: mk([fA.trunk, fA.crown], [MAT.bark, MAT.crown], 2000, false), treeBfar: mk([fB.trunk, fB.crown], [MAT.bark, MAT.crown], 2000, false),
+        spruce: mk([sp.geo], [MAT.spruce], 400, true), spruceFar: mk([spFar], [MAT.spruceFar], 2500, false),
+        bush: mk([bush], [MAT.crown], 400, true), bushfar: mk([bushF], [MAT.crown], 1500, false),
+        rock1: mk([rock1], [MAT.rock], 300, true), rock2: mk([rock2], [MAT.rock], 300, true), rockfar: mk([rockF], [MAT.rock], 1000, false),
         tuft0: mk([A.tuft(400, V.tuft)], [MAT.tuft], 5000, M.smallShadow), tuft1: mk([A.tuft(401, V.tuft)], [MAT.tuft], 5000, M.smallShadow),
         peb0: mk([A.pebbleFlat(1)], [MAT.stone], 3000, true), peb1: mk([A.pebbleFlat(2)], [MAT.stone], 3000, true), peb2: mk([A.pebbleFlat(3)], [MAT.stone], 3000, true),
         flW: mk([A.flower('#ffffff')], [MAT.flower], 600, M.smallShadow),
@@ -416,7 +445,7 @@
       console.log('[scene] sculpts built in ' + Math.round(performance.now() - t0) + ' ms');
     },
     // place objects on a fixed 3D lattice sliced by the sea-level sphere, so they never move as you walk
-    scatter(p, radius, cell, fn) {
+    *scatter(p, radius, cell, fn) {
       const u = p.clone().normalize(), e1 = new T.Vector3().crossVectors(Math.abs(u.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0), u).normalize(), e2 = new T.Vector3().crossVectors(u, e1);
       const seen = new Set(), step = cell * 0.5, n = Math.ceil(radius / step), b = u.clone().multiplyScalar(W.R);
       for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) {
@@ -425,31 +454,36 @@
         const l = Math.hypot(x, y, z), sx = x / l * W.R, sy = y / l * W.R, sz = z / l * W.R;
         const X = Math.floor(sx / cell), Y = Math.floor(sy / cell), Z = Math.floor(sz / cell), k = X + ',' + Y + ',' + Z;
         if (seen.has(k)) continue; seen.add(k); fn(X, Y, Z);
+        if ((j & 7) === 0) yield;
       }
     },
     _m: new T.Matrix4(), _q: new T.Quaternion(), _q2: new T.Quaternion(), _u: v3(0, 0, 0),
     add(kind, x, y, z, s, yaw, tilt, list) {
-      const K = this.kinds[kind]; if (K.n >= K.max) return;
+      const K = this.kinds[kind]; if (K.sn >= K.max) return;
       const l = Math.hypot(x, y, z); this._u.set(x / l, y / l, z / l);
       const q = this._q.setFromUnitVectors(Y_AX, this._u).multiply(this._q2.setFromAxisAngle(Y_AX, yaw));
       if (tilt) q.multiply(this._q2.setFromAxisAngle(X_AX, tilt));
       this._m.compose(v3(x - O.x, y - O.y, z - O.z), q, v3(s, s, s));
-      for (const m of K.meshes) m.setMatrixAt(K.n, this._m);
-      list.push([K, K.n, x, y, z]); K.n++;
+      this._m.toArray(K.stage, K.sn * 16);
+      list.push([K, K.sn, x, y, z]); K.sn++;
     },
-    finish(names) { for (const k of names) { const K = this.kinds[k]; for (const m of K.meshes) { m.count = K.n; m.instanceMatrix.needsUpdate = true; } } },
-    update(p, force) {
-      if (force || !this.anchor || this.anchor.distanceTo(p) > 30) this.placeBig(p);
-      if (force || !this.grassAnchor || this.grassAnchor.distanceTo(p) > M.grassR * 0.22) this.placeSmall(p);
+    // placement runs a little every frame (no hitches); the new layout replaces the old one when it is complete
+    finish(names) { for (const k of names) { const K = this.kinds[k]; K.n = K.sn; for (const m of K.meshes) { m.instanceMatrix.array.set(K.stage.subarray(0, K.sn * 16)); m.count = K.n; m.instanceMatrix.needsUpdate = true; } } },
+    jobs: {},
+    update(p, force, budgetMs) {
+      if (force || (!this.jobs.big && (!this.anchor || this.anchor.distanceTo(p) > 30))) { this.anchor = p.clone(); this.jobs.big = this.placeBig(p.clone()); }
+      if (force || (!this.jobs.small && (!this.grassAnchor || this.grassAnchor.distanceTo(p) > M.grassR * 0.22))) { this.grassAnchor = p.clone(); this.jobs.small = this.placeSmall(p.clone()); }
+      const t0 = performance.now(), budget = force ? 1e9 : (budgetMs || 3);
+      for (const name of ['small', 'big']) { const j = this.jobs[name]; if (!j) continue; while (performance.now() - t0 < budget) { if (j.next().done) { this.jobs[name] = null; break; } } }
     },
     alive(x, y, z) {   // ground still there under this point (not dug away)?
       const l = Math.hypot(x, y, z);
       return W.solid(x - x / l * 0.15, y - y / l * 0.15, z - z / l * 0.15) > 0 && W.solid(x + x / l * 0.25, y + y / l * 0.25, z + z / l * 0.25) < 0;
     },
-    placeBig(p) {
-      this.anchor = p.clone(); for (const k of this.big) this.kinds[k].n = 0; this.bigItems = [];
+    *placeBig(p) {
+      for (const k of this.big) this.kinds[k].sn = 0; const items = [];
       const spawn = Scene.spawnPoint, near2 = M.nearR * M.nearR;
-      this.scatter(p, M.treeR, 9, (X, Y, Z) => {
+      yield* this.scatter(p, M.treeR, 9, (X, Y, Z) => {
         const r = W.hash01(X, Y, Z), jx = W.hash01(X, Y, Z + 7), jy = W.hash01(X + 3, Y, Z), jz = W.hash01(X, Y + 5, Z);
         let x = (X + jx) * 9, y = (Y + jy) * 9, z = (Z + jz) * 9; const l = Math.hypot(x, y, z);
         const forest = W.noise(x / 260, y / 260, z / 260, 77) + 0.05;
@@ -466,14 +500,14 @@
         } else if (r > 0.935) { kind = near ? 'bush' : 'bushfar'; sc = 0.9 + s * 0.4; }
         else if (r > 0.91) { kind = near ? (r > 0.922 ? 'rock1' : 'rock2') : 'rockfar'; sc = 0.4 + s * 0.6; }
         if (!kind) return;
-        this.add(kind, x, y, z, sc, yaw, 0, this.bigItems);
+        this.add(kind, x, y, z, sc, yaw, 0, items);
       });
-      this.finish(this.big);
+      this.finish(this.big); this.bigItems = items;
     },
-    placeSmall(p) {
-      this.grassAnchor = p.clone(); for (const k of this.small) this.kinds[k].n = 0; this.smallItems = [];
+    *placeSmall(p) {
+      for (const k of this.small) this.kinds[k].sn = 0; const items = [];
       const fl = ['flW', 'flW', 'flY', 'flV'];
-      this.scatter(p, M.grassR, 0.6, (X, Y, Z) => {
+      yield* this.scatter(p, M.grassR, 0.6, (X, Y, Z) => {
         const r = W.hash01(X, Y, Z); if (r > 0.42) return;
         let x = (X + W.hash01(X, Y, Z + 7)) * 0.6, y = (Y + W.hash01(X + 3, Y, Z)) * 0.6, z = (Z + W.hash01(X, Y + 5, Z)) * 0.6;
         const l = Math.hypot(x, y, z), h = W.heightDir(x / l, y / l, z / l); if (h > 215) return;
@@ -487,16 +521,16 @@
         const patch = W.noise(x / 4, y / 4, z / 4, 19);
         if (r < 0.16) {   // a chunky tuft (in loose patches)
           if (patch < -0.05) return;
-          this.add(r2 < 0.5 ? 'tuft0' : 'tuft1', x - ux * 0.004, y - uy * 0.004, z - uz * 0.004, 0.8 + r3 * 0.7, yaw, (r2 - 0.5) * 0.1, this.smallItems);
+          this.add(r2 < 0.5 ? 'tuft0' : 'tuft1', x - ux * 0.004, y - uy * 0.004, z - uz * 0.004, 0.8 + r3 * 0.7, yaw, (r2 - 0.5) * 0.1, items);
         } else if (r < 0.36) {   // a flat faceted pebble, sometimes with a smaller one next to it
           const big = 0.016 + r3 * 0.034 + (r2 < 0.03 ? 0.05 : 0), k = 'peb' + (Math.floor(r2 * 3) % 3);
-          this.add(k, x + ux * big * 0.08, y + uy * big * 0.08, z + uz * big * 0.08, big, yaw, (r3 - 0.5) * 0.25, this.smallItems);
-          if (r3 < 0.4) { const o = 0.12, sx = x + (r2 - 0.5) * o, sz = z + (r3 - 0.2) * o; this.add('peb' + ((Math.floor(r2 * 3) + 1) % 3), sx, y, sz, big * 0.5, yaw * 1.7, 0, this.smallItems); }
+          this.add(k, x + ux * big * 0.08, y + uy * big * 0.08, z + uz * big * 0.08, big, yaw, (r3 - 0.5) * 0.25, items);
+          if (r3 < 0.4) { const o = 0.12, sx = x + (r2 - 0.5) * o, sz = z + (r3 - 0.2) * o; this.add('peb' + ((Math.floor(r2 * 3) + 1) % 3), sx, y, sz, big * 0.5, yaw * 1.7, 0, items); }
         } else if (r > 0.405 && patch > 0.1) {   // a few flowers in drifts
-          this.add(fl[Math.floor(r3 * 4)], x - ux * 0.004, y - uy * 0.004, z - uz * 0.004, 0.85 + r2 * 0.5, yaw, (r3 - 0.5) * 0.25, this.smallItems);
+          this.add(fl[Math.floor(r3 * 4)], x - ux * 0.004, y - uy * 0.004, z - uz * 0.004, 0.85 + r2 * 0.5, yaw, (r3 - 0.5) * 0.25, items);
         }
       });
-      this.finish(this.small);
+      this.finish(this.small); this.smallItems = items;
     },
     hole(h) {   // hide anything whose base was dug out
       const zero = new T.Matrix4().makeScale(0, 0, 0);
@@ -509,33 +543,53 @@
     }
   };
   const Y_AX = v3(0, 1, 0), X_AX = v3(1, 0, 0);
-  Scene.updateDeco = (p, force) => Deco.update(p, force);
+  Scene.updateDeco = (p, force, budget) => Deco.update(p, force, budget);
   Scene._deco = Deco;
   Scene.buildClouds = function () {};     // the chosen look has a clear sky with the moon instead of clouds
 
-  // ---------- the worksite at the start: depot (where the soil is handed in), van, bollards, bucket ----------
+  // ---------- the first base at the start: a wooden shack and the bin where soil is handed in ----------
   // Positions are in the local frame: x right, z back (the player first looks toward -z).
-  Scene.addProps = function () {
+  // Nothing can be dug under them (World.blockers) and the player can't walk through them.
+  function signTexture(lines) {
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d');
+    c.fillStyle = '#f3e7cf'; c.fillRect(0, 0, 512, 256); c.fillStyle = 'rgba(120,80,40,.08)'; for (let i = 0; i < 8; i++) c.fillRect(0, i * 32 + 6, 512, 4);
+    c.strokeStyle = '#7a5234'; c.lineWidth = 14; c.strokeRect(7, 7, 498, 242);
+    c.textAlign = 'center'; c.fillStyle = '#c4561a'; c.font = 'bold 66px "Nunito", "Arial Rounded MT Bold", sans-serif'; c.fillText(lines[0], 256, 112);
+    c.fillStyle = '#4a2c14'; c.font = 'bold 42px "Nunito", sans-serif'; c.fillText(lines[1], 256, 186);
+    const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4; return tex;
+  }
+  Scene.addProps = function (labels) {
     const g = new T.Group(); g.position.set(anchor.x - O.x, anchor.y - O.y, anchor.z - O.z);
     g.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(LX, LY, LZ));
     const groundAt = (lx, lz) => { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz), l = w.length(); return W.heightDir(w.x / l, w.y / l, w.z / l); };
-    const place = (obj, lx, lz, yaw, sink, r) => {
+    const worldAt = (lx, ly, lz) => anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).addScaledVector(LY, ly);
+    const block = (lx, lz, r, solidR) => { const w = worldAt(lx, groundAt(lx, lz), lz); W.blockers.push([w.x, w.y, w.z, r, solidR === undefined ? r : solidR]); blocked.push([w.x, w.y, w.z, r + 0.3]); };
+    const place = (obj, lx, lz, yaw, sink) => {
+      // sit on the lowest ground under the footprint so nothing floats
       obj.position.set(lx, groundAt(lx, lz) - (sink || 0), lz); obj.rotation.y = yaw || 0; g.add(obj);
       obj.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-      if (r) { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).addScaledVector(LY, groundAt(lx, lz)); blocked.push([w.x, w.y, w.z, r]); }
       return obj;
     };
-    place(new T.Mesh(A.depot(), MAT.paint), -7.4, -20.4, 0.42, 0.04, 3.4); blocked.push(blockedAt(-9.8, -18.8, 1.4, groundAt));
-    const van = A.van(), vg = new T.Group(); for (const geo of [van.body, van.extras]) vg.add(new T.Mesh(geo, MAT.paint));
-    place(vg, -0.9, -17.2, 2.25, 0.02, 2.5);
-    const parts = [A.colorize(new T.CapsuleGeometry(0.07, 0.5, 6, 18).translate(0, 0.3, 0), col('#e9e8e4')), A.colorize(new T.CylinderGeometry(0.074, 0.074, 0.1, 18).translate(0, 0.52, 0), col('#f08a24')), A.colorize(new T.CylinderGeometry(0.1, 0.11, 0.05, 18).translate(0, 0.025, 0), col('#2b3442'))];
-    const bollard = A.merge(parts);
-    for (let i = 0; i < 7; i++) { const t = i / 6, x = -3.55 + (-8.5 + 3.55) * t - 0.15 * Math.sin(t * 3.1), z = -3.4 + (-13.8 + 3.4) * t; place(new T.Mesh(bollard, MAT.paint), x, z, 0, 0, 0.16); }
-    const b = A.bucket(), bg = new T.Group(), body = new T.Mesh(b.body, MAT.bucket), soil = new T.Mesh(b.soil, MAT.soilObj); bg.add(body, soil);
-    place(bg, 0.55, -2.3, 0.6, 0.004, 0.15); Scene.bucket = { group: bg, soil };
+    const wood = pd(std({ vertexColors: true, roughness: 0.82 }), { space: 'object', color: 'diffuseColor.rgb *= 0.88 + 0.2*pdFbm(P*vec3(1.0, 9.0, 1.0), 6.0, 2).x;' });
+    const metal = std({ vertexColors: true, roughness: 0.45, metalness: 0.55 }), glass = new T.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.08, metalness: 0, clearcoat: 1 });
+    // the shack, a little to the left, its door toward the start point
+    const sh = A.shack(), shg = new T.Group(); shg.add(new T.Mesh(sh.wood, wood), new T.Mesh(sh.metal, metal), new T.Mesh(sh.glass, glass));
+    const SX = -4.2, SZ = -7.5, SY = 0.55;
+    const c0 = Math.cos(SY), s0 = Math.sin(SY), sink = Math.max(...[[-1.6, -1.3], [1.6, -1.3], [-1.6, 1.3], [1.6, 1.3]].map(([a, b2]) => groundAt(SX, SZ) - groundAt(SX + a * c0 + b2 * s0, SZ - a * s0 + b2 * c0)));
+    place(shg, SX, SZ, SY, Math.max(0.05, sink + 0.05));
+    // a sign over the door
+    const signM = new T.MeshStandardMaterial({ map: signTexture(labels.sign), roughness: 0.8 });
+    const sign = new T.Mesh(new T.PlaneGeometry(1.0, 0.5), signM); sign.position.set(0.92, 2.06, 1.27); shg.add(sign);
+    block(SX, SZ, 1.75, 1.6);
+    // the soil bin next to the door, with a pile that grows as soil is handed in
+    const bin = new T.Group(); bin.add(new T.Mesh(A.bin(), wood));
+    const pile = new T.Mesh(new T.SphereGeometry(0.5, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), MAT.soil); pile.scale.set(0.98, 0.05, 0.6); pile.position.y = 0.1; bin.add(pile);
+    const BX = SX + 2.1, BZ = SZ + 1.3; place(bin, BX, BZ, SY, 0.03);
+    block(BX, BZ, 0.75, 0.65);
+    Scene.drop = { point: worldAt(BX, groundAt(BX, BZ) + 0.5, BZ), pile, fill: 0 };
     scene.add(g); Scene.props = g;
   };
-  function blockedAt(lx, lz, r, groundAt) { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).addScaledVector(LY, groundAt(lx, lz)); return [w.x, w.y, w.z, r]; }
+  Scene.setPile = function (k) { const d = Scene.drop; if (!d) return; d.fill = Math.min(1, k); d.pile.scale.y = 0.05 + d.fill * 0.9; d.pile.position.y = 0.1 + d.fill * 0.25; };
 
   // ---------- particles: dirt clods and dust ----------
   const Particles = {
@@ -598,7 +652,7 @@
   // ---------- first-person bare hand gripping a spoon ----------
   // hold: pivot in camera space (moves for the scoop stroke); hand: the sculpt in its approved look-dev pose
   const Hand = {
-    full: false, bob: 0,
+    full: false, bob: 0, tip: 0,
     build() {
       const t0 = performance.now(), sp = A.spoon(M.detail), pal = V.pal;
       const skin = new T.Mesh(A.glove(pal, M.detail), MAT.skin), sleeve = new T.Mesh(A.sleeve(pal), MAT.sleeve), spoon = new T.Mesh(sp.spoon, MAT.steel), soil = new T.Mesh(sp.soil, MAT.soilObj);
@@ -610,8 +664,15 @@
       this.hand.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(s, u, h.clone().negate()));
       this.base = v3(0.185, -0.160, -0.45);
       Shadow.build(skin.geometry, spoon.geometry, this.hand.quaternion);
+      // the bucket, held low on the left; its soil rises as it fills
+      const b = A.bucket(); this.bucket = new T.Group();
+      const bb = new T.Mesh(b.body, MAT.bucket), bs = new T.Mesh(b.soil, MAT.soilObj); bs.position.y = -0.158; this.bucketSoil = bs;
+      this.bucket.add(bb, bs); this.bucket.position.set(-0.36, -0.40, -0.62); this.bucket.rotation.set(0.42, 0.5, 0.1); this.bucket.scale.setScalar(0.95);
+      for (const m of [bb, bs]) m.frustumCulled = false;
+      handCam.add(this.bucket); this.setFill(0);
       console.log('[scene] hand built in ' + Math.round(performance.now() - t0) + ' ms');
     },
+    setFill(k) { this.fill = k; this.bucketSoil.visible = k > 0.01; this.bucketSoil.position.y = -0.155 + k * 0.155; this.bucketSoil.scale.setScalar(0.86 + 0.14 * k); },
     // the scoop stroke as keyframes over its progress k: [k, dx, dy, dz, rotation about camera x]
     KEYS: [[0, 0, 0, 0, 0], [0.3, 0.005, 0.035, 0.02, 0.32], [0.48, -0.02, -0.09, -0.15, -0.75], [0.62, -0.015, -0.07, -0.12, -0.55], [0.8, -0.005, -0.02, -0.04, 0.3], [1, 0, 0, 0, 0]],
     update(k, walk, t, dt, look) {
@@ -627,9 +688,12 @@
       this.hold.position.set(this.base.x + bx + sw.x + dx, this.base.y + by + sw.y + dy, this.base.z + dz);
       this.hold.rotation.set(rx, 0, 0);
       this.soil.visible = this.full;
+      this.bucket.position.set(-0.36 + bx * 0.6 + sw.x, -0.40 + by * 1.2 + sw.y + this.tip * 0.08, -0.62 - this.tip * 0.05); this.bucket.rotation.z = 0.12 - this.tip * 0.9;
     }
   };
   Scene.setSpoonFull = on => { Hand.full = !!on; };
+  Scene.setBucket = k => Hand.setFill(Math.max(0, Math.min(1, k)));
+  Scene.setTip = k => { Hand.tip = k; };   // 0..1: tipping the bucket out at the bin
   Scene.setTool = function () {};
   Scene._hand = Hand;
 
@@ -639,11 +703,15 @@
     build(handGeo, spoonGeo, handQ) {
       const mat = MAT.shadowOnly, add = (parent, m) => { m.castShadow = true; m.frustumCulled = false; parent.add(m); };
       const cap = (rad, a, b) => { const m = new T.Mesh(new T.CapsuleGeometry(rad, a.distanceTo(b), 4, 12), mat); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Y_AX, b.clone().sub(a).normalize()); add(this.body, m); };
-      cap(0.09, v3(-0.11, 0.1, 0), v3(-0.1, 0.9, 0)); cap(0.09, v3(0.11, 0.1, 0), v3(0.1, 0.9, 0)); cap(0.2, v3(0, 1.02, 0), v3(0, 1.34, 0));
-      cap(0.075, v3(-0.25, 1.42, 0), v3(-0.31, 0.98, 0.02)); cap(0.08, v3(0.25, 1.42, 0), v3(0.39, 1.16, 0.09));
-      const sph = (r, x, y, z, w) => { const m = new T.Mesh(new T.SphereGeometry(r, 16, 12, 0, 6.2832, 0, w || 3.1416), mat); m.position.set(x, y, z); add(this.body, m); };
-      sph(0.125, 0, 1.63, 0.03); sph(0.165, 0, 1.66, 0.03, 1.7); sph(0.05, 0, 1.75, -0.15);
-      const brim = new T.Mesh(new T.CylinderGeometry(0.215, 0.215, 0.03, 22), mat); brim.position.set(0, 1.665, -0.03); add(this.body, brim);
+      // an ordinary person in work clothes: legs, hips, torso, shoulders, arms (right one reaching forward with the spoon,
+      // left one down holding the bucket), neck and head
+      cap(0.07, v3(-0.1, 0.08, 0), v3(-0.1, 0.86, 0)); cap(0.07, v3(0.1, 0.08, 0), v3(0.1, 0.86, 0));
+      cap(0.15, v3(0, 0.98, 0), v3(0, 1.12, 0)); cap(0.165, v3(0, 1.16, 0), v3(0, 1.3, 0));
+      cap(0.075, v3(-0.17, 1.4, 0), v3(0.17, 1.4, 0));
+      cap(0.05, v3(-0.23, 1.38, 0), v3(-0.27, 0.88, 0.02)); cap(0.05, v3(0.23, 1.38, 0), v3(0.33, 1.12, -0.2));
+      cap(0.045, v3(0, 1.45, 0), v3(0, 1.53, 0));
+      const head = new T.Mesh(new T.SphereGeometry(1, 16, 12), mat); head.scale.set(0.095, 0.12, 0.105); head.position.set(0, 1.64, 0); add(this.body, head);
+      const bucket = new T.Mesh(new T.CylinderGeometry(0.12, 0.09, 0.22, 16), mat); bucket.position.set(-0.29, 0.72, 0.03); add(this.body, bucket);
       const hd = new T.Group(); hd.quaternion.copy(handQ); add(hd, new T.Mesh(handGeo, mat)); add(hd, new T.Mesh(spoonGeo, mat)); this.hold.add(hd);
       this.group.add(this.body); scene.add(this.group); camera.add(this.hold);
     },
@@ -675,11 +743,17 @@
     O.set(Math.round(p.x), Math.round(p.y), Math.round(p.z));
     uOff.value.copy(O).sub(anchor);
     for (const ch of chunks.values()) if (ch.mesh) ch.mesh.position.set(ch.cx * W.CH - O.x, ch.cy * W.CH - O.y, ch.cz * W.CH - O.z);
+    for (const m of fines.values()) if (m) { const b = m.userData.base; m.position.set(b[0] - O.x, b[1] - O.y, b[2] - O.z); }
     if (Scene.props) Scene.props.position.set(anchor.x - O.x, anchor.y - O.y, anchor.z - O.z);
     Scene.updateFar(p, true); Deco.update(p, true);
   };
   Scene.setOrigin = function (p) { O.set(Math.round(p.x), Math.round(p.y), Math.round(p.z)); uOff.value.copy(O).sub(anchor); };
   Scene.renderer = () => renderer;
+  // compile every shader up front (in parallel where the browser can), so the first frames don't stall
+  Scene.compile = function () {
+    if (!renderer.compileAsync) return Promise.resolve();
+    return Promise.all([renderer.compileAsync(scene, camera), renderer.compileAsync(handScene, handCam)]);
+  };
 
   root.Scene = Scene;
 })(window);

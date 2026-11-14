@@ -374,5 +374,71 @@
     return { body, extras: merge(parts) };
   };
 
+
+  // =====================================================================================
+  // The first base: a small wooden shack with a lean-to tin roof, and the wooden bin where soil is handed in.
+  // Front (door) faces +Z. Returns { wood, metal, glass } geometries (vertex coloured).
+  // =====================================================================================
+  A.shack = function () {
+    const wood = [], metal = [], glass = [], r = S.rng(31);
+    const planksA = [C('#b9824a'), C('#a8733f'), C('#c48d55')], dark = C('#7a5234'), frame = C('#e9e3d6');
+    const box = (list, w, h, d, x, y, z, c, rad, rx, ry, rz) => { const g = new T.RoundedBoxGeometry(w, h, d, 2, rad === undefined ? 0.015 : rad); if (rx) g.rotateX(rx); if (ry) g.rotateY(ry); if (rz) g.rotateZ(rz); g.translate(x, y, z); list.push(colorize(g, c)); };
+    const W = 3.0, D = 2.4, H0 = 0.25, Hf = 2.35, Hb = 1.95;           // width, depth, floor height, front and back wall heights
+    // stilts and floor
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(wood, 0.16, 0.4, 0.16, sx * (W / 2 - 0.12), 0.1, sz * (D / 2 - 0.12), dark, 0.02);
+    box(wood, W + 0.3, 0.1, D + 0.25, 0, H0, 0.05, C('#94653a'), 0.02);
+    // walls of vertical planks (front and back), horizontal boards on the sides
+    const pw = 0.2, n = Math.round(W / pw);
+    for (let i = 0; i < n; i++) {
+      const x = -W / 2 + pw * (i + 0.5), c = planksA[Math.floor(r() * 3)];
+      const doorGap = x > -0.55 && x < 0.35, winGap = x > 0.6 && x < 1.25;
+      if (!doorGap) {
+        if (winGap) { box(wood, pw - 0.012, 0.75, 0.06, x, H0 + 0.42, D / 2, c); box(wood, pw - 0.012, Hf - 1.6, 0.06, x, H0 + 1.55 + (Hf - 1.6) / 2 - 0.05, D / 2, c); }
+        else box(wood, pw - 0.012, Hf - H0 + 0.05 * (r() - 0.5), 0.06, x, (H0 + Hf) / 2, D / 2, c);
+      } else box(wood, pw - 0.012, Hf - 2.2, 0.06, x, Hf - (Hf - 2.2) / 2 + 0.02, D / 2, c);
+      const hb = Hb - H0 + 0.05 * (r() - 0.5); box(wood, pw - 0.012, hb, 0.06, x, H0 + hb / 2, -D / 2, planksA[Math.floor(r() * 3)]);
+    }
+    for (const sx of [-1, 1]) for (let y = H0 + 0.1; y < Hf; y += 0.22) {
+      const t = (y - H0) / (Hf - H0), len = D;
+      if (y > Hb + (Hf - Hb) * 0.5 && y > Hb) { const cut = (y - Hb) / (Hf - Hb); box(wood, 0.06, 0.2, len * (1 - cut) + 0.02, sx * W / 2, y, D / 2 - len * (1 - cut) / 2, planksA[Math.floor(r() * 3)]); }
+      else box(wood, 0.06, 0.2, len + 0.02, sx * W / 2, y, 0, planksA[Math.floor(r() * 3)]);
+    }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(wood, 0.12, (sz > 0 ? Hf : Hb) - H0 + 0.05, 0.12, sx * W / 2, H0 + ((sz > 0 ? Hf : Hb) - H0) / 2, sz * D / 2, dark, 0.02);
+    // door: planks with a Z brace, a round handle
+    for (let i = 0; i < 4; i++) box(wood, 0.21, 1.9, 0.05, -0.43 + i * 0.22, H0 + 0.97, D / 2 + 0.02, C('#8f5e34'));
+    box(wood, 0.86, 0.1, 0.04, -0.1, H0 + 0.35, D / 2 + 0.06, dark); box(wood, 0.86, 0.1, 0.04, -0.1, H0 + 1.6, D / 2 + 0.06, dark);
+    box(wood, 0.1, 1.42, 0.04, -0.1, H0 + 0.97, D / 2 + 0.06, dark, 0.015, 0, 0, 0.62);
+    { const g = new T.SphereGeometry(0.04, 14, 10); g.translate(0.22, H0 + 1.0, D / 2 + 0.1); metal.push(colorize(g, C('#3b4048'))); }
+    // window: light frame, blue glass, a cross bar, little shutters
+    box(wood, 0.74, 0.07, 0.08, 0.92, H0 + 0.81, D / 2 + 0.02, frame); box(wood, 0.74, 0.07, 0.08, 0.92, H0 + 1.52, D / 2 + 0.02, frame);
+    box(wood, 0.07, 0.75, 0.08, 0.58, H0 + 1.165, D / 2 + 0.02, frame); box(wood, 0.07, 0.75, 0.08, 1.26, H0 + 1.165, D / 2 + 0.02, frame);
+    box(wood, 0.04, 0.68, 0.06, 0.92, H0 + 1.165, D / 2 + 0.03, frame); box(wood, 0.62, 0.04, 0.06, 0.92, H0 + 1.165, D / 2 + 0.03, frame);
+    box(glass, 0.62, 0.66, 0.02, 0.92, H0 + 1.165, D / 2 - 0.005, C('#5aa6e8'), 0.005);
+    box(wood, 0.3, 0.8, 0.04, 0.38, H0 + 1.165, D / 2 + 0.05, C('#f08a24')); box(wood, 0.3, 0.8, 0.04, 1.46, H0 + 1.165, D / 2 + 0.05, C('#f08a24'));
+    // lean-to roof of corrugated tin, overhanging, sloping to the back
+    { const rw = W + 0.5, rd = D + 0.7, nx = 64, nz = 2, pos = [], idx = [], slope = Math.atan2(Hf - Hb, D);
+      for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const x = -rw / 2 + rw * i / nx, z = rd / 2 - rd * j / nz; pos.push(x, 0.025 * Math.sin(i / nx * rw / 0.13 * Math.PI * 2) + 0.025, z); }
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const a = j * (nx + 1) + i, b = a + nx + 1; idx.push(a, a + 1, b, a + 1, b + 1, b); }
+      const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+      const thick = g.clone(); thick.translate(0, -0.012, 0); const ti = thick.getIndex().array; for (let k = 0; k < ti.length; k += 3) { const t2 = ti[k + 1]; ti[k + 1] = ti[k + 2]; ti[k + 2] = t2; } thick.computeVertexNormals();
+      for (const gg of [g, thick]) { gg.rotateX(slope); gg.translate(0, (Hf + Hb) / 2 + 0.06, 0.05); metal.push(colorize(gg, C('#9fb3bf'))); }
+      box(wood, W + 0.2, 0.1, 0.12, 0, Hf + 0.02, D / 2, dark); box(wood, W + 0.2, 0.1, 0.12, 0, Hb + 0.02, -D / 2, dark); }
+    // stove pipe with a little cap
+    { const g = new T.CylinderGeometry(0.07, 0.07, 1.1, 18); g.translate(-1.0, Hf + 0.35, -0.5); metal.push(colorize(g, C('#59616b')));
+      const c2 = new T.ConeGeometry(0.15, 0.12, 18); c2.translate(-1.0, Hf + 0.98, -0.5); metal.push(colorize(c2, C('#59616b'))); }
+    // a step at the door
+    box(wood, 1.0, 0.12, 0.45, -0.1, 0.12, D / 2 + 0.38, C('#94653a'), 0.02);
+    return { wood: merge(wood), metal: merge(metal), glass: merge(glass), size: [W + 0.5, Hf + 1.1, D + 0.9] };
+  };
+  // the wooden bin where the dug soil is handed in (open top, 1.1 x 0.7 x 0.75)
+  A.bin = function () {
+    const parts = [], c1 = C('#c48d55'), c2 = C('#a8733f'), dark = C('#7a5234');
+    const box = (w, h, d, x, y, z, c) => { const g = new T.RoundedBoxGeometry(w, h, d, 2, 0.012); g.translate(x, y, z); parts.push(colorize(g, c)); };
+    for (let i = 0; i < 4; i++) { const y = 0.12 + i * 0.17, c = i % 2 ? c1 : c2; box(1.1, 0.15, 0.04, 0, y, 0.33, c); box(1.1, 0.15, 0.04, 0, y, -0.33, c); box(0.04, 0.15, 0.7, 0.53, y, 0, c); box(0.04, 0.15, 0.7, -0.53, y, 0, c); }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(0.08, 0.78, 0.08, sx * 0.53, 0.39, sz * 0.33, dark);
+    box(1.06, 0.04, 0.66, 0, 0.05, 0, dark);
+    return merge(parts);
+  };
+
   root.Assets = A;
 })(window);

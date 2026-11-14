@@ -1,17 +1,14 @@
 // The planet: a 1:1 Earth-sized sphere (radius 6 371 km) of diggable ground.
 // Ground is a density field in planet-centred metres (doubles): solid > 0, air < 0.
 //   solid(p) = R + h(dir(p)) - |p|, minus every dug sphere (CSG subtraction).
-// Near the player the field is sampled on a 0.4 m grid in chunks and turned into a smooth mesh (surface nets),
-// so digging leaves round holes, not cubes. Works anywhere on the sphere: chunks are axis-aligned in planet space.
+// Two grids turn the field into smooth meshes (surface nets):
+//   - coarse: 0.4 m cells in 9.6 m chunks, everywhere around the player (and big holes);
+//   - fine: 2.5 cm cells in 0.8 m boxes, only where small holes were dug (spoon-sized). Coarse quads inside fine boxes
+//     are left out, the fine mesh draws there instead.
 'use strict';
 (function (root) {
   const R = 6371000;            // planet radius, m
-  const VOX = 0.4;              // voxel size, m
-  const N = 24;                 // voxels per chunk side
-  const CH = VOX * N;           // chunk size, m (9.6)
-  const S = N + 2;              // samples per side (one extra each way for seamless edges)
-  const HL = 4;                 // height lattice step, in voxels (height is interpolated between lattice points)
-  const HS = Math.floor((S - 1) / HL) + 2;
+  const BIG = 0.15;             // holes at least this big are carved into the coarse grid too
 
   // ---------- noise ----------
   function ihash(x, y, z) {
@@ -36,37 +33,54 @@
   }
 
   // ---------- terrain height above sea level (sea level = R) ----------
-  // q = point on the sea-level sphere (metres). Rolling meadows, hills and far mountains.
+  // Gentle steppe-like relief for now (real relief comes from elevation data later).
   function height(qx, qy, qz) {
-    const m = noise(qx / 6000, qy / 6000, qz / 6000, 11);                       // where the mountains are
-    const mount = Math.max(0, m + 0.15) * 260;
-    const hills = noise(qx / 700, qy / 700, qz / 700, 23) * 22 + noise(qx / 180, qy / 180, qz / 180, 37) * 5;
-    const bumps = noise(qx / 35, qy / 35, qz / 35, 41) * 0.9 + noise(qx / 9, qy / 9, qz / 9, 53) * 0.18;
-    return 60 + mount + hills + bumps;
+    const m = noise(qx / 6000, qy / 6000, qz / 6000, 11);
+    const mount = Math.max(0, m + 0.15) * 45;
+    const hills = noise(qx / 700, qy / 700, qz / 700, 23) * 8 + noise(qx / 180, qy / 180, qz / 180, 37) * 2.5;
+    const bumps = noise(qx / 35, qy / 35, qz / 35, 41) * 0.5 + noise(qx / 9, qy / 9, qz / 9, 53) * 0.12;
+    return 90 + mount + hills + bumps;
   }
   function heightDir(dx, dy, dz) { return height(dx * R, dy * R, dz * R); }
   function heightAt(px, py, pz) { const l = Math.hypot(px, py, pz); return heightDir(px / l, py / l, pz / l); }
 
-  // ---------- dug holes ----------
-  // Every dig is a sphere [x, y, z, r] in planet metres. Indexed by chunk so lookups stay cheap.
-  const holes = [];                 // all holes in order (for saving)
-  const holeIndex = new Map();      // chunkKey -> [hole, ...]
+  // ---------- grid levels ----------
+  function level(vox, n) { const L = { VOX: vox, N: n, CH: vox * n, S: n + 2, HL: 4 }; L.HS = Math.floor((L.S - 1) / L.HL) + 2; return L; }
+  const LC = level(0.4, 24), LF = level(0.025, 32), FPC = 12;       // coarse 9.6 m chunks, fine 0.8 m boxes (12 per coarse chunk side)
+  const VOX = LC.VOX, N = LC.N, CH = LC.CH, S = LC.S;
   const key = (cx, cy, cz) => cx + ',' + cy + ',' + cz;
-  function chunksTouching(x, y, z, r) {
-    const pad = r + VOX * 2, out = [];
-    const x0 = Math.floor((x - pad) / CH), x1 = Math.floor((x + pad) / CH);
-    const y0 = Math.floor((y - pad) / CH), y1 = Math.floor((y + pad) / CH);
-    const z0 = Math.floor((z - pad) / CH), z1 = Math.floor((z + pad) / CH);
-    for (let a = x0; a <= x1; a++) for (let b = y0; b <= y1; b++) for (let c = z0; c <= z1; c++) out.push([a, b, c]);
+
+  // ---------- dug holes ----------
+  // Every dig is a sphere [x, y, z, r] in planet metres, indexed by coarse chunk so lookups stay cheap.
+  const holes = [];
+  const holeIndex = new Map();      // coarse chunk key -> [hole, ...]
+  const fineSet = new Set();        // fine box keys that exist
+  function boxesTouching(L, x, y, z, pad) {
+    const out = [], c = L.CH;
+    const x0 = Math.floor((x - pad) / c), x1 = Math.floor((x + pad) / c), y0 = Math.floor((y - pad) / c), y1 = Math.floor((y + pad) / c), z0 = Math.floor((z - pad) / c), z1 = Math.floor((z + pad) / c);
+    for (let a = x0; a <= x1; a++) for (let b = y0; b <= y1; b++) for (let k = z0; k <= z1; k++) out.push([a, b, k]);
     return out;
   }
+  // Returns what has to be re-meshed: { coarse: [keys], fine: [keys] }
   function addHole(x, y, z, r) {
     const h = [x, y, z, r]; holes.push(h);
-    const touched = chunksTouching(x, y, z, r);
-    for (const [a, b, c] of touched) { const k = key(a, b, c); let l = holeIndex.get(k); if (!l) holeIndex.set(k, l = []); l.push(h); }
-    return touched.map(t => key(t[0], t[1], t[2]));
+    for (const [a, b, c] of boxesTouching(LC, x, y, z, r + VOX * 2)) { const k = key(a, b, c); let l = holeIndex.get(k); if (!l) holeIndex.set(k, l = []); l.push(h); }
+    const coarse = new Set(), fine = [];
+    if (r >= BIG) for (const [a, b, c] of boxesTouching(LC, x, y, z, r + VOX * 1.5)) coarse.add(key(a, b, c));
+    // fine boxes around the hole, with a margin so its edge never meets the coarse mesh
+    for (const [a, b, c] of boxesTouching(LF, x, y, z, r + 0.45)) {
+      const k = key(a, b, c), wx = (a + 0.5) * LF.CH, wy = (b + 0.5) * LF.CH, wz = (c + 0.5) * LF.CH;
+      if (Math.abs(depthAt(wx, wy, wz)) > LF.CH * 0.9 + 0.05 && !holeNear(wx, wy, wz, LF.CH)) continue;   // nowhere near the surface
+      const isNew = !fineSet.has(k);
+      if (isNew) { fineSet.add(k); coarse.add(key(Math.floor(a / FPC), Math.floor(b / FPC), Math.floor(c / FPC))); }
+      if (isNew || fineTouches(a, b, c, h)) fine.push(k);
+    }
+    return { coarse: [...coarse], fine };
   }
-  function clearHoles() { holes.length = 0; holeIndex.clear(); }
+  function fineTouches(a, b, c, h) { const p = h[3] + LF.VOX * 2, c0 = LF.CH; return h[0] + p > a * c0 && h[0] - p < (a + 1) * c0 && h[1] + p > b * c0 && h[1] - p < (b + 1) * c0 && h[2] + p > c * c0 && h[2] - p < (c + 1) * c0; }
+  function holeNear(x, y, z, pad) { const l = holeIndex.get(key(Math.floor(x / CH), Math.floor(y / CH), Math.floor(z / CH))); if (l) for (const h of l) if (Math.hypot(x - h[0], y - h[1], z - h[2]) < h[3] + pad) return true; return false; }
+  function clearHoles() { holes.length = 0; holeIndex.clear(); fineSet.clear(); }
+  const isFineCell = (x, y, z) => fineSet.has(key(Math.floor(x / LF.CH), Math.floor(y / LF.CH), Math.floor(z / LF.CH)));
 
   // Solid-ness at any point (≈ signed distance to the surface, positive inside the ground).
   function solid(px, py, pz) {
@@ -79,68 +93,68 @@
   // How deep a point is under the untouched surface (m). Negative = above it.
   function depthAt(px, py, pz) { const l = Math.hypot(px, py, pz); return R + heightDir(px / l, py / l, pz / l) - l; }
 
-  // ---------- chunk sampling ----------
-  // Cheap test: can this chunk contain any surface at all?
+  // ---------- sampling ----------
   function chunkMayHaveSurface(cx, cy, cz) {
     if (holeIndex.has(key(cx, cy, cz))) return true;
     const x = (cx + 0.5) * CH, y = (cy + 0.5) * CH, z = (cz + 0.5) * CH;
-    const d = Math.abs(depthAt(x, y, z));
-    return d < CH * 0.87 + 3;
+    return Math.abs(depthAt(x, y, z)) < CH * 0.87 + 3;
   }
-
-  // Sample the field for a chunk: density (S³) and surface height lattice (for colouring and the field itself).
-  function sampleChunk(cx, cy, cz) {
-    const ox = cx * CH - VOX, oy = cy * CH - VOX, oz = cz * CH - VOX;     // world position of sample (0,0,0)
-    // height on a coarse lattice, interpolated per sample
+  function sampleBox(L, cx, cy, cz, holeList, holeFilter) {
+    const { VOX: vox, S: s, HL, HS } = L, ox = cx * L.CH - vox, oy = cy * L.CH - vox, oz = cz * L.CH - vox;
     const hl = new Float64Array(HS * HS * HS);
     for (let k = 0; k < HS; k++) for (let j = 0; j < HS; j++) for (let i = 0; i < HS; i++) {
-      const x = ox + i * HL * VOX, y = oy + j * HL * VOX, z = oz + k * HL * VOX, l = Math.hypot(x, y, z);
+      const x = ox + i * HL * vox, y = oy + j * HL * vox, z = oz + k * HL * vox, l = Math.hypot(x, y, z);
       hl[i + HS * (j + HS * k)] = heightDir(x / l, y / l, z / l);
     }
-    const hAt = (fi, fj, fk) => {   // fi.. in sample units
+    const hAt = (fi, fj, fk) => {
       const a = fi / HL, b = fj / HL, c = fk / HL, i = Math.min(HS - 2, Math.floor(a)), j = Math.min(HS - 2, Math.floor(b)), k = Math.min(HS - 2, Math.floor(c));
       const u = a - i, v = b - j, w = c - k, I = (ii, jj, kk) => hl[ii + HS * (jj + HS * kk)];
       const x00 = I(i, j, k) + u * (I(i + 1, j, k) - I(i, j, k)), x10 = I(i, j + 1, k) + u * (I(i + 1, j + 1, k) - I(i, j + 1, k));
       const x01 = I(i, j, k + 1) + u * (I(i + 1, j, k + 1) - I(i, j, k + 1)), x11 = I(i, j + 1, k + 1) + u * (I(i + 1, j + 1, k + 1) - I(i, j + 1, k + 1));
       const y0 = x00 + v * (x10 - x00), y1 = x01 + v * (x11 - x01); return y0 + w * (y1 - y0);
     };
-    const d = new Float32Array(S * S * S);
-    for (let k = 0; k < S; k++) for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
-      const x = ox + i * VOX, y = oy + j * VOX, z = oz + k * VOX;
-      d[i + S * (j + S * k)] = R + hAt(i, j, k) - Math.hypot(x, y, z);
-    }
-    const base = d.slice();
-    const list = holeIndex.get(key(cx, cy, cz));
-    if (list) for (const h of list) carve(d, ox, oy, oz, h);
-    return { cx, cy, cz, ox, oy, oz, d, base, hAt };
+    const d = new Float32Array(s * s * s);
+    for (let k = 0; k < s; k++) for (let j = 0; j < s; j++) for (let i = 0; i < s; i++) d[i + s * (j + s * k)] = R + hAt(i, j, k) - Math.hypot(ox + i * vox, oy + j * vox, oz + k * vox);
+    const base = d.slice(), c = { L, cx, cy, cz, ox, oy, oz, d, base, hAt };
+    if (holeList) for (const h of holeList) if (!holeFilter || holeFilter(h)) carve(c, h);
+    return c;
+  }
+  const sampleChunk = (cx, cy, cz) => sampleBox(LC, cx, cy, cz, holeIndex.get(key(cx, cy, cz)), h => h[3] >= BIG);
+  function sampleFine(a, b, c) {
+    const list = holeIndex.get(key(Math.floor(a / FPC), Math.floor(b / FPC), Math.floor(c / FPC)));
+    return sampleBox(LF, a, b, c, list, h => fineTouches(a, b, c, h));
   }
   // Apply one hole to sampled density (only the samples in its box).
-  function carve(d, ox, oy, oz, h) {
-    const r = h[3] + VOX * 1.5;
-    const i0 = Math.max(0, Math.floor((h[0] - r - ox) / VOX)), i1 = Math.min(S - 1, Math.ceil((h[0] + r - ox) / VOX));
-    const j0 = Math.max(0, Math.floor((h[1] - r - oy) / VOX)), j1 = Math.min(S - 1, Math.ceil((h[1] + r - oy) / VOX));
-    const k0 = Math.max(0, Math.floor((h[2] - r - oz) / VOX)), k1 = Math.min(S - 1, Math.ceil((h[2] + r - oz) / VOX));
+  function carve(c, h) {
+    const { VOX: vox, S: s } = c.L, d = c.d, ox = c.ox, oy = c.oy, oz = c.oz, r = h[3] + vox * 1.5;
+    const i0 = Math.max(0, Math.floor((h[0] - r - ox) / vox)), i1 = Math.min(s - 1, Math.ceil((h[0] + r - ox) / vox));
+    const j0 = Math.max(0, Math.floor((h[1] - r - oy) / vox)), j1 = Math.min(s - 1, Math.ceil((h[1] + r - oy) / vox));
+    const k0 = Math.max(0, Math.floor((h[2] - r - oz) / vox)), k1 = Math.min(s - 1, Math.ceil((h[2] + r - oz) / vox));
     for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-      const v = Math.hypot(ox + i * VOX - h[0], oy + j * VOX - h[1], oz + k * VOX - h[2]) - h[3];
-      const n = i + S * (j + S * k); if (v < d[n]) d[n] = v;
+      const v = Math.hypot(ox + i * vox - h[0], oy + j * vox - h[1], oz + k * vox - h[2]) - h[3];
+      const n = i + s * (j + s * k); if (v < d[n]) d[n] = v;
     }
   }
 
   // ---------- surface nets mesher ----------
-  // Returns positions relative to the chunk's own corner (cx*CH, ...), normals, and for each vertex the
-  // depth below the untouched surface (for colouring by layer) plus its up-facing amount.
+  // Positions are relative to the box's own corner; for each vertex also the depth below the untouched surface
+  // (0 exactly for untouched ground). Coarse boxes skip quads whose four cells all lie inside fine boxes.
   const CORNERS = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]];
   const EDGES = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
   function meshChunk(c) {
-    const d = c.d, C = S - 1;                 // cells per side
+    const { VOX: vox, N: n0, S: s } = c.L, d = c.d, C = s - 1, coarse = c.L === LC;
     const vidx = new Int32Array(C * C * C).fill(-1);
-    const pos = [], nrm = [], depth = [], upness = [], idx = [];
-    const ccx = (c.cx + 0.5) * CH, ccy = (c.cy + 0.5) * CH, ccz = (c.cz + 0.5) * CH, cl = Math.hypot(ccx, ccy, ccz);
-    const upx = ccx / cl, upy = ccy / cl, upz = ccz / cl;      // local "up" (constant enough across one chunk)
+    const pos = [], nrm = [], depth = [], idx = [];
     const val = new Float32Array(8);
+    let culled = null;
+    if (coarse && fineSet.size) {   // which cells are covered by fine boxes
+      culled = new Uint8Array(C * C * C); let any = false;
+      for (let k = 0; k < C; k++) for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) if (isFineCell(c.ox + (i + 0.5) * vox, c.oy + (j + 0.5) * vox, c.oz + (k + 0.5) * vox)) { culled[i + C * (j + C * k)] = 1; any = true; }
+      if (!any) culled = null;
+    }
     for (let k = 0; k < C; k++) for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) {
       let mask = 0, carved = false;
-      for (let q = 0; q < 8; q++) { const o = CORNERS[q], n = (i + o[0]) + S * ((j + o[1]) + S * (k + o[2])), v = d[n]; val[q] = v; if (v > 0) mask |= 1 << q; if (v !== c.base[n]) carved = true; }
+      for (let q = 0; q < 8; q++) { const o = CORNERS[q], m = (i + o[0]) + s * ((j + o[1]) + s * (k + o[2])), v = d[m]; val[q] = v; if (v > 0) mask |= 1 << q; if (v !== c.base[m]) carved = true; }
       if (mask === 0 || mask === 255) continue;
       let sx = 0, sy = 0, sz = 0, n = 0;
       for (const [a, b] of EDGES) {
@@ -149,48 +163,58 @@
         sx += A[0] + t * (B[0] - A[0]); sy += A[1] + t * (B[1] - A[1]); sz += A[2] + t * (B[2] - A[2]); n++;
       }
       const fx = i + sx / n, fy = j + sy / n, fz = k + sz / n;
-      // gradient of solid-ness (points into the ground) → normal points out
       let gx = (val[1] - val[0]) + (val[3] - val[2]) + (val[5] - val[4]) + (val[7] - val[6]);
       let gy = (val[2] - val[0]) + (val[3] - val[1]) + (val[6] - val[4]) + (val[7] - val[5]);
       let gz = (val[4] - val[0]) + (val[5] - val[1]) + (val[6] - val[2]) + (val[7] - val[3]);
       const gl = Math.hypot(gx, gy, gz) || 1; gx = -gx / gl; gy = -gy / gl; gz = -gz / gl;
       vidx[i + C * (j + C * k)] = pos.length / 3;
-      pos.push((fx - 1) * VOX, (fy - 1) * VOX, (fz - 1) * VOX);
+      pos.push((fx - 1) * vox, (fy - 1) * vox, (fz - 1) * vox);
       nrm.push(gx, gy, gz);
-      // depth below the untouched surface at this vertex
-      // depth below the untouched surface, read from the untouched field itself at this vertex (≈ metres);
-      // untouched ground reports exactly 0, so the shader paints soil only where something was dug
       let bd = 0;
-      if (carved) {
-        const u = sx / n, v = sy / n, w = sz / n, B = q => c.base[(i + CORNERS[q][0]) + S * ((j + CORNERS[q][1]) + S * (k + CORNERS[q][2]))];
+      if (carved) {   // depth from the untouched field itself at this vertex
+        const u = sx / n, v = sy / n, w = sz / n, B = q => c.base[(i + CORNERS[q][0]) + s * ((j + CORNERS[q][1]) + s * (k + CORNERS[q][2]))];
         const x0 = B(0) + u * (B(1) - B(0)), x1 = B(2) + u * (B(3) - B(2)), x2 = B(4) + u * (B(5) - B(4)), x3 = B(6) + u * (B(7) - B(6));
-        bd = Math.max(0, (x0 + v * (x1 - x0)) + w * ((x2 + v * (x3 - x2)) - (x0 + v * (x1 - x0))));
+        const y0 = x0 + v * (x1 - x0), y1 = x2 + v * (x3 - x2);
+        bd = Math.max(0, y0 + w * (y1 - y0));
       }
       depth.push(bd);
-      upness.push(gx * upx + gy * upy + gz * upz);
     }
-    // quads: one per sign-changing grid edge owned by this chunk (start sample index 1..N on all axes)
     const V = (i, j, k) => vidx[i + C * (j + C * k)];
+    const cull = (a, b, e, f) => culled && culled[a] && culled[b] && culled[e] && culled[f];
+    const ci = (i, j, k) => i + C * (j + C * k);
     const quad = (a, b, cc, dd, flip) => {
       if (a < 0 || b < 0 || cc < 0 || dd < 0) return;
       if (flip) idx.push(a, cc, b, a, dd, cc); else idx.push(a, b, cc, a, cc, dd);
     };
-    for (let k = 1; k <= N; k++) for (let j = 1; j <= N; j++) for (let i = 1; i <= N; i++) {
-      const v0 = d[i + S * (j + S * k)] > 0;
-      if (i < S - 1 && v0 !== (d[(i + 1) + S * (j + S * k)] > 0))   // x edge: cells (i, j-1..j, k-1..k)
+    for (let k = 1; k <= n0; k++) for (let j = 1; j <= n0; j++) for (let i = 1; i <= n0; i++) {
+      const v0 = d[i + s * (j + s * k)] > 0;
+      if (i < s - 1 && v0 !== (d[(i + 1) + s * (j + s * k)] > 0) && !cull(ci(i, j - 1, k - 1), ci(i, j, k - 1), ci(i, j, k), ci(i, j - 1, k)))
         quad(V(i, j - 1, k - 1), V(i, j, k - 1), V(i, j, k), V(i, j - 1, k), !v0);
-      if (j < S - 1 && v0 !== (d[i + S * ((j + 1) + S * k)] > 0))   // y edge
+      if (j < s - 1 && v0 !== (d[i + s * ((j + 1) + s * k)] > 0) && !cull(ci(i - 1, j, k - 1), ci(i - 1, j, k), ci(i, j, k), ci(i, j, k - 1)))
         quad(V(i - 1, j, k - 1), V(i - 1, j, k), V(i, j, k), V(i, j, k - 1), !v0);
-      if (k < S - 1 && v0 !== (d[i + S * (j + S * (k + 1))] > 0))   // z edge
+      if (k < s - 1 && v0 !== (d[i + s * (j + s * (k + 1))] > 0) && !cull(ci(i - 1, j - 1, k), ci(i, j - 1, k), ci(i, j, k), ci(i - 1, j, k)))
         quad(V(i - 1, j - 1, k), V(i, j - 1, k), V(i, j, k), V(i - 1, j, k), !v0);
     }
-    return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), depth: new Float32Array(depth), upness: new Float32Array(upness), idx: pos.length / 3 > 65535 ? new Uint32Array(idx) : new Uint16Array(idx) };
+    return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), depth: new Float32Array(depth), idx: pos.length / 3 > 65535 ? new Uint32Array(idx) : new Uint16Array(idx) };
+  }
+
+  // ---------- places that can't be dug (under buildings and fixed props) ----------
+  // [x, y, z, r]: a vertical cylinder of radius r around the point (planet metres), any depth.
+  const blockers = [];
+  function blocked(x, y, z, pad) {
+    for (const b of blockers) {
+      const l = Math.hypot(b[0], b[1], b[2]), ux = b[0] / l, uy = b[1] / l, uz = b[2] / l;
+      const dx = x - b[0], dy = y - b[1], dz = z - b[2], along = dx * ux + dy * uy + dz * uz;
+      const hx = dx - ux * along, hy = dy - uy * along, hz = dz - uz * along;
+      if (along < 6 && hx * hx + hy * hy + hz * hz < (b[3] + pad) * (b[3] + pad)) return b;
+    }
+    return null;
   }
 
   // ---------- geography helpers ----------
   function fromLatLon(lat, lon) { const a = lat * Math.PI / 180, b = lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), -Math.cos(a) * Math.sin(b)]; }
   function toLatLon(x, y, z) { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; }
 
-  root.World = { R, VOX, N, CH, S, noise, hash01, ihash, height, heightDir, heightAt, solid, depthAt, addHole, clearHoles, holes, key,
-    chunkMayHaveSurface, sampleChunk, carve, meshChunk, fromLatLon, toLatLon };
+  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, heightAt, solid, depthAt, addHole, clearHoles, holes, key,
+    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, fineSet, blockers, blocked, fromLatLon, toLatLon };
 })(typeof window !== 'undefined' ? window : globalThis);
