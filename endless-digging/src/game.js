@@ -1,4 +1,4 @@
-// Graphics test scene: walk on a 1:1 Earth-sized planet in first person and dig with bare hands or a shovel.
+// Test scene: walk on a 1:1 Earth-sized planet in first person and dig with a spoon.
 'use strict';
 (function (root) {
   const W = root.World, T = root.THREE, S = root.Scene;
@@ -9,14 +9,14 @@
   const RU = /^(ru|uk|be|kk)/i.test(navigator.language || '');
   const L = RU ? {
     title: 'Endless Digging', sub: 'Тестовая сцена графики · Земля в масштабе 1:1', play: 'Играть', cont: 'Продолжить',
-    loading: 'Строим планету…', hands: 'Руки', shovel: 'Лопата', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км',
-    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать · <b>1</b> руки · <b>2</b> лопата · <b>Esc</b> пауза',
+    loading: 'Строим планету…', spoon: 'Ложка', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км',
+    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать · <b>Esc</b> пауза',
     pause: 'Пауза', quality: 'Графика', hi: 'Высокая', lo: 'Быстрая', reset: 'Засыпать все ямы', far: 'Слишком далеко', sign: '↓ ЯДРО 6 371 км',
     clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км'
   } : {
     title: 'Endless Digging', sub: 'Graphics test scene · Earth at 1:1 scale', play: 'Play', cont: 'Continue',
-    loading: 'Building the planet…', hands: 'Hands', shovel: 'Shovel', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km',
-    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig · <b>1</b> hands · <b>2</b> shovel · <b>Esc</b> pause',
+    loading: 'Building the planet…', spoon: 'Spoon', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km',
+    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig · <b>Esc</b> pause',
     pause: 'Paused', quality: 'Graphics', hi: 'High', lo: 'Fast', reset: 'Fill in all holes', far: 'Too far', sign: '↓ CORE 6,371 km',
     clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km'
   };
@@ -28,14 +28,14 @@
     : { tkeys: '<b>Left thumb</b> walk (push further to run) · <b>right</b> look · <b>⛏</b> dig · <b>⤒</b> jump · <b>Ⅱ</b> pause', dig: 'Dig', jumpB: 'Jump', turn: 'Turn your phone sideways for a better view' });
 
   // ---------- tools ----------
+  // the start tool is a spoon (the hole size is temporary until the ground grid gets finer)
   const TOOLS = {
-    hands: { r: 0.24, time: 0.45, reach: 2.6, parts: 7 },
-    shovel: { r: 0.42, time: 0.62, reach: 3.0, parts: 14 }
+    spoon: { r: 0.24, time: 0.55, reach: 2.4, parts: 6, size: 0.6 }
   };
   const EARTH_VOL = 4 / 3 * Math.PI * Math.pow(W.R, 3);
 
   // ---------- player ----------
-  const pl = { pos: v3(0, 0, 0), vel: v3(0, 0, 0), fwd: v3(0, 0, -1), pitch: 0, grounded: false, tool: 'hands', dig: -1, digHit: null, dug: 0 };
+  const pl = { pos: v3(0, 0, 0), vel: v3(0, 0, 0), fwd: v3(0, 0, -1), pitch: 0, grounded: false, tool: 'spoon', dig: -1, digHit: null, dug: 0 };
   const RAD = 0.32, EYE = 1.62, G = 15, JUMP = 6.1, WALK = 4.3, RUN = 7.2;
   const SPHERES = [0.33, 0.9, 1.42];
   const up = v3(0, 1, 0), right = v3(1, 0, 0);
@@ -137,7 +137,8 @@
     const hole = [c.x, c.y, c.z, tool.r];
     const keysTouched = W.addHole(c.x, c.y, c.z, tool.r);
     S.applyHole(hole, keysTouched);
-    S.burst(hit.p.x, hit.p.y, hit.p.z, color, tool.parts, hit.d.clone().negate());
+    S.burst(hit.p.x, hit.p.y, hit.p.z, color, tool.parts, hit.d.clone().negate(), tool.size);
+    S.setSpoonFull(true);
     Sound.dig(pl.tool, depth);
     pl.dug += vol;
     if (vol > 0.0005) floater('+' + vol.toFixed(3) + ' ' + L.m3);
@@ -149,8 +150,6 @@
   addEventListener('keydown', e => {
     if (!playing) return;
     keys[e.code] = true;
-    if (e.code === 'Digit1') setTool('hands');
-    if (e.code === 'Digit2') setTool('shovel');
     if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   });
   addEventListener('keyup', e => { keys[e.code] = false; });
@@ -169,7 +168,6 @@
     const s = 0.0022;
     turn(e.movementX * s, e.movementY * s);
   });
-  addEventListener('wheel', e => { if (playing) setTool(pl.tool === 'hands' ? 'shovel' : 'hands'); }, { passive: true });
   function turn(dx, dy) {
     frame();
     const c = Math.cos(dx), s = Math.sin(dx);
@@ -205,7 +203,7 @@
     }
     return {
       unlock() { try { ctx(); if (ac.state === 'suspended') ac.resume(); } catch (e) {} },
-      dig(tool, depth) { if (!ac) return; const hard = depth > 13 ? 1 : 0; noise(0.22, 500 + hard * 900, 0.8, 0.35); tone(tool === 'shovel' ? 120 : 90, 0.16, 0.25, -40); if (tool === 'shovel') tone(1400 + hard * 600, 0.08, 0.03, 0, 'triangle'); noise(0.35, 2400, 0.6, 0.05, 'highpass', 0.05); },
+      dig(tool, depth) { if (!ac) return; const hard = depth > 13 ? 1 : 0; noise(0.22, 500 + hard * 900, 0.8, 0.35); tone(90, 0.12, 0.2, -40); tone(1900 + hard * 600, 0.06, 0.025, 0, 'triangle'); noise(0.35, 2400, 0.6, 0.05, 'highpass', 0.05); },
       step() { if (!ac) return; noise(0.12, 380 + Math.random() * 120, 1.2, 0.1); noise(0.08, 2800, 0.7, 0.02, 'highpass'); },
       jump() { if (!ac) return; noise(0.1, 600, 1, 0.06); },
       land(k) { if (!ac) return; noise(0.2, 260, 1, 0.12 + 0.2 * k); tone(70, 0.15, 0.15 * k, -20); }
@@ -260,13 +258,13 @@
       pl.fwd.applyAxisAngle(u, -0.6); pl.pitch = -0.12;
     }
     frame();
-    // sun: fixed over the start region, mid-morning from the south-east
-    const u0 = sp.clone().normalize(), n0 = v3(0, 1, 0).addScaledVector(u0, -u0.y).normalize(), e0 = new T.Vector3().crossVectors(n0, u0).normalize();
-    S.setSun(u0.clone().multiplyScalar(0.62).addScaledVector(e0, 0.55).addScaledVector(n0, -0.45));
+    // the start region: local frame for shading, the sun low behind the player's first view, the worksite ahead
+    const u0 = sp.clone().normalize(), n0 = v3(0, 1, 0).addScaledVector(u0, -u0.y).normalize();
     S.setOrigin(pl.pos);
+    S.setRegion(sp, n0.clone().applyAxisAngle(u0, -0.6));
     S.setFrame(up);
-    S.addProps(sp, n0.clone().applyAxisAngle(u0, -0.6), new T.Vector3().crossVectors(n0.clone().applyAxisAngle(u0, -0.6), u0).normalize());
-    setTool(saved && saved.tool || 'hands');
+    S.addProps();
+    setTool('spoon');
     S.updateFar(pl.pos, true); S.updateDeco(pl.pos, true); S.buildClouds(pl.pos);
     addEventListener('resize', () => S.resize());
   }
@@ -335,6 +333,7 @@
   // ---------- loop ----------
   let last = performance.now(), t = 0, loading = true, digT = 0;
   function loop(now) {
+    if (root.__stopLoop) return;   // test tools take still frames themselves
     requestAnimationFrame(loop);
     const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
     if (loading) {
@@ -349,11 +348,11 @@
       walk = step(dt);
       // digging stroke
       const tool = TOOLS[pl.tool];
-      if (pl.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { pl.dig = 0; pl.didHit = false; }
+      if (pl.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { pl.dig = 0; pl.didHit = false; S.setSpoonFull(false); }
       if (pl.dig >= 0) {
         const prev = pl.dig; pl.dig += dt / tool.time;
         if (prev < 0.45 && pl.dig >= 0.45 && !pl.didHit) { pl.didHit = true; const h = rayHit(tool.reach); if (h) doDig(h); }
-        if (pl.dig >= 1) pl.dig = mouseDown ? 0 : -1, pl.didHit = false;
+        if (pl.dig >= 1) { pl.dig = mouseDown ? 0 : -1; pl.didHit = false; if (mouseDown) S.setSpoonFull(false); }
       }
       // crosshair shows whether there is ground in reach
       if ((digT += dt) > 0.08) { digT = 0; $('cross').classList.toggle('hit', !!rayHit(tool.reach)); }
@@ -368,7 +367,7 @@
   }
 
   root.addEventListener('load', () => {
-    $('slotHands').textContent = (TOUCH ? '✋ ' : '1 · ') + L.hands; $('slotShovel').textContent = (TOUCH ? '⛏ ' : '2 · ') + L.shovel;
+    $('slotSpoon').textContent = L.spoon;
     $('clickHint').textContent = L.clickHint; $('leftLbl').textContent = L.left;
     document.title = L.title;
     for (const el of document.querySelectorAll('.slot')) el.onclick = () => setTool(el.dataset.t);

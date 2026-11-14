@@ -23,7 +23,8 @@
   // =====================================================================================
   const HAND = { w: (() => { const v = [0.10, 0.60, 0.79], l = Math.hypot(v[0], v[1], v[2]); return v.map(c => c / l); })(), Wc: [0.012, 0.022, 0.048], G: 1.16, SP: 1.32 };
   A.HAND = HAND;
-  A.glove = function (pal) {
+  A.glove = function (pal, detail) {   // detail: cell size multiplier (1 = full, 2 = phone)
+    const DK = detail || 1;
     // a bare hand gripping the spoon: fingers wrap round the handle and stop short, so the handle shows in the gap
     // between the fingertips and the ball of the thumb; the thumb crosses over the handle and rests on the index finger
     const fz = [-0.0335, -0.0112, 0.0108, 0.0312], fr = [0.0118, 0.0124, 0.0120, 0.0108], tip = [0.0, -0.06, -0.02, 0.10], R = 0.0200, w = HAND.w, W0 = HAND.Wc, G = HAND.G;
@@ -51,7 +52,7 @@
     };
     const f = (x, y, z) => f0(x / G, y / G, z / G) * G;
     const skin = C(pal.skin || '#eebd98'), nail = C(pal.nail || '#f9dfd2'), blush = C(pal.skinWarm || '#e3a184');
-    const m = S.mesh(f, [-0.06 * G, -0.055 * G, -0.062 * G], [0.10 * G, 0.15 * G, 0.19 * G], 0.0012 * G, {
+    const m = S.mesh(f, [-0.06 * G, -0.055 * G, -0.062 * G], [0.10 * G, 0.15 * G, 0.19 * G], 0.0012 * G * DK, {
       ao: 0.5, aoRadius: 0.005,
       color(x, y, z, nx, ny, nz, out) {
         x /= G; y /= G; z /= G;
@@ -84,7 +85,8 @@
     return S.geometry(m);
   };
   // Table spoon (scaled up a little, cartoon-style). Returns { spoon, soil } geometries.
-  A.spoon = function () {
+  A.spoon = function (detail) {
+    const DK = detail || 1;
     const SP = HAND.SP, a1 = -0.066, r1 = 0.0098, a2 = 0.082, r2 = 0.0036, th = 0.0017, a0 = 0.118, rz = 0.031, rx0 = 0.0212, ry = 0.0125, yr = -0.011;
     const f = function (X, Y, Z) {
       const x = X / SP, y = Y / SP, a = -Z / SP;
@@ -96,13 +98,13 @@
       const db = S.smax(abs(E) - 0.0011, y - yr, 0.0010);
       return S.smin(dh, db, 0.0045) * SP;
     };
-    const spoon = S.geometry(S.mesh(f, [-0.0245 * SP, -0.0275 * SP, -0.153 * SP], [0.0245 * SP, 0.0065 * SP, 0.080 * SP], 0.00065 * SP, { project: 3 }));
+    const spoon = S.geometry(S.mesh(f, [-0.0245 * SP, -0.0275 * SP, -0.153 * SP], [0.0245 * SP, 0.0065 * SP, 0.080 * SP], 0.00065 * SP * DK, { project: 3 }));
     const fs = function (X, Y, Z) {
       const x = X / SP, y = Y / SP, a = -Z / SP;
       const E = S.ellipsoid(x, y, a, 0.001, yr - 0.0015, a0 + 0.001, 0.0165, 0.0095, 0.0245);
       return (E - 0.0016 * S.fbm(x * 260, y * 260, a * 260, 3)) * SP;
     };
-    const soil = S.geometry(S.mesh(fs, [-0.022 * SP, -0.026 * SP, -0.150 * SP], [0.022 * SP, 0.004 * SP, -0.088 * SP], 0.0008 * SP, { project: 2 }));
+    const soil = S.geometry(S.mesh(fs, [-0.022 * SP, -0.026 * SP, -0.150 * SP], [0.022 * SP, 0.004 * SP, -0.088 * SP], 0.0008 * SP * DK, { project: 2 }));
     return { spoon, soil, bowl: [0, yr * SP, -a0 * SP] };
   };
 
@@ -119,7 +121,7 @@
       for (const b of br) d = S.smin(d, S.cone(x, y, z, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]), 0.08);
       return d + lumpy * 0.012 * S.noise(x * 7, y * 2.5, z * 7);
     };
-    const trunk = S.geometry(S.mesh(trunkF, [-1.9, -0.25, -1.9], [1.9, H + 1.9, 1.9], 0.03, { ao: 0.3, aoRadius: 0.1 }));
+    const trunk = S.geometry(S.mesh(trunkF, [-1.9, -0.25, -1.9], [1.9, H + 1.9, 1.9], o.trunkCell || 0.03, { ao: 0.3, aoRadius: 0.1 }));
     const blobs = [[bend, H + 1.55, 0, 1.28]];
     for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2 + r() * 0.5, rad = 1.15 + r() * 0.25; blobs.push([bend + cos(a) * rad, H + 0.85 + r() * 0.75, sin(a) * rad, 0.82 + r() * 0.3]); }
     for (let i = 0; i < 3; i++) { const a = i / 3 * PI * 2 + r() * 1.0; blobs.push([bend + cos(a) * 0.62, H + 2.35 + r() * 0.3, sin(a) * 0.62, 0.72 + r() * 0.2]); }
@@ -171,7 +173,7 @@
     o = o || {}; const r = S.rng(seed), bl = []; for (let i = 0; i < 5; i++) { const a = r() * 6.28, d = r() * 0.42; bl.push([cos(a) * d, 0.22 + r() * 0.25, sin(a) * d, 0.3 + r() * 0.18]); }
     const f = (x, y, z) => { let d = 0; for (let i = 0; i < bl.length; i++) { const b = bl[i], di = S.sphere(x, y, z, b[0], b[1], b[2], b[3]); d = i ? S.smin(d, di, 0.2) : di; } return d + (o.lumpy || 0) * 0.03 * S.noise(x * 3, y * 3, z * 3); };
     const dark = C(o.dark || '#3c8440'), light = C(o.light || '#86c85a');
-    return S.geometry(S.mesh(f, [-1, -0.1, -1], [1, 1.1, 1], 0.03, { ao: 0.5, aoRadius: 0.1, color(x, y, z, nx, ny, nz, out) { mixC(dark, light, clamp01(y * 0.9 + ny * 0.3), out); } }));
+    return S.geometry(S.mesh(f, [-1, -0.1, -1], [1, 1.1, 1], o.cell || 0.03, { ao: 0.5, aoRadius: 0.1, color(x, y, z, nx, ny, nz, out) { mixC(dark, light, clamp01(y * 0.9 + ny * 0.3), out); } }));
   };
   A.rock = function (seed, o) {
     o = o || {}; const r = S.rng(seed), parts = []; for (let i = 0; i < 4; i++) parts.push([(r() - 0.5) * 0.5, 0.12 + r() * 0.22, (r() - 0.5) * 0.5, 0.3 + r() * 0.22, 0.22 + r() * 0.16, 0.28 + r() * 0.2]);
@@ -179,7 +181,7 @@
       let d = 0; for (let i = 0; i < parts.length; i++) { const p = parts[i], di = S.ellipsoid(x, y, z, p[0], p[1], p[2], p[3], p[4], p[5]); d = i ? S.smin(d, di, 0.16) : di; }
       return d + 0.035 * S.noise(x * 2.6 + seed, y * 2.6, z * 2.6) + 0.008 * S.noise(x * 9, y * 9, z * 9) * (0.5 + (o.lumpy || 0));
     };
-    return S.geometry(S.mesh(f, [-0.95, -0.2, -0.95], [0.95, 0.8, 0.95], 0.022, { ao: 0.35, aoRadius: 0.08 }));
+    return S.geometry(S.mesh(f, [-0.95, -0.2, -0.95], [0.95, 0.8, 0.95], o.cell || 0.022, { ao: 0.35, aoRadius: 0.08 }));
   };
   A.cloud = function (seed) {
     const r = S.rng(seed), bl = [], n = 6 + Math.floor(r() * 4); let x = -n * 0.42;

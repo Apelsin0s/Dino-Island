@@ -139,8 +139,8 @@
     const upx = ccx / cl, upy = ccy / cl, upz = ccz / cl;      // local "up" (constant enough across one chunk)
     const val = new Float32Array(8);
     for (let k = 0; k < C; k++) for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) {
-      let mask = 0;
-      for (let q = 0; q < 8; q++) { const o = CORNERS[q]; const v = d[(i + o[0]) + S * ((j + o[1]) + S * (k + o[2]))]; val[q] = v; if (v > 0) mask |= 1 << q; }
+      let mask = 0, carved = false;
+      for (let q = 0; q < 8; q++) { const o = CORNERS[q], n = (i + o[0]) + S * ((j + o[1]) + S * (k + o[2])), v = d[n]; val[q] = v; if (v > 0) mask |= 1 << q; if (v !== c.base[n]) carved = true; }
       if (mask === 0 || mask === 255) continue;
       let sx = 0, sy = 0, sz = 0, n = 0;
       for (const [a, b] of EDGES) {
@@ -158,8 +158,15 @@
       pos.push((fx - 1) * VOX, (fy - 1) * VOX, (fz - 1) * VOX);
       nrm.push(gx, gy, gz);
       // depth below the untouched surface at this vertex
-      const wx = c.ox + fx * VOX, wy = c.oy + fy * VOX, wz = c.oz + fz * VOX;
-      depth.push(R + c.hAt(fx, fy, fz) - Math.hypot(wx, wy, wz));
+      // depth below the untouched surface, read from the untouched field itself at this vertex (≈ metres);
+      // untouched ground reports exactly 0, so the shader paints soil only where something was dug
+      let bd = 0;
+      if (carved) {
+        const u = sx / n, v = sy / n, w = sz / n, B = q => c.base[(i + CORNERS[q][0]) + S * ((j + CORNERS[q][1]) + S * (k + CORNERS[q][2]))];
+        const x0 = B(0) + u * (B(1) - B(0)), x1 = B(2) + u * (B(3) - B(2)), x2 = B(4) + u * (B(5) - B(4)), x3 = B(6) + u * (B(7) - B(6));
+        bd = Math.max(0, (x0 + v * (x1 - x0)) + w * ((x2 + v * (x3 - x2)) - (x0 + v * (x1 - x0))));
+      }
+      depth.push(bd);
       upness.push(gx * upx + gy * upy + gz * upz);
     }
     // quads: one per sign-changing grid edge owned by this chunk (start sample index 1..N on all axes)
