@@ -83,6 +83,7 @@
   const fineSet = new Set();        // fine box keys that exist
   const bigIndex = new Map();       // coarse chunk key -> big holes only
   const smallIndex = new Map();     // fine box key -> small holes that reach into it (keeps solid() fast with thousands of scoops)
+  const fineByChunk = new Map();    // coarse chunk key -> [[a, b, c], ...] fine boxes inside it (fast culling of coarse quads)
   const push = (m, k, h) => { let l = m.get(k); if (!l) m.set(k, l = []); l.push(h); };
   function boxesTouching(L, x, y, z, pad) {
     const out = [], c = L.CH;
@@ -102,14 +103,14 @@
       const k = key(a, b, c), wx = (a + 0.5) * LF.CH, wy = (b + 0.5) * LF.CH, wz = (c + 0.5) * LF.CH;
       if (Math.abs(depthAt(wx, wy, wz)) > LF.CH * 0.9 + 0.05 && !holeNear(wx, wy, wz, LF.CH)) continue;   // nowhere near the surface
       const isNew = !fineSet.has(k);
-      if (isNew) { fineSet.add(k); coarse.add(key(Math.floor(a / FPC), Math.floor(b / FPC), Math.floor(c / FPC))); }
+      if (isNew) { fineSet.add(k); const ck = key(Math.floor(a / FPC), Math.floor(b / FPC), Math.floor(c / FPC)); coarse.add(ck); push(fineByChunk, ck, [a, b, c]); }
       if (isNew || fineTouches(a, b, c, h)) fine.push(k);
     }
     return { coarse: [...coarse], fine };
   }
   function fineTouches(a, b, c, h) { const p = h[3] + LF.VOX * 2, c0 = LF.CH; return h[0] + p > a * c0 && h[0] - p < (a + 1) * c0 && h[1] + p > b * c0 && h[1] - p < (b + 1) * c0 && h[2] + p > c * c0 && h[2] - p < (c + 1) * c0; }
   function holeNear(x, y, z, pad) { const l = holeIndex.get(key(Math.floor(x / CH), Math.floor(y / CH), Math.floor(z / CH))); if (l) for (const h of l) if (Math.hypot(x - h[0], y - h[1], z - h[2]) < h[3] + pad) return true; return false; }
-  function clearHoles() { holes.length = 0; holeIndex.clear(); bigIndex.clear(); smallIndex.clear(); fineSet.clear(); }
+  function clearHoles() { holes.length = 0; holeIndex.clear(); bigIndex.clear(); smallIndex.clear(); fineSet.clear(); fineByChunk.clear(); }
   const isFineCell = (x, y, z) => fineSet.has(key(Math.floor(x / LF.CH), Math.floor(y / LF.CH), Math.floor(z / LF.CH)));
 
   // Solid-ness at any point (≈ signed distance to the surface, positive inside the ground).
@@ -179,9 +180,21 @@
     const pos = [], nrm = [], depth = [], idx = [];
     const val = new Float32Array(8);
     let culled = null;
-    if (coarse && fineSet.size) {   // which cells are covered by fine boxes
-      culled = new Uint8Array(C * C * C); let any = false;
-      for (let k = 0; k < C; k++) for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) if (isFineCell(c.ox + (i + 0.5) * vox, c.oy + (j + 0.5) * vox, c.oz + (k + 0.5) * vox)) { culled[i + C * (j + C * k)] = 1; any = true; }
+    if (coarse && fineSet.size) {   // which cells are covered by fine boxes (boxes of this chunk and its neighbours)
+      let any = false; const F = LF.CH;
+      for (let A = -1; A <= 1; A++) for (let B = -1; B <= 1; B++) for (let D = -1; D <= 1; D++) {
+        const list = fineByChunk.get(key(c.cx + A, c.cy + B, c.cz + D)); if (!list) continue;
+        for (const [a, b, e] of list) {
+          // cells whose centres lie inside the box: centre = o + (i + 0.5) * vox
+          const i0 = Math.max(0, Math.ceil((a * F - c.ox) / vox - 0.5)), i1 = Math.min(C - 1, Math.ceil(((a + 1) * F - c.ox) / vox - 0.5) - 1);
+          const j0 = Math.max(0, Math.ceil((b * F - c.oy) / vox - 0.5)), j1 = Math.min(C - 1, Math.ceil(((b + 1) * F - c.oy) / vox - 0.5) - 1);
+          const k0 = Math.max(0, Math.ceil((e * F - c.oz) / vox - 0.5)), k1 = Math.min(C - 1, Math.ceil(((e + 1) * F - c.oz) / vox - 0.5) - 1);
+          if (i0 > i1 || j0 > j1 || k0 > k1) continue;
+          if (!culled) culled = new Uint8Array(C * C * C);
+          for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) culled[i + C * (j + C * k)] = 1;
+          any = true;
+        }
+      }
       if (!any) culled = null;
     }
     for (let k = 0; k < C; k++) for (let j = 0; j < C; j++) for (let i = 0; i < C; i++) {
@@ -228,6 +241,15 @@
         quad(V(i - 1, j - 1, k), V(i, j - 1, k), V(i, j, k), V(i - 1, j, k), !v0);
     }
     return { pos: new Float32Array(pos), nrm: new Float32Array(nrm), depth: new Float32Array(depth), idx: pos.length / 3 > 65535 ? new Uint32Array(idx) : new Uint16Array(idx) };
+  }
+
+  // kind 'c' = coarse chunk (a, b, c), 'f' = fine box. Result is plain typed arrays (can be sent between threads).
+  function buildMesh(kind, a, b, c) {
+    const fine = kind === 'f', L = fine ? LF : LC;
+    const m = meshChunk(fine ? sampleFine(a, b, c) : sampleChunk(a, b, c));
+    const bx = a * L.CH, by = b * L.CH, bz = c * L.CH, n = m.pos.length / 3, mats = new Int8Array(n);
+    for (let i = 0; i < n; i++) mats[i] = m.depth[i] <= 0 ? -1 : materialAt(bx + m.pos[i * 3], by + m.pos[i * 3 + 1], bz + m.pos[i * 3 + 2]);
+    m.mats = mats; m.base = [bx, by, bz]; return m;
   }
 
   // ---------- places that can't be dug (under buildings and fixed props) ----------
@@ -313,5 +335,5 @@
   function toLatLon(x, y, z) { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; }
 
   root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, heightAt, solid, depthAt, addHole, clearHoles, holes, key,
-    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, fineSet, blockers, blocked, materialAt, kryvbas, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
+    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, buildMesh, fineSet, blockers, blocked, materialAt, kryvbas, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
 })(typeof window !== 'undefined' ? window : globalThis);

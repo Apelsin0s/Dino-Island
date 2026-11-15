@@ -901,7 +901,7 @@
   function pause(on) { if (on) { playing = false; mouseDown = false; for (const k in keys) keys[k] = false; stick.id = lookT.id = null; stick.x = stick.y = 0; const sb = $('stick'); if (sb) sb.hidden = true; overlay('pause'); if (dirty) save(); } }
 
   // ---------- loop ----------
-  let last = performance.now(), t = 0, loading = true, digT = 0, compiled = null, driveCamNow = null;
+  let last = performance.now(), t = 0, loadDrawn = 0, chunksDone = false, loading = true, digT = 0, compiled = null, driveCamNow = null;
   function loop(now) {
     if (root.__stopLoop) return;   // test tools take still frames themselves
     requestAnimationFrame(loop);
@@ -911,9 +911,11 @@
       const left = S.updateChunks(pl.pos, 30), total = S.chunkCount() + left;
       const b = $('loadBar'); if (b) b.style.width = Math.round(S.chunkCount() / Math.max(1, total) * 90) + '%';
       // shaders are compiled while the loading screen is up, so the first frames do not stall
-      if (left === 0 && !compiled) compiled = S.compile().then(() => { compiled = 'done'; }, () => { compiled = 'done'; });
-      if (compiled === 'done') { loading = false; overlay('start'); }
-      S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, dt, t);
+      if (!compiled) compiled = S.compile().then(() => { performance.mark('ed:compiled'); compiled = 'done'; }, () => { compiled = 'done'; });
+      if (left === 0 && !chunksDone) { chunksDone = true; performance.mark('ed:chunks'); }
+      if (compiled === 'done' && chunksDone) { loading = false; performance.mark('ed:ready'); overlay('start'); if (root.ModelCache) setTimeout(() => ModelCache.save(), 1500); }
+      // nothing is drawn under the loading card until the world is built: all the time goes to building it
+      if (compiled === 'done' && chunksDone) { loadDrawn = now; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, dt, t); }
       return;
     }
     let walk = 0;
@@ -951,8 +953,12 @@
     const D = root.DemInfo, get = f => fetch(f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.text(); }).then(t => { const bin = atob(t.trim()), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; });   // base64 int16
     const dem = D ? Promise.all(['local', 'ukraine'].map(k => get(D[k].file).then(b => [k, Object.assign({}, D[k], { data: new Int16Array(b) })])))
       .then(list => W.setDem(Object.fromEntries(list))).catch(e => console.warn('relief not loaded, using invented ground:', e.message)) : Promise.resolve();
-    dem.then(() => setTimeout(() => {
-      setup(); setupTouch();
+    // the mesher threads start while the relief loads; the world is built once both are ready
+    const models = root.ModelCache ? ModelCache.load() : Promise.resolve(0);
+    Promise.all([dem, models]).then(() => { performance.mark('ed:dem'); return root.Mesher ? Mesher.start() : false; }).then(() => setTimeout(() => {
+      performance.mark('ed:threads'); setup(); setupTouch(); performance.mark('ed:setup');
+      // while loading, hand the threads new work as soon as one finishes (not only once per frame)
+      if (root.Mesher) Mesher.onResult = () => { if (loading) S.updateChunks(pl.pos, 4); else Mesher.onResult = null; };
       requestAnimationFrame(loop);
       addEventListener('beforeunload', () => { if (dirty) save(); });
       root.__game = { pl, W, S, owned, scan, toggleAdmin, adminAct, teleport, toggleDrive, get drive() { return drive; },

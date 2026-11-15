@@ -261,12 +261,21 @@
     handScene = new T.Scene();
     handCam = new T.PerspectiveCamera(58, 1, 0.01, 10); handScene.add(handCam);
     handSun = new T.DirectionalLight(col(V.sunColor), V.sunI); handSun.position.copy(sunDir); handScene.add(handSun);
-    buildEnv();
+    performance.mark('ed:init:mats'); buildEnv(); performance.mark('ed:init:env');
 
-    buildComposer();
-    Hand.build();
+    buildComposer(); performance.mark('ed:init:composer');
+    Hand.build(); performance.mark('ed:init:hand');
     Particles.build();
-    Deco.build();
+    Deco.build(); performance.mark('ed:init:deco');
+    // stand-ins for the terrain (its meshes only arrive later from the mesher threads), so its shaders compile up front
+    for (const [mat, cast] of [[MAT.terrain, false], [MAT.terrainFine, true]]) {
+      const g = new T.BufferGeometry(), z = a => new T.BufferAttribute(new Float32Array(a), a.length / 3 === 3 ? 3 : 1);
+      g.setAttribute('position', new T.BufferAttribute(new Float32Array([0, 0, 0, 0.01, 0, 0, 0, 0.01, 0]), 3));
+      g.setAttribute('normal', new T.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
+      g.setAttribute('color', new T.BufferAttribute(new Float32Array(9), 3));
+      g.setAttribute('aMat', new T.BufferAttribute(new Float32Array(3), 1)); g.setAttribute('aDepth', new T.BufferAttribute(new Float32Array(3), 1));
+      const m = new T.Mesh(g, mat); m.castShadow = cast; m.receiveShadow = true; m.position.set(0, -1e5, 0); scene.add(m);
+    }
     Scene.resize();
   };
 
@@ -321,18 +330,19 @@
   const chunks = new Map();     // key -> { cx, cy, cz, data, mesh }
   const fines = new Map();      // key -> mesh
   let lastCenter = '', buildQueue = [], fineScan = 0;
-  function makeMesh(m, bx, by, bz, mat, cast) {
+  // m = mesh arrays from World.buildMesh (made on a background thread, see mesher.js)
+  function makeMesh(m, mat, cast) {
     if (!m.idx.length) return null;
+    const [bx, by, bz] = m.base;
     const g = new T.BufferGeometry();
     g.setAttribute('position', new T.BufferAttribute(m.pos, 3));
     g.setAttribute('normal', new T.BufferAttribute(m.nrm, 3));
-    // dug walls show what the ground is made of there (World.materialAt): clay, granite, iron ore
-    const cols = new Float32Array(m.pos.length), mats = new Float32Array(m.pos.length / 3);
-    for (let i = 0, n = m.pos.length / 3; i < n; i++) {
-      if (m.depth[i] <= 0) { cols[i * 3] = P.soil.r; cols[i * 3 + 1] = P.soil.g; cols[i * 3 + 2] = P.soil.b; continue; }
-      const x = bx + m.pos[i * 3], y = by + m.pos[i * 3 + 1], z = bz + m.pos[i * 3 + 2];
-      const id = W.materialAt(x, y, z);
-      matColor(id, x, y, z, tmpC); mats[i] = id > 0 ? 1 : 0;
+    // dug walls show what the ground is made of there (World.materialAt, found on the thread): clay, granite, iron ore
+    const n = m.pos.length / 3, cols = new Float32Array(n * 3), mats = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const id = m.mats[i];
+      if (id < 0) { cols[i * 3] = P.soil.r; cols[i * 3 + 1] = P.soil.g; cols[i * 3 + 2] = P.soil.b; continue; }
+      matColor(id, bx + m.pos[i * 3], by + m.pos[i * 3 + 1], bz + m.pos[i * 3 + 2], tmpC); mats[i] = id > 0 ? 1 : 0;
       cols[i * 3] = tmpC.r; cols[i * 3 + 1] = tmpC.g; cols[i * 3 + 2] = tmpC.b;
     }
     g.setAttribute('color', new T.BufferAttribute(cols, 3)); g.setAttribute('aMat', new T.BufferAttribute(mats, 1));
@@ -345,16 +355,21 @@
     scene.add(mesh); return mesh;
   }
   function drop(mesh) { if (mesh) { mesh.geometry.dispose(); scene.remove(mesh); } }
-  function buildMesh(ch) {
-    drop(ch.mesh);
-    ch.mesh = makeMesh(W.meshChunk(ch.data), ch.cx * W.CH, ch.cy * W.CH, ch.cz * W.CH, MAT.terrain, false);
+  // chunks: key -> { cx, cy, cz, mesh, done }; fines: key -> mesh (or null while it is being built)
+  const fineKey = k => 'f' + k;
+  function askChunk(k, X, Y, Z) { let ch = chunks.get(k); if (!ch) chunks.set(k, ch = { cx: X, cy: Y, cz: Z, mesh: null, done: false }); Mesher.request('c', k, X, Y, Z); }
+  function askFine(k) { const [a, b, c] = k.split(',').map(Number); if (!fines.has(k)) fines.set(k, null); Mesher.request('f', fineKey(k), a, b, c); }
+  // put finished meshes into the scene (within a time budget, nearest work was asked for first)
+  function takeResults(budgetMs) {
+    const t0 = performance.now(), R = Mesher.results;
+    while (R.length && performance.now() - t0 < budgetMs) {
+      const r = R.shift();
+      if (!Mesher.isLatest(r)) continue;          // a newer version of this box is on its way
+      if (r.kind === 'f') { const k = r.k.slice(1); if (!fines.has(k)) continue; drop(fines.get(k)); fines.set(k, makeMesh(r, MAT.terrainFine, true)); }
+      else { const ch = chunks.get(r.k); if (!ch) continue; drop(ch.mesh); ch.mesh = makeMesh(r, MAT.terrain, false); ch.done = true; }
+    }
   }
-  function buildFine(k) {
-    const [a, b, c] = k.split(',').map(Number), F = W.LF.CH;
-    drop(fines.get(k));
-    fines.set(k, makeMesh(W.meshChunk(W.sampleFine(a, b, c)), a * F, b * F, c * F, MAT.terrainFine, true));
-  }
-  // Decide which chunks should exist around the player; returns how many are still waiting to be built.
+  // Decide which chunks should exist around the player; returns how much is still waiting to be built.
   Scene.updateChunks = function (p, budgetMs) {
     const cx = Math.floor(p.x / W.CH), cy = Math.floor(p.y / W.CH), cz = Math.floor(p.z / W.CH), ck = cx + ',' + cy + ',' + cz;
     if (ck !== lastCenter) {
@@ -376,51 +391,55 @@
       list.sort((a, b) => a.dist - b.dist); buildQueue = list;
     }
     const t0 = performance.now();
-    while (buildQueue.length && performance.now() - t0 < budgetMs) {
+    while (buildQueue.length && Mesher.canTake() && performance.now() - t0 < budgetMs) {
       const q = buildQueue.shift();
-      if (q.fine) { if (!fines.has(q.k)) buildFine(q.k); continue; }
-      if (chunks.has(q.k)) continue;
-      const ch = { cx: q.X, cy: q.Y, cz: q.Z, data: W.sampleChunk(q.X, q.Y, q.Z), mesh: null };
-      chunks.set(q.k, ch); buildMesh(ch);
+      if (q.fine) { if (!fines.has(q.k)) askFine(q.k); continue; }
+      if (!chunks.has(q.k)) askChunk(q.k, q.X, q.Y, q.Z);
     }
-    return buildQueue.length;
+    takeResults(Math.max(2, budgetMs - (performance.now() - t0)));
+    let waiting = buildQueue.length; for (const ch of chunks.values()) if (!ch.done) waiting++;
+    return waiting;
   };
-  // A hole was dug: re-mesh what it touched right away. res = { coarse: [keys], fine: [keys] } from World.addHole.
+  // A hole was dug: re-mesh what it touched (first thing the threads do next). res = { coarse, fine } from World.addHole.
   Scene.applyHole = function (h, res) {
-    for (const k of res.fine) buildFine(k);
+    for (const k of res.fine) askFine(k);
     for (const k of res.coarse) {
-      const ch = chunks.get(k);
-      if (ch) { if (h[3] >= W.BIG) W.carve(ch.data, h); buildMesh(ch); }
-      else if (h[3] >= W.BIG) { const [X, Y, Z] = k.split(',').map(Number); const c = { cx: X, cy: Y, cz: Z, data: W.sampleChunk(X, Y, Z), mesh: null }; chunks.set(k, c); buildMesh(c); }
+      if (chunks.has(k) || h[3] >= W.BIG) { const [X, Y, Z] = k.split(',').map(Number); askChunk(k, X, Y, Z); }
     }
     Deco.hole(h);
   };
-  Scene.chunkCount = () => chunks.size;
+  Scene.chunkCount = () => { let n = 0; for (const ch of chunks.values()) if (ch.done) n++; return n; };
   Scene.resetChunks = function () { for (const ch of chunks.values()) drop(ch.mesh); chunks.clear(); for (const m of fines.values()) drop(m); fines.clear(); lastCenter = ''; buildQueue = []; };
 
   // ---------- far terrain (non-diggable ring out to the horizon) ----------
   let far = null, farAnchor = null;
   const FAR_OUT = 4200, NR = 56, NA = 120;
   const lawnMid = col(V.lawn[0]).lerp(col(V.lawn[1]), 0.55);
-  function buildFar(p) {
-    farAnchor = p.clone();
+  // Rebuilt every 8 m of walking. The work is spread over several frames (a few rows of the ring per frame) and the
+  // finished ring replaces the old one, so walking has no hitch; 'force' builds it at once (start, teleport).
+  let farJob = null;
+  function farStart(p) {
     const u = p.clone().normalize();
     const e1 = new T.Vector3().crossVectors(Math.abs(u.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0), u).normalize(), e2 = new T.Vector3().crossVectors(u, e1);
-    const pos = new Float32Array(NR * NA * 3), cols = new Float32Array(NR * NA * 3);
-    const base = u.clone().multiplyScalar(W.R);
-    for (let i = 0; i < NR; i++) {
-      const r = M.farIn * Math.pow(FAR_OUT / M.farIn, i / (NR - 1));
+    farJob = { p: p.clone(), u, e1, e2, base: u.clone().multiplyScalar(W.R), o: O.clone(), i: 0, pos: new Float32Array(NR * NA * 3), cols: new Float32Array(NR * NA * 3) };
+  }
+  function farRows(budgetMs) {
+    const J = farJob, t0 = performance.now(), { e1, e2, base, o, pos, cols } = J;
+    while (J.i < NR && (budgetMs === Infinity || performance.now() - t0 < budgetMs)) {
+      const i = J.i++, r = M.farIn * Math.pow(FAR_OUT / M.farIn, i / (NR - 1));
       for (let a = 0; a < NA; a++) {
         const t = a / NA * Math.PI * 2, x = base.x + (e1.x * Math.cos(t) + e2.x * Math.sin(t)) * r, y = base.y + (e1.y * Math.cos(t) + e2.y * Math.sin(t)) * r, z = base.z + (e1.z * Math.cos(t) + e2.z * Math.sin(t)) * r;
         const l = Math.hypot(x, y, z), dx = x / l, dy = y / l, dz = z / l, h = W.heightDir(dx, dy, dz), rr = W.R + h - (i === 0 ? 0.35 : 0.15);
         const n = (i * NA + a) * 3;
-        pos[n] = dx * rr - O.x; pos[n + 1] = dy * rr - O.y; pos[n + 2] = dz * rr - O.z;
+        pos[n] = dx * rr - o.x; pos[n + 1] = dy * rr - o.y; pos[n + 2] = dz * rr - o.z;
         const nz = W.noise(x / 60, y / 60, z / 60, 5), forest = W.noise(x / 260, y / 260, z / 260, 77) + 0.05;
         if (h > 1900) tmpC.copy(P.snow); else if (h > 1500) tmpC.copy(P.rock).lerp(P.snow, Math.max(0, (h - 1800) / 100));
         else tmpC.copy(lawnMid).lerp(P.grassDry, Math.max(0, nz * 0.6)).lerp(P.forest, Math.min(1, Math.max(0, forest * 2.2)) * Math.min(1, r / 400));
         cols[n] = tmpC.r; cols[n + 1] = tmpC.g; cols[n + 2] = tmpC.b;
       }
     }
+    if (J.i < NR) return;
+    farJob = null; farAnchor = J.p;
     const idx = [];
     for (let i = 0; i < NR - 1; i++) for (let a = 0; a < NA; a++) {
       const a2 = (a + 1) % NA, p0 = i * NA + a, p1 = i * NA + a2, p2 = (i + 1) * NA + a, p3 = (i + 1) * NA + a2;
@@ -430,10 +449,15 @@
     g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('color', new T.BufferAttribute(cols, 3)); g.setIndex(idx);
     g.computeVertexNormals();
     const nn = g.getAttribute('normal'); const test = v3(nn.getX(NA * 5), nn.getY(NA * 5), nn.getZ(NA * 5));
-    if (test.dot(u) < 0) { const ia = g.getIndex().array; for (let k = 0; k < ia.length; k += 3) { const s = ia[k + 1]; ia[k + 1] = ia[k + 2]; ia[k + 2] = s; } g.computeVertexNormals(); }
+    if (test.dot(J.u) < 0) { const ia = g.getIndex().array; for (let k = 0; k < ia.length; k += 3) { const s = ia[k + 1]; ia[k + 1] = ia[k + 2]; ia[k + 2] = s; } g.computeVertexNormals(); }
     if (far) { far.geometry.dispose(); far.geometry = g; } else { far = new T.Mesh(g, MAT.far); far.receiveShadow = true; scene.add(far); }
+    far.position.set(J.o.x - O.x, J.o.y - O.y, J.o.z - O.z);   // built around the origin of its time
   }
-  Scene.updateFar = function (p, force) { if (force || !farAnchor || farAnchor.distanceTo(p) > 8) buildFar(p); };
+  Scene.updateFar = function (p, force) {
+    if (force) { farStart(p); farRows(Infinity); return; }
+    if (farJob) { farRows(2); return; }
+    if (!farAnchor || farAnchor.distanceTo(p) > 8) { farStart(p); farRows(2); }
+  };
 
   // ---------- places where nothing grows (props, the start spot) ----------
   const blocked = [];   // [x, y, z, r] in planet metres
