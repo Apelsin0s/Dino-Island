@@ -100,18 +100,21 @@
     bindInput();
   };
 
+  // names in the player's language: deposits have Ukrainian and English names, resources a table of translations
+  const depName = d => (MapView.L.lang === 'uk' ? d[3] : d[4]) || d[4];
+  const resName = r => (r.n && (r.n[MapView.L.lang] || r.n[MapView.L.lang.split('-')[0]])) || r.en;
   // ---------- deposits: resource marks with a legend; information only ----------
   const marks = [];
   let layer, tip, tipFor = null;
   function buildMarkers() {
     const DD = root.DepositData; if (!DD) return;
-    const L = MapView.L, ru = L.lang === 'ru';
+    const L = MapView.L;
     layer = document.createElement('div'); layer.className = 'mkLayer'; ui.appendChild(layer);
     tip = document.createElement('div'); tip.className = 'mkTip'; tip.hidden = true; ui.appendChild(tip);
     const add = (d, ua) => {
       const r = DD.res[d[2]]; if (!r) return;
       const el = document.createElement('button'); el.className = 'mk' + (ua ? ' ua' : ''); el.style.setProperty('--c', r.col);
-      el.textContent = r.sym; el.setAttribute('aria-label', (ru ? d[3] : d[4]) + ' — ' + (ru ? r.ru : r.en));
+      el.textContent = r.sym; el.setAttribute('aria-label', depName(d) + ' — ' + resName(r));
       el.addEventListener('pointerdown', e => { e.stopPropagation(); showTip(m); });
       layer.appendChild(el);
       // importance: Ukraine first, then the dearer resources
@@ -124,14 +127,14 @@
     // legend: every resource on the map, cheapest to dearest
     const used = new Set(marks.map(m => m.d[2])), lg = ui.querySelector('.mapRes');
     if (lg) lg.innerHTML = Object.keys(DD.res).filter(k => used.has(k)).sort((a, b) => DD.res[a].price - DD.res[b].price).map(k => {
-      const r = DD.res[k]; return `<span class="lgr"><i class="mk" style="--c:${r.col}">${r.sym}</i>${ru ? r.ru : r.en}<em>${r.price ? '$' + fmtP(r.price) + '/' + L.l : L.wells}</em></span>`;
+      const r = DD.res[k]; return `<span class="lgr"><i class="mk" style="--c:${r.col}">${r.sym}</i>${resName(r)}<em>${r.price ? '$' + fmtP(r.price) + '/' + L.l : L.wells}</em></span>`;
     }).join('');
   }
   const fmtP = p => p >= 100 ? Math.round(p) : p >= 10 ? p.toFixed(1) : p.toFixed(2);
   function showTip(m) {
-    const L = MapView.L, ru = L.lang === 'ru', d = m.d, r = m.r;
+    const L = MapView.L, d = m.d, r = m.r;
     tipFor = m; tip.hidden = false;
-    tip.innerHTML = `<b>${ru ? d[3] : d[4]}</b><div class="tr"><i class="mk" style="--c:${r.col}">${r.sym}</i>${ru ? r.ru : r.en}</div>
+    tip.innerHTML = `<b>${depName(d)}</b><div class="tr"><i class="mk" style="--c:${r.col}">${r.sym}</i>${resName(r)}</div>
       <div>${L.status}: <span class="st ${d[5]}">${(L.st[d[5]] || d[5])}</span>${d[6] && d[6] !== 'UA' ? ' · ' + d[6] : ''}</div>
       <div>${r.price ? L.priceL + ': <b>$' + fmtP(r.price) + '</b> · ' + L.rarity + ': ' + (r.ppm >= 1 ? Math.round(r.ppm) : r.ppm) + ' ' + L.ppm : L.wells}</div>
       <div class="dim">${m.ua ? L.srcUA : L.srcWorld}</div>`;

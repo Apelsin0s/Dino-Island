@@ -6,125 +6,24 @@
   const $ = id => document.getElementById(id);
 
   // ---------- language ----------
-  const RU = /^(ru|uk|be|kk)/i.test(navigator.language || '');
-  const L = RU ? {
-    title: 'Endless Digging', sub: 'Выкопай всю Землю. Начни с ложки.', play: 'Играть', cont: 'Продолжить',
-    loading: 'Строим планету…', spoon: 'Ложка',
-    lang: 'ru',
-    saveFull: 'Сохранение не помещается в браузер: засыпь лишние ямы в панели администратора',
-    adm: { title: 'Панель администратора', code: 'Код доступа', enter: 'Войти', wrong: 'Неверный код',
-      tabs: { money: 'Деньги', research: 'Исследования', countries: 'Страны', player: 'Игрок', world: 'Мир', machines: 'Техника', save: 'Сохранение' },
-      zero: 'Обнулить', setTo: 'Сделать', apply: 'Применить', incomeX10: 'Доход ×10', unlockAll: 'Открыть всё дерево', resetAll: 'Сбросить дерево',
-      openAll: 'Открыть все', onlyUkr: 'Только Украина', closeAll: 'Закрыть все', opened: 'Открыто', search: 'Поиск страны…', teleport: 'Телепорт',
-      fly: 'Полёт', flyHint: 'WASD и мышь — лететь, Пробел — вверх, C — вниз, Shift — быстрее; сквозь всё', speed: 'Скорость', digSize: 'Размер копка', reach: 'Дальность',
-      toStart: 'На старт', lat: 'Широта', lon: 'Долгота', fillHoles: 'Засыпать все ямы', bigScan: 'Скан руды 40 м / 30 м', stats: 'Статистика (FPS)', hideHud: 'Скрыть интерфейс',
-      allMachines: 'Выдать всю технику', everything: 'Всё и сразу ($1 млрд, всё дерево, все страны)', bringHere: 'Пригнать сюда',
-      export: 'Выгрузить', import: 'Загрузить', wipe: 'Стереть сохранение', savePh: 'Здесь появится сохранение. Вставь сюда своё и нажми «Загрузить».',
-      saveHint: '«Выгрузить» копирует сохранение (JSON) — так можно перенести игру в другой браузер.', badSave: 'Это не похоже на сохранение', wipeAgain: 'Нажми «Стереть» ещё раз',
-      drawCalls: 'вызовов', tris: 'треуг.', chunks: 'кусков', holes: 'ям', fineBoxes: 'мелких' }, shop: 'Исследования', shopSub: 'Выбери узел дерева', buy: 'Купить', bought: 'Уже есть', soon: 'Скоро', need: 'Не хватает', openShop: 'исследования', close: 'Закрыть',
-    soonLong: 'Появится в следующих обновлениях', needFirst: 'Сначала нужно',
-    rows: ['Инструмент', 'Сила', 'Геология', 'Торговля', 'Автоматизация', 'Техника', 'Бурение'],
-    eff: { perStroke: 'За взмах', perTrip: 'За ходку', stroke: 'Время взмаха', price: 'Цена грунта', rigs: 'Установки', rig1: '1 ручная', rig2: '2 с мотором', rig3: '3 с мотором', see: 'Видно', scanR: 'Радиус / глубина скана', drive: 'Управление', bucket: 'ковш', exIncome: 'Доход экскаваторов', perSec: 'В секунду', probeDepth: 'Глубина щупа', reach: 'Дальность', move: 'Скорость ходьбы', orePrice: 'Цена руды', bank: 'Доход', bankV: '+1 % в минуту', rigSpeed: 'Скорость копалок', rigTurn: 'За оборот', rigIncome: 'Доход копалок', probe: 'породы под прицелом до 4 м', detector: 'руду вокруг до 12 м' },
-    node: {
-      spoon: ['Ложка', 'С неё всё начинается. Маленькая ямка за взмах.'], scoop: ['Совок', 'Металлический совок: вдвое больше земли за взмах.'],
-      trowel: ['Садовая лопатка', 'Острая лопатка, легко входит в глину.'], shovel: ['Лопата', 'Настоящая штыковая лопата. Нужны сильные руки.'],
-      pick: ['Кирка', 'Разбивает камень глубже 16 м.'], b5: ['Ведро 5 л', 'Оранжевое ведро в левой руке.'], b10: ['Ведро 10 л', 'Вдвое больше земли за ходку.'],
-      b20: ['Большое ведро 20 л', 'Тяжёлое, но ходить к приёмке реже.'], sack: ['Мешок за спиной 50 л', 'Прочный мешок, руки свободны.'], barrow: ['Тачка 120 л', 'Возить грунт тачкой.'],
-      arms1: ['Сильные руки I', 'Взмах на 15 % быстрее.'], arms2: ['Сильные руки II', 'Ещё быстрее.'], arms3: ['Сильные руки III', 'Копаешь как машина.'],
-      probe: ['Щуп', 'Стальной щуп: показывает, какие породы под прицелом, до 4 м вглубь.'], detector: ['Металлоискатель', 'Нажми E: один скан вокруг — руда в радиусе 8 м и до 4 м вглубь отмечается на земле с глубиной.'], detector2: ['Мощный металлоискатель', 'Скан на 15 м вокруг и до 8 м вглубь.'],
-      radar: ['Георадар', 'Карта руды под участком.'], scales1: ['Свой покупатель', 'Постоянный покупатель платит за всё на 25 % больше.'], scales2: ['Договор с заводом', 'Платят на 50 % больше.'],
-      sharp: ['Заточка', 'Острая кромка входит глубже: больше земли за взмах.'], longhandle: ['Длинный черенок', 'Достаёшь на 70 см дальше: копать в глубокой яме удобнее.'],
-      boots1: ['Рабочие сапоги', 'Ходишь и бегаешь на 15 % быстрее.'], boots2: ['Лёгкие ботинки', 'На 30 % быстрее.'], arms4: ['Двужильный', 'Взмах ещё быстрее — почти вдвое быстрее, чем в начале.'],
-      probe2: ['Глубокий щуп', 'Щуп показывает породы до 8 м вглубь.'], sorting: ['Сортировка руды', 'Отбираешь руду от пустой породы: руда дороже на 25 %.'],
-      orebuyer: ['Скупщик руды', 'Свой человек на комбинате: руда дороже в 1,5 раза.'], scales3: ['Оптовые поставки', 'Крупный заказчик: за всё платят вдвое.'], bank: ['Сберкасса', 'Каждую минуту +1 % к деньгам (не больше $10).'],
-      grease: ['Смазка шнека', 'Копалки работают на 43 % быстрее.'], auger2: ['Длинный шнек', 'За оборот копалка поднимает 1,6 л вместо 1 л.'], conveyor: ['Конвейер', 'Лента к лачуге: доход копалок ×1,5.'],
-      exMini: ['Мини-экскаватор', 'Свой экскаватор: подойди и нажми R, чтобы сесть. Ездишь на WASD, копаешь ковшом куда смотришь. Без тебя копает котлован сам.'],
-      truck: ['Карьерный самосвал', 'Возит грунт от экскаваторов: их сам по себе доход ×2.'],
-      exBig: ['Карьерный экскаватор', 'Огромный экскаватор с ковшом 0,7 м. Тоже можно сесть и копать (R).'],
-      wheel: ['Роторный экскаватор', 'Махина длиной 45 м: колесо с ковшами снимает 400 л в секунду.'],
-      quarry: ['Карьер-гигант', 'Целый карьерный комплекс.'],
-      bore: ['Буровая установка', 'Бурит скважину на 40 м: 15 л породы и руды в секунду.'],
-      derrick: ['Буровая вышка', 'Вышка 40 м, скважина 200 м: 60 л в секунду.'],
-      shaft: ['Шахта с копром', 'Свой рудник: 200 л руды в секунду с глубины 400 м.'],
-      superdeep: ['Сверхглубокая скважина', 'Глубже, чем кто-либо копал.'],
-      auto1: ['Ручная копалка', 'Тренога со шнеком у лачуги: сама бурит землю, деньги идут тебе.'], auto2: ['Мотобур', 'Мотор на копалке — вдвое быстрее, и вторая установка.'], auto3: ['Третья установка', 'Ещё один мотобур.'], excavator: ['Мини-экскаватор', 'Настоящая техника для котлована.']
-    },
-    mat: ['чернозём', 'глина', 'гранит', 'магнетитовый кварцит', 'гематитовая руда'], firstOre: 'Руда! Железная руда стоит дороже земли',
-    oreSold: 'руда сдана:', probeL: 'Щуп', detL: 'Металлоискатель', noOre: 'руды не найдено', machines: 'техника', getIn: 'сесть', getOut: 'выйти', driveHint: 'WASD — ехать, мышь — смотреть, ЛКМ — копать ковшом, R — выйти', outReach: 'Ковш не дотянется', interest: 'проценты', found: 'найдено гнёзд:', nearest: 'ближайшее', scanB: 'скан', ahead: 'впереди', behind: 'сзади', leftS: 'слева', rightS: 'справа', depthL: 'глубина',
-    status: 'Статус', priceL: 'Цена за литр', rarity: 'в земной коре', ppm: 'г/т', wells: 'добывается скважинами',
-    srcUA: 'Координаты приблизительные, статус на 2026 год', srcWorld: 'Данные USGS MRDS, статус на момент их обновления',
-    st: { work: 'работает', idle: 'простаивает', closed: 'закрыто', occ14: 'оккупировано с 2014', occ22: 'оккупировано с 2022', front: 'у линии фронта', expl: 'разведано, не разрабатывается',
-      usgs_prod: 'добывалось', usgs_past: 'отработано', known: 'известное месторождение' },
-    resTitle: 'Ресурсы на карте', lmap: 'л',
-    helperPay: 'помощники', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км', l: 'л',
-    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать (деньги сразу) · <b>F</b> исследования · <b>E</b> скан металлоискателем · <b>R</b> сесть в технику · <b>M</b> карта · <b>Ё</b> админ · <b>Esc</b> пауза',
-    pause: 'Пауза', quality: 'Графика', hi: 'Высокая', mid: 'Средняя', lo: 'Быстрая', reset: 'Начать заново', far: 'Слишком далеко',
-    clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км',
-    sign: ['ПРИЁМ ГРУНТА', '$0.10 за литр'], bucket: 'Ведро', full: 'Ведро полное — неси в приёмку у лачуги', sell: 'сдать грунт', noDig: 'Здесь копать нельзя', inWay: 'Мешает — камень или дерево',
-    map: 'Карта мира', mapHint: 'Тяни — вращать · колесо — масштаб · M — закрыть', mapTouch: 'Тяни — вращать · два пальца — масштаб', open: 'Открыто: Украина', locked: 'Остальной мир пока закрыт', here: 'Вы здесь',
-    resetAsk: 'Нажми ещё раз: ямы, деньги и покупки пропадут'
-  } : {
-    title: 'Endless Digging', sub: 'Dig out the whole Earth. Start with a spoon.', play: 'Play', cont: 'Continue',
-    loading: 'Building the planet…', spoon: 'Spoon',
-    lang: 'en',
-    saveFull: 'The save no longer fits in the browser: fill some holes in the admin panel',
-    adm: { title: 'Admin panel', code: 'Access code', enter: 'Enter', wrong: 'Wrong code',
-      tabs: { money: 'Money', research: 'Research', countries: 'Countries', player: 'Player', world: 'World', machines: 'Machines', save: 'Save' },
-      zero: 'Zero', setTo: 'Set to', apply: 'Apply', incomeX10: 'Income ×10', unlockAll: 'Unlock the whole tree', resetAll: 'Reset the tree',
-      openAll: 'Open all', onlyUkr: 'Ukraine only', closeAll: 'Close all', opened: 'Open', search: 'Find a country…', teleport: 'Teleport',
-      fly: 'Fly', flyHint: 'WASD and mouse to fly, Space up, C down, Shift faster; through everything', speed: 'Speed', digSize: 'Dig size', reach: 'Reach',
-      toStart: 'To the start', lat: 'Lat', lon: 'Lon', fillHoles: 'Fill all holes', bigScan: 'Ore sweep 40 m / 30 m', stats: 'Stats (FPS)', hideHud: 'Hide the HUD',
-      allMachines: 'Give all machines', everything: 'Everything ($1 bn, the whole tree, all countries)', bringHere: 'Bring here',
-      export: 'Export', import: 'Import', wipe: 'Wipe the save', savePh: 'The save appears here. Paste one in and press Import.',
-      saveHint: 'Export copies the save (JSON) — move the game to another browser that way.', badSave: 'That does not look like a save', wipeAgain: 'Press Wipe once more',
-      drawCalls: 'calls', tris: 'tris', chunks: 'chunks', holes: 'holes', fineBoxes: 'fine' }, shop: 'Research', shopSub: 'Pick a node of the tree', buy: 'Buy', bought: 'Owned', soon: 'Soon', need: 'Need', openShop: 'research', close: 'Close',
-    soonLong: 'Coming in a later update', needFirst: 'First you need',
-    rows: ['Tool', 'Strength', 'Geology', 'Trade', 'Automation', 'Machinery', 'Drilling'],
-    eff: { perStroke: 'Per stroke', perTrip: 'Per trip', stroke: 'Stroke time', price: 'Soil price', rigs: 'Rigs', rig1: '1 hand-crank', rig2: '2 motor', rig3: '3 motor', see: 'Shows', scanR: 'Sweep radius / depth', drive: 'Drive it', bucket: 'bucket', exIncome: 'Excavator income', perSec: 'Per second', probeDepth: 'Probe depth', reach: 'Reach', move: 'Walking speed', orePrice: 'Ore price', bank: 'Income', bankV: '+1 % a minute', rigSpeed: 'Rig speed', rigTurn: 'Per turn', rigIncome: 'Rig income', probe: 'the ground under the crosshair to 4 m', detector: 'ore around you to 12 m' },
-    node: {
-      spoon: ['Spoon', 'Where it all starts. A tiny hole per stroke.'], scoop: ['Hand scoop', 'A metal scoop: twice the soil per stroke.'],
-      trowel: ['Garden trowel', 'A sharp trowel that cuts into clay.'], shovel: ['Shovel', 'A real spade. Needs strong arms.'],
-      pick: ['Pickaxe', 'Breaks rock below 16 m.'], b5: ['Bucket 5 L', 'The orange bucket in your left hand.'], b10: ['Bucket 10 L', 'Twice the soil per trip.'],
-      b20: ['Big bucket 20 L', 'Heavy, but fewer trips to the bin.'], sack: ['Back sack 50 L', 'A strong sack, hands free.'], barrow: ['Wheelbarrow 120 L', 'Move soil by barrow.'],
-      arms1: ['Strong arms I', 'Strokes 15 % faster.'], arms2: ['Strong arms II', 'Faster still.'], arms3: ['Strong arms III', 'You dig like a machine.'],
-      probe: ['Probe', 'A steel probe: shows the ground under the crosshair, 4 m down.'], detector: ['Metal detector', 'Press E: one sweep — ore within 8 m and 4 m down gets marks on the ground with its depth.'], detector2: ['Strong detector', 'Sweeps 15 m around and 8 m down.'],
-      radar: ['Ground radar', 'A map of the ore under the site.'], scales1: ['Regular buyer', 'A regular buyer pays 25 % more for everything.'], scales2: ['Plant contract', 'Pays 50 % more.'],
-      sharp: ['Sharpened edge', 'A sharp edge cuts deeper: more soil per stroke.'], longhandle: ['Long handle', 'Reach 70 cm further: easier in a deep pit.'],
-      boots1: ['Work boots', 'Walk and run 15 % faster.'], boots2: ['Light boots', '30 % faster.'], arms4: ['Tireless', 'Strokes faster still — about twice as fast as at the start.'],
-      probe2: ['Deep probe', 'The probe reads the ground 8 m down.'], sorting: ['Ore sorting', 'Pick ore from waste rock: ore pays 25 % more.'],
-      orebuyer: ['Ore buyer', 'A contact at the steel plant: ore pays 1.5 times more.'], scales3: ['Wholesale', 'A big customer: everything pays double.'], bank: ['Savings bank', '+1 % of your money every minute (up to $10).'],
-      grease: ['Auger grease', 'Rigs work 43 % faster.'], auger2: ['Long auger', 'Each turn brings up 1.6 L instead of 1 L.'], conveyor: ['Conveyor', 'A belt to the shack: rig income ×1.5.'],
-      exMini: ['Mini excavator', 'Your own excavator: walk up and press R to get in. Drive with WASD, dig with the bucket where you look. Left alone it digs a pit by itself.'],
-      truck: ['Mining dump truck', 'Hauls soil for the excavators: their own income ×2.'],
-      exBig: ['Quarry excavator', 'A huge excavator with a 0.7 m bucket. You can get in and dig too (R).'],
-      wheel: ['Bucket-wheel excavator', 'A 45 m giant: the wheel strips 400 L a second.'],
-      quarry: ['Giant quarry', 'A whole quarry complex.'],
-      bore: ['Drilling rig', 'Drills a 40 m well: 15 L of rock and ore a second.'],
-      derrick: ['Drilling derrick', 'A 40 m derrick, a 200 m well: 60 L a second.'],
-      shaft: ['Mine headframe', 'Your own mine: 200 L of ore a second from 400 m down.'],
-      superdeep: ['Super-deep borehole', 'Deeper than anyone has dug.'],
-      auto1: ['Hand-crank rig', 'A tripod auger by the shack bores by itself; the money is yours.'], auto2: ['Motor drill', 'A motor on the rig: twice as fast, plus a second rig.'], auto3: ['Third rig', 'One more motor drill.'], excavator: ['Mini excavator', 'Real machinery for a proper pit.']
-    },
-    mat: ['topsoil', 'clay', 'granite', 'magnetite quartzite', 'hematite ore'], firstOre: 'Ore! Iron ore is worth more than soil',
-    oreSold: 'ore handed in:', probeL: 'Probe', detL: 'Detector', noOre: 'no ore found', machines: 'machinery', getIn: 'get in', getOut: 'get out', driveHint: 'WASD to drive, mouse to look, LMB to dig with the bucket, R to get out', outReach: 'The bucket cannot reach that', interest: 'interest', found: 'pockets found:', nearest: 'nearest', scanB: 'scan', ahead: 'ahead', behind: 'behind', leftS: 'to the left', rightS: 'to the right', depthL: 'depth',
-    status: 'Status', priceL: 'Price per litre', rarity: 'in the crust', ppm: 'ppm', wells: 'extracted by wells',
-    srcUA: 'Approximate coordinates, status as of 2026', srcWorld: 'USGS MRDS data, status as of its last update',
-    st: { work: 'working', idle: 'idle', closed: 'closed', occ14: 'occupied since 2014', occ22: 'occupied since 2022', front: 'near the front line', expl: 'explored, not mined',
-      usgs_prod: 'producer', usgs_past: 'past producer', known: 'well-known deposit' },
-    resTitle: 'Resources on the map', lmap: 'L',
-    helperPay: 'helpers', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km', l: 'L',
-    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig (paid at once) · <b>F</b> research · <b>E</b> detector sweep · <b>R</b> get into a machine · <b>M</b> map · <b>`</b> admin · <b>Esc</b> pause',
-    pause: 'Paused', quality: 'Graphics', hi: 'High', mid: 'Medium', lo: 'Fast', reset: 'Start over', far: 'Too far',
-    clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km',
-    sign: ['SOIL WANTED', '$0.10 per litre'], bucket: 'Bucket', full: 'Bucket is full — take it to the bin by the shack', sell: 'hand in soil', noDig: "Can't dig here", inWay: 'A rock or a tree is in the way',
-    map: 'World map', mapHint: 'Drag to turn · wheel to zoom · M to close', mapTouch: 'Drag to turn · two fingers to zoom', open: 'Open: Ukraine', locked: 'The rest of the world is locked for now', here: 'You are here',
-    resetAsk: 'Press again: holes, money and upgrades will be lost'
+  // ---------- language: English is the base, others override (src/lang/*.js); chosen in the menu, else from the system ----------
+  const LANGS = root.Lang || {};
+  const pickLang = () => {
+    let saved = null; try { saved = localStorage.getItem('endlessdigging.lang'); } catch (e) {}
+    if (saved && LANGS[saved]) return saved;
+    for (const l of (navigator.languages || [navigator.language || 'en'])) { const k = String(l).toLowerCase(), base = k.split('-')[0];
+      if (LANGS[k]) return k; if (k === 'zh-tw' || k === 'zh-hk') { if (LANGS['zh-TW']) return 'zh-TW'; } if (LANGS[base]) return base; if (base === 'zh' && LANGS['zh-CN']) return 'zh-CN'; if (base === 'pt' && LANGS['pt-BR']) return 'pt-BR'; }
+    return 'en';
   };
-  document.documentElement.lang = RU ? 'ru' : 'en';
+  const LANG = pickLang();
+  const deepMerge = (a, b) => { const o = Array.isArray(a) ? a.slice() : Object.assign({}, a); for (const k in b) o[k] = b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] ? deepMerge(a[k], b[k]) : b[k]; return o; };
+  const L = deepMerge(LANGS.en || {}, LANG === 'en' ? {} : (LANGS[LANG] || {}));
+  L.lang = LANG;
+  document.documentElement.lang = LANG; if (L.rtl) document.documentElement.dir = 'rtl';
+  const loc = L.locale || 'en-US';
+  const nameOf = o => (o.n && (o.n[LANG] || o.n[LANG.split('-')[0]])) || o.en;   // a name in the player's language, English if missing
   const TOUCH = (root.matchMedia && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in root || /[?&]touch\b/.test(location.search);
   if (TOUCH) document.documentElement.classList.add('touch');
-  Object.assign(L, RU ? { tkeys: '<b>Левый палец</b> — идти (дальше от центра — бег) · <b>правый</b> — смотреть · <b>копать</b> · <b>прыжок</b> · <b>карта</b> · <b>Ⅱ</b> пауза', dig: 'Копать', jumpB: 'Прыжок', turn: 'Поверни телефон боком — так удобнее' }
-    : { tkeys: '<b>Left thumb</b> walk (push further to run) · <b>right</b> look · <b>dig</b> · <b>jump</b> · <b>map</b> · <b>Ⅱ</b> pause', dig: 'Dig', jumpB: 'Jump', turn: 'Turn your phone sideways for a better view' });
 
   // ---------- tools and economy ----------
   // the tool ladder (variant 1 of the progression page): each step digs a bigger scoop
@@ -648,7 +547,7 @@
   })();
 
   // ---------- HUD ----------
-  function fmtInt(n) { return Math.round(n).toLocaleString(RU ? 'ru-RU' : 'en-US'); }
+  function fmtInt(n) { return Math.round(n).toLocaleString(loc); }
   function floater(text, cls) { const el = document.createElement('div'); el.className = 'floater' + (cls ? ' ' + cls : ''); el.textContent = text; $('floaters').appendChild(el); setTimeout(() => el.remove(), 1200); }
   let noticeT = 0;
   function notice(text) { const el = $('notice'); el.textContent = text; el.hidden = false; noticeT = 2.2; }
@@ -760,17 +659,17 @@
   function adminBody() {
     const C = root.Countries || [], open = new Set(pl.open);
     switch (AD.tab) {
-      case 'money': return `<div class="arow big">$${pl.money.toLocaleString(RU ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 })}</div>
+      case 'money': return `<div class="arow big">$${pl.money.toLocaleString(loc, { maximumFractionDigits: 2 })}</div>
         <div class="arow">${btn('m:1e6', '+ $1 000 000', 'main')}${btn('m:1e3', '+ $1 000')}${btn('m:1e9', '+ $1 000 000 000')}${btn('m:x2', '× 2')}${btn('m:0', A_.zero, 'warn')}</div>
         <div class="arow"><label>${A_.setTo} $<input id="aMoney" type="number" min="0" step="1" value="${Math.round(pl.money)}"></label>${btn('m:set', A_.apply)}</div>
         <div class="arow">${chip('m:mul', AD.incomeMul > 1, A_.incomeX10)}</div>`;
       case 'research': return `<div class="arow">${btn('r:all', A_.unlockAll, 'main')}${btn('r:none', A_.resetAll, 'warn')}</div>
         <div class="agrid">${NODES.filter(n => !n.root).map(n => `<label class="acheck${n.soon ? ' dim' : ''}"><input type="checkbox" data-node="${n.id}"${has(n.id) ? ' checked' : ''}${n.soon ? ' disabled' : ''}>${L.node[n.id][0]}${n.soon ? ' · ' + L.soon : ''}</label>`).join('')}</div>`;
       case 'countries': {
-        const f = AD.filter.trim().toLowerCase(), list = C.filter(c => !f || c.ru.toLowerCase().includes(f) || c.en.toLowerCase().includes(f));
+        const f = AD.filter.trim().toLowerCase(), list = C.filter(c => !f || nameOf(c).toLowerCase().includes(f) || c.en.toLowerCase().includes(f));
         return `<div class="arow">${btn('c:all', A_.openAll, 'main')}${btn('c:ukr', A_.onlyUkr)}${btn('c:none', A_.closeAll, 'warn')}<span class="acount">${A_.opened}: ${open.size} / ${C.length}</span></div>
           <div class="arow"><input id="aFilter" type="search" placeholder="${A_.search}" value="${AD.filter.replace(/"/g, '&quot;')}"></div>
-          <div class="alist">${list.map(c => `<div class="aitem"><label class="acheck"><input type="checkbox" data-country="${c.id}"${open.has(c.id) ? ' checked' : ''}>${RU ? c.ru : c.en}</label><button class="abtn small" data-act="tp:${c.id}">${A_.teleport}</button></div>`).join('')}</div>`;
+          <div class="alist">${list.map(c => `<div class="aitem"><label class="acheck"><input type="checkbox" data-country="${c.id}"${open.has(c.id) ? ' checked' : ''}>${nameOf(c)}</label><button class="abtn small" data-act="tp:${c.id}">${A_.teleport}</button></div>`).join('')}</div>`;
       }
       case 'player': return `<div class="arow">${chip('p:fly', AD.fly, A_.fly)}<span class="ahint">${A_.flyHint}</span></div>
         <div class="arow"><span class="alab">${A_.speed}</span>${[1, 3, 10, 30].map(v => chip('p:speed:' + v, AD.speed === v, '×' + v)).join('')}</div>
@@ -805,8 +704,8 @@
   }
   function setOpen(ids) { pl.open = ids; MapV.setOpen(ids); dirty = true; updateOpenLabel(); }
   function updateOpenLabel() {
-    const C = root.Countries || [], names = C.filter(c => pl.open.includes(c.id)).map(c => RU ? c.ru : c.en);
-    $('mapOpen').textContent = (RU ? 'Открыто: ' : 'Open: ') + (names.length <= 3 ? names.join(', ') || '—' : names.length + (RU ? ' стран' : ' countries'));
+    const C = root.Countries || [], names = C.filter(c => pl.open.includes(c.id)).map(nameOf);
+    $('mapOpen').textContent = L.openPrefix + ': ' + (names.length <= 3 ? names.join(', ') || '—' : names.length + ' ' + L.countriesN);
   }
   function teleport(lat, lon) {
     if (drive) toggleDrive();
@@ -984,6 +883,7 @@
       : `<div class="card"><h1>${kind === 'pause' ? L.pause : L.title}</h1><p class="sub">${kind === 'pause' ? L.planet : L.sub}</p>
           <button id="bPlay" class="big">${kind === 'pause' ? L.cont : L.play}</button>
           <div class="row"><span>${L.quality}</span><button id="qHi" class="${q === 'high' ? 'on' : ''}">${L.hi}</button><button id="qMid" class="${q === 'mid' ? 'on' : ''}">${L.mid}</button><button id="qLo" class="${q === 'low' ? 'on' : ''}">${L.lo}</button></div>
+          <div class="row"><span>${L.langLabel}</span><select id="langSel">${Object.keys(LANGS).map(k => `<option value="${k}"${k === LANG ? ' selected' : ''}>${LANGS[k].langName || k}</option>`).join('')}</select></div>
           ${kind === 'pause' ? `<div class="row"><button id="bAdmin" class="ghost">${L.adm.title}</button><button id="bReset" class="ghost">${L.reset}</button></div>` : ''}
           <p class="keys">${TOUCH ? L.tkeys : L.keys}</p></div>`;
     if (kind === 'loading') return;
@@ -996,6 +896,7 @@
       wipeSave();   // a clean start: machines, rigs and holes all go
     };
     const ab = $('bAdmin'); if (ab) ab.onclick = () => toggleAdmin(true);
+    $('langSel').onchange = e => { try { localStorage.setItem('endlessdigging.lang', e.target.value); } catch (er) {} if (dirty) save(); location.reload(); };
   }
   function pause(on) { if (on) { playing = false; mouseDown = false; for (const k in keys) keys[k] = false; stick.id = lookT.id = null; stick.x = stick.y = 0; const sb = $('stick'); if (sb) sb.hidden = true; overlay('pause'); if (dirty) save(); } }
 
@@ -1041,7 +942,7 @@
   root.addEventListener('load', () => {
     $('clickHint').textContent = L.clickHint; $('leftLbl').textContent = L.left;
     $('resTitle').textContent = L.resTitle;
-    $('mapTitle').textContent = L.map; $('mapHint').textContent = TOUCH ? L.mapTouch : L.mapHint; $('mapOpen').textContent = L.open; if (root.Countries) updateOpenLabel(); $('mapLocked').textContent = L.locked;
+    $('mapTitle').textContent = L.map; $('mapHint').textContent = TOUCH ? L.mapTouch : L.mapHint; updateOpenLabel(); $('mapLocked').textContent = L.locked;
     document.title = L.title;
     for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = Icons.svg(el.dataset.icon);
     overlay('loading');
