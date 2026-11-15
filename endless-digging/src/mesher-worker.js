@@ -6,6 +6,10 @@ const W = self.World;
 onmessage = e => {
   const m = e.data;
   if (m.t === 'dem') W.setDem(m.dem);
+  else if (m.t === 'wdem') W.setWorldDem(m.info);
+  else if (m.t === 'block') W.setWorldBlock(m.k, m.d);
+  else if (m.t === 'patches') W.setPatches(m.list);
+  else if (m.t === 'patch') W.setPatchData(m.id, m.d);
   else if (m.t === 'holes') { const h = m.h; for (let i = 0; i + 3 < h.length; i += 4) W.addHole(h[i], h[i + 1], h[i + 2], h[i + 3]); }
   else if (m.t === 'clear') W.clearHoles();
   else if (m.t === 'ping') postMessage({ t: 'pong' });

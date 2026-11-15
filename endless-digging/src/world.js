@@ -44,21 +44,82 @@
     const x = Math.floor(fx), y = Math.floor(fy), tx = fx - x, ty = fy - y, d = g.data, w = g.w;
     const row = j => { const o = j * w + x; return cr(d[o - 1], d[o], d[o + 1], d[o + 2], tx); };
     g.fade = Math.min(1, Math.min(fx, fy, g.w - 1 - fx, g.h - 1 - fy) / 25);
-    return cr(row(y - 1), row(y), row(y + 1), row(y + 2), ty) * 0.1;
+    return cr(row(y - 1), row(y), row(y + 1), row(y + 2), ty) * (g.unit || 0.1);
+  }
+  // ---------- the whole Earth: 15° blocks of a 1/30° grid (~3.7 km), dem/world/<col>_<row>.txt ----------
+  // Blocks are loaded around the player (game), on first use (server, see setBlockLoader), and sent to the mesher threads.
+  let WD = null, lastBlk = null, lastRough = 0;
+  const blocks = new Map();
+  let blockLoader = null;
+  function setWorldDem(info) { WD = info; }
+  function setWorldBlock(k, data) { blocks.set(k, data); lastBlk = null; }
+  function setBlockLoader(f) { blockLoader = f; }
+  // a block file after inflating: int16 deltas along each row, first column down -> elevations
+  function decodeBlock(deltas) {
+    const S = WD.size, e = new Int16Array(S * S);
+    for (let j = 0; j < S; j++) { const o = j * S; e[o] = (j ? e[o - S] : 0) + deltas[o]; for (let i = 1; i < S; i++) e[o + i] = e[o + i - 1] + deltas[o + i]; }
+    return e;
+  }
+  function blockOf(lat, lon) { const B = WD.block; return [Math.min(WD.cols - 1, Math.max(0, Math.floor((lon + 180) / B))), Math.min(WD.rows - 1, Math.max(0, Math.floor((90 - lat) / B)))]; }
+  function blockKey(lat, lon) { const [c, r] = blockOf(lat, lon); return c + '_' + r; }
+  function worldAt(lat, lon) {   // metres (sea floor negative), NaN while its block is not loaded
+    if (!WD) return NaN;
+    if (lon >= 180) lon -= 360; else if (lon < -180) lon += 360;
+    const B = WD.block, S = WD.size;
+    let L = lastBlk;
+    if (!L || lon < L.lon0 || lon >= L.lon0 + B || lat > L.lat1 || lat <= L.lat1 - B) {
+      const [c, r] = blockOf(lat, lon), k = c + '_' + r;
+      let d = blocks.get(k);
+      if (!d && blockLoader) { d = blockLoader(k); if (d) blocks.set(k, d); }
+      if (!d) return NaN;
+      L = lastBlk = { d, lon0: -180 + c * B, lat1: 90 - r * B };
+    }
+    const d = L.d, fx = (lon - L.lon0) / WD.step + 1, fy = (L.lat1 - lat) / WD.step + 1;
+    const x = Math.min(S - 3, Math.max(1, Math.floor(fx))), y = Math.min(S - 3, Math.max(1, Math.floor(fy))), tx = fx - x, ty = fy - y;
+    const row = j => { const o = j * S + x; return cr(d[o - 1], d[o], d[o + 1], d[o + 2], tx); };
+    const o = y * S + x, a = d[o], b = d[o + 1], c2 = d[o + S], e = d[o + S + 1];
+    lastRough = Math.max(a, b, c2, e) - Math.min(a, b, c2, e);
+    return cr(row(y - 1), row(y), row(y + 1), row(y + 2), ty);
+  }
+  // ---------- ~40 m patches: famous volcanoes, craters, mountains, canyons (dem/patches/*.txt) ----------
+  let PATCHES = [], patchLoader = null;
+  function setPatches(list) { PATCHES = list.map(p => Object.assign({ data: null, unit: 0.5, tried: false }, p)); }
+  function setPatchData(id, data) { const p = PATCHES.find(q => q.id === id); if (p) p.data = data; }
+  function setPatchLoader(f) { patchLoader = f; }
+  function decodePatch(deltas, w, h) {
+    const e = new Int16Array(w * h);
+    for (let j = 0; j < h; j++) { const o = j * w; e[o] = (j ? e[o - w] : 0) + deltas[o]; for (let i = 1; i < w; i++) e[o + i] = e[o + i - 1] + deltas[o + i]; }
+    return e;
+  }
+  function patchBlend(h, lat, lon) {
+    for (const p of PATCHES) {
+      const b = p.box; if (lon < b[0] || lon > b[1] || lat < b[2] || lat > b[3]) continue;
+      if (!p.data && patchLoader && !p.tried) { p.tried = true; p.data = patchLoader(p); }
+      if (!p.data) continue;
+      const v = demAt(p, lat, lon); if (v !== v) continue;
+      const f = Math.min(1, p.fade * 2.5), k = f * f * (3 - 2 * f); h = h + (v - h) * k;
+    }
+    return h;
   }
   function height(qx, qy, qz) {
-    if (DEM) {
-      const lat = Math.asin(Math.max(-1, Math.min(1, qy / R))) * 57.29577951308232, lon = Math.atan2(-qz, qx) * 57.29577951308232;
-      let h = demAt(DEM.ukraine, lat, lon);
-      if (h === h) {
-        const fu = DEM.ukraine.fade;
-        if (fu < 1) h = h * fu + inventedHeight(qx, qy, qz) * (1 - fu);
-        const hl = demAt(DEM.local, lat, lon);
-        if (hl === hl) { const f = DEM.local.fade, k = f * f * (3 - 2 * f); h = h + (hl - h) * k; }
-        return h + noise(qx / 35, qy / 35, qz / 35, 41) * 0.35 + noise(qx / 9, qy / 9, qz / 9, 53) * 0.1;
-      }
+    const lat = Math.asin(Math.max(-1, Math.min(1, qy / R))) * 57.29577951308232, lon = Math.atan2(-qz, qx) * 57.29577951308232;
+    let h = worldAt(lat, lon);
+    if (h === h) {
+      // between the 3.7 km samples: rocky detail where the land is rugged (mountains, volcanoes), almost none on plains
+      const rough = Math.min(1500, lastRough);
+      if (rough > 25) h += (noise(qx / 1100, qy / 1100, qz / 1100, 71) * 0.55 + noise(qx / 380, qy / 380, qz / 380, 73) * 0.3 + noise(qx / 120, qy / 120, qz / 120, 79) * 0.15) * (rough - 25) * 0.16;
+      h += noise(qx / 700, qy / 700, qz / 700, 23) * 2.5;
+    } else h = inventedHeight(qx, qy, qz);
+    if (DEM) {   // finer real grids: Ukraine (~2 km)
+      const hu = demAt(DEM.ukraine, lat, lon);
+      if (hu === hu) h = h + (hu - h) * DEM.ukraine.fade;
     }
-    return inventedHeight(qx, qy, qz);
+    if (PATCHES.length) h = patchBlend(h, lat, lon);   // famous places (~40 m)
+    if (DEM) {   // the start (~20 m)
+      const hl = demAt(DEM.local, lat, lon);
+      if (hl === hl) { const f = DEM.local.fade, k = f * f * (3 - 2 * f); h = h + (hl - h) * k; }
+    }
+    return h + noise(qx / 35, qy / 35, qz / 35, 41) * 0.35 + noise(qx / 9, qy / 9, qz / 9, 53) * 0.1;
   }
   function inventedHeight(qx, qy, qz) {
     const m = noise(qx / 6000, qy / 6000, qz / 6000, 11);
@@ -338,6 +399,6 @@
   function fromLatLon(lat, lon) { const a = lat * Math.PI / 180, b = lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), -Math.cos(a) * Math.sin(b)]; }
   function toLatLon(x, y, z) { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; }
 
-  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, heightAt, solid, depthAt, addHole, clearHoles, holes, key,
+  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, setWorldDem, setWorldBlock, setBlockLoader, decodeBlock, setPatches, setPatchData, setPatchLoader, decodePatch, patches: () => PATCHES, blockKey, blockOf, worldAt, hasBlock: k => blocks.has(k), heightAt, solid, depthAt, addHole, clearHoles, holes, key,
     chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, buildMesh, fineSet, blockers, blocked, materialAt, kryvbas, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
 })(typeof window !== 'undefined' ? window : globalThis);

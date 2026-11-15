@@ -18,6 +18,11 @@
     return addHole(x, y, z, r);
   };
   W.clearHoles = function () { flush(); if (!M.sync) post({ t: 'clear' }); return clearHoles(); };
+  // relief blocks of the whole Earth go to every thread too
+  const blocks = new Map(), setBlock = W.setWorldBlock;
+  W.setWorldBlock = function (k, d) { blocks.set(k, d); if (!M.sync) post({ t: 'block', k, d }); return setBlock(k, d); };
+  const pdata = new Map(), setPD = W.setPatchData;
+  W.setPatchData = function (id, d) { pdata.set(id, d); if (!M.sync) post({ t: 'patch', id, d }); return setPD(id, d); };
   let demData = null;
   W.setDem = function (d) { demData = d; if (!M.sync) post({ t: 'dem', dem: d }); return setDem(d); };
 
@@ -52,6 +57,10 @@
       M.workers = ws; M.sync = false;
       // bring the threads up to date: relief, then every hole dug so far
       if (demData) post({ t: 'dem', dem: demData });
+      if (root.WorldDemInfo) post({ t: 'wdem', info: root.WorldDemInfo });
+      for (const [k, d] of blocks) post({ t: 'block', k, d });
+      if (root.DemPatches) post({ t: 'patches', list: root.DemPatches });
+      for (const [id, d] of pdata) post({ t: 'patch', id, d });
       const h = []; for (const q of W.holes) h.push(q[0], q[1], q[2], q[3]);
       if (h.length) post({ t: 'holes', h });
       return true;

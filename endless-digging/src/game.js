@@ -109,16 +109,18 @@
     if (stick.id !== null) { mx = stick.x; mz = -stick.y; amt = Math.min(1, Math.hypot(mx, mz) * 1.25); run = amt >= 1 && Math.hypot(mx, mz) > 0.92; }
     const sp = (run ? RUN : WALK) * lvl('move') * AD.speed;
     const wish = v3(0, 0, 0).addScaledVector(pl.fwd, mz).addScaledVector(right, mx);
-    if (wish.lengthSq() > 0.0001) wish.normalize().multiplyScalar(sp * amt);
+    // in the sea (below sea level where the map has water): you swim at the surface, slower; Space dives up
+    const swim = pl.pos.length() - W.R < -0.9 && S.inSea(pl.pos);
+    if (wish.lengthSq() > 0.0001) wish.normalize().multiplyScalar(sp * amt * (swim ? 0.45 : 1));
     // fixed small physics steps: the same feel at any frame rate
     let speed = 0, landV = 0;
     const n = Math.max(1, Math.ceil(dt / (1 / 120)));
     for (let i = 0; i < n; i++) {
       const h = dt / n; frame();
       const vu = pl.vel.dot(up), vt = pl.vel.clone().addScaledVector(up, -vu);
-      vt.lerp(wish, Math.min(1, (pl.grounded ? 14 : 2.5) * h));
-      let nvu = vu - G * h;
-      if (pl.grounded && k.Space && !pl.jumpHeld) { nvu = JUMP; pl.grounded = false; pl.jumpHeld = true; Sound.jump(); }
+      vt.lerp(wish, Math.min(1, (pl.grounded ? 14 : swim ? 3 : 2.5) * h));
+      let nvu = swim ? vu + ((-1.35 - (pl.pos.length() - W.R)) * 6 - vu * 2.5 + (k.Space ? 3 : 0)) * h : vu - G * h;
+      if (!swim && pl.grounded && k.Space && !pl.jumpHeld) { nvu = JUMP; pl.grounded = false; pl.jumpHeld = true; Sound.jump(); }
       pl.vel.copy(vt).addScaledVector(up, nvu);
       pl.pos.addScaledVector(pl.vel, h); frame();
       const gr = collide();
@@ -683,12 +685,16 @@
     const C = root.Countries || [], names = C.filter(c => pl.open.includes(c.id)).map(nameOf);
     $('mapOpen').textContent = L.openPrefix + ': ' + (names.length <= 3 ? names.join(', ') || '—' : names.length + ' ' + L.countriesN);
   }
-  function teleport(lat, lon) {
+  // the relief there is fetched first (a 15° block), then you are put on the ground
+  function teleport(lat, lon) { notice(L.loading); Terrain.ensure(lat, lon).then(() => teleportNow(lat, lon)); }
+  function teleportNow(lat, lon) {
     if (drive) toggleDrive();
     const d = W.fromLatLon(lat, lon), h = W.heightDir(d[0], d[1], d[2]);
     const p = v3(d[0], d[1], d[2]).multiplyScalar(W.R + h + 0.2);
-    pl.pos.copy(S.groundBelow(p, 3)).addScaledVector(p.clone().normalize(), 0.05); pl.vel.set(0, 0, 0); frame();
-    S.rebase(pl.pos); S.shadeAt(pl.pos, pl.fwd); dirty = true;
+    pl.pos.copy(S.groundBelow(p, 3)).addScaledVector(p.clone().normalize(), 0.05);
+    if (h < -1.35 && S.inSea(p)) pl.pos.copy(p).setLength(W.R - 1.35);   // at sea: you float at the surface
+    pl.vel.set(0, 0, 0); frame();
+    S.rebase(pl.pos); S.shadeAt(pl.pos, pl.fwd); S.rebuildDistant(pl.pos); dirty = true;
   }
   function adminAct(a) {
     const [k, v, w] = a.split(':');
@@ -968,7 +974,7 @@
   function pause(on) { if (on) { playing = false; mouseDown = false; for (const k in keys) keys[k] = false; stick.id = lookT.id = null; stick.x = stick.y = 0; const sb = $('stick'); if (sb) sb.hidden = true; overlay('pause'); if (dirty) save(); } }
 
   // ---------- loop ----------
-  let last = performance.now(), t = 0, loadDrawn = 0, chunksDone = false, loading = true, digT = 0, compiled = null, driveCamNow = null;
+  let terrT = 0, last = performance.now(), t = 0, loadDrawn = 0, chunksDone = false, loading = true, digT = 0, compiled = null, driveCamNow = null;
   function loop(now) {
     if (root.__stopLoop) return;   // test tools take still frames themselves
     requestAnimationFrame(loop);
@@ -998,7 +1004,8 @@
       if (!drive && (digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach + lvl('reach') + AD.reach); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
       S.updateChunks(pl.pos, 5); S.updateFar(pl.pos); S.updateDeco(pl.pos, false, 3);
       if ((saveT += dt) > 5 && dirty) { saveT = 0; save(); }
-      updateMachines(dt); updateHeavy(dt); updateStats(dt); netTick(dt); if (scanCool > 0) scanCool -= dt;
+      updateMachines(dt); updateHeavy(dt); updateStats(dt); netTick(dt);
+      if ((terrT += dt) > 2) { terrT = 0; const ll = W.toLatLon(pl.pos.x, pl.pos.y, pl.pos.z); Terrain.watch(ll[0], ll[1]); } if (scanCool > 0) scanCool -= dt;
       if (has('bank') && !ONLINE && (pl.bankT = (pl.bankT || 0) + dt) >= 60) { pl.bankT = 0; const g2 = Math.min(10, pl.money * 0.01); pl.money += g2; floater('+$' + fmtMoney(g2) + ' · ' + L.interest); dirty = true; }
       hud(dt);
     }
@@ -1025,7 +1032,23 @@
     // co-op: sign in while everything else loads; if the server cannot be reached the game starts solo
     const conn = root.Net && Net.mode() === 'coop' ? Net.connect().catch(reason => ({ failed: reason })) : Promise.resolve(null);
     let welcome = null;
-    Promise.all([dem, models, conn]).then(r => { welcome = r[2]; performance.mark('ed:dem'); return root.Mesher ? Mesher.start() : false; }).then(() => setTimeout(() => {
+    // the relief of the whole Earth around the start, your plot (co-op) and where you were last time
+    const terr = conn.then(w => {
+      const at = [[SPAWN_LAT, SPAWN_LON]];
+      if (w && !w.failed) at.push(w.plot);
+      else { const sv = load(); if (sv && sv.pos) at.push(W.toLatLon(sv.pos[0], sv.pos[1], sv.pos[2])); }
+      return Promise.all(at.map(a => Terrain.ensure(a[0], a[1])));
+    });
+    Promise.all([dem, models, conn, terr, root.Biome ? Biome.ready : 0]).then(r => { welcome = r[2]; performance.mark('ed:dem'); return root.Mesher ? Mesher.start() : false; }).then(() => setTimeout(() => {
+      // a relief block that arrives later (you walked or drove towards another one): rebuild the ground around you
+      Terrain.onBlock = (k, patch) => {
+        if (loading) return;
+        const ll = W.toLatLon(pl.pos.x, pl.pos.y, pl.pos.z);
+        if (patch) { const bx = patch.box, m = 0.06; if (ll[0] < bx[2] - m || ll[0] > bx[3] + m || ll[1] < bx[0] - m * 1.5 || ll[1] > bx[1] + m * 1.5) { S.rebuildDistant(pl.pos); return; } }
+        else if (![[0, 0], [0.05, 0.05], [-0.05, -0.05], [0.05, -0.05], [-0.05, 0.05]].some(([a, b]) => W.blockKey(ll[0] + a, ll[1] + b) === k)) return;
+        S.resetChunks(); S.updateFar(pl.pos, true); S.updateDeco(pl.pos, true);
+        if (W.solid(pl.pos.x, pl.pos.y, pl.pos.z) > 0) { pl.pos.setLength(W.R + W.heightAt(pl.pos.x, pl.pos.y, pl.pos.z) + 0.1); pl.vel.set(0, 0, 0); }
+      };
       performance.mark('ed:threads'); setup(welcome); setupTouch(); if (ONLINE) { buildChat(); netStart(); } else if (welcome && welcome.failed) netFailed = welcome.failed; performance.mark('ed:setup');
       // while loading, hand the threads new work as soon as one finishes (not only once per frame)
       if (root.Mesher) Mesher.onResult = () => { if (loading) S.updateChunks(pl.pos, 4); else Mesher.onResult = null; };
@@ -1039,6 +1062,7 @@
           return 'moved, money +' + (pl.money - m0).toFixed(2) + ', holes ' + W.holes.length;
         },
         driveDig() { mouseDown = true; locked = true; driveStep(0.05); mouseDown = false; for (let i = 0; i < 200 && drive.dig >= 0; i++) driveStep(0.05); locked = false; },   // test helper: one bucket stroke where the camera looks
+        frameInfo() { frame(); return { ru: right.dot(up), fu: pl.fwd.dot(up), d: S.debugDistant() }; },
         snapPose(pitch, info, n) { pl.pitch = pitch; for (let i = 0; i < (n || 1); i++) S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), Object.assign({ dig: -1, walk: 0, look }, info), 0.05, t += 0.05); return canvas.toDataURL('image/jpeg', 0.9); },   // test helper
         snapDrive(adv) { const c = driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); }, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach + lvl('reach') + AD.reach); return h ? doDig(h) : false; }, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },

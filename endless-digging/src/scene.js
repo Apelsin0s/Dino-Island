@@ -10,7 +10,7 @@
   const col = h => new T.Color(h);
 
   const Scene = {};
-  let renderer, composer, gtao, bloom, scene, camera, handScene, handCam, handSun, sun, sky, envTex = null;
+  let renderer, composer, gtao, bloom, scene, camera, handScene, handCam, handSun, sun, sky, envTex = null, farScene, farCam, farSun;
   const O = v3(0, 0, 0);                         // floating origin (planet metres)
   const up = v3(0, 1, 0), sunDir = v3(0, 1, 0);
   const timeU = { value: 0 };
@@ -23,7 +23,7 @@
   // ---------- the look (variant 5) ----------
   const V = {
     sun: [0.30, 0.40, 0.87], moon: [-0.30, 0.19, -0.93], sunColor: '#fff2dc', sunI: 3.1, envI: 1.15, exposure: 1.0,
-    sky: { zen: '#3a86e0', hor: '#d6ecfb', ground: '#8fb060' }, skyDesat: 0.3, fog: ['#d4e9f7', 0.00028],
+    sky: { zen: '#3a86e0', hor: '#d6ecfb', ground: '#8fb060' }, skyDesat: 0.3, fog: ['#d4e9f7', 0.000012],
     lawn: ['#6fb848', '#90cc56', '#bbd65e'], soil: ['#6b3f1f', '#93602f'], forestC: '#3a8440',
     tuft: { root: '#62b23c', tip: '#b6e04a', width: 0.03, blades: 6, hMin: 0.05, hMax: 0.11 },
     leaf: ['#3f9a2f', '#a4d845'], spruce: ['#1f6f3a', '#5fb44c'],
@@ -34,7 +34,7 @@
   const P = {
     grass: col(V.lawn[0]), grass2: col(V.lawn[1]), grassDry: col(V.lawn[2]), forest: col(V.forestC),
     soil: col(V.soil[0]), dirt: col(V.soil[1]), clay: col('#b9733f'), stone: col('#8e8f96'), stone2: col('#6f7079'),
-    rock: col('#a9a6ad'), snow: col('#f4f7fb')
+    rock: col('#a9a6ad'), snow: col('#f4f7fb'), spruceC: col('#2f6a3c')
   };
   const tmpC = new T.Color();
   function groundColor(depth, upness, n, out) {
@@ -73,7 +73,7 @@
     PX.copy(LX); PY.copy(LY); PZ.copy(LZ);
     sunDir.copy(toWorld(V.sun[0], V.sun[1], V.sun[2])).normalize();
     if (sun) sun.position.copy(sunDir).multiplyScalar(100);
-    if (handSun) handSun.position.copy(sunDir);
+    if (handSun) handSun.position.copy(sunDir); if (farSun) farSun.position.copy(sunDir);
     if (renderer) buildEnv();
   };
 
@@ -88,7 +88,7 @@
   Scene.shadeAt = function (p, fwd) {
     shadeFrame(p, fwd);
     if (sun) sun.position.copy(sunDir).multiplyScalar(100);
-    if (handSun) handSun.position.copy(sunDir);
+    if (handSun) handSun.position.copy(sunDir); if (farSun) farSun.position.copy(sunDir);
     if (renderer) buildEnv();
   };
 
@@ -133,12 +133,13 @@
     if (back) { m.polygonOffset = true; m.polygonOffsetFactor = 1; m.polygonOffsetUnits = 2; }
     return pd(m, {
       uniforms: Object.assign({ uG1: U(col(V.lawn[0])), uG2: U(col(V.lawn[1])), uG3: U(col(V.lawn[2])), uRim: U(rim) }, soilU),
-      vdecl: 'attribute float aDepth; attribute float aMat; varying float vDepth; varying float vMat;\n', vertex: 'vDepth = aDepth; vMat = aMat;',
-      fdecl: 'varying float vDepth; varying float vMat; uniform float uRim; uniform vec3 uG1; uniform vec3 uG2; uniform vec3 uG3; uniform vec3 uS1; uniform vec3 uS2;\n',
+      vdecl: 'attribute float aDepth; attribute float aMat; attribute vec3 aBio; varying float vDepth; varying float vMat; varying vec3 vBio;\n', vertex: 'vDepth = aDepth; vMat = aMat; vBio = aBio;',
+      fdecl: 'varying float vDepth; varying float vMat; varying vec3 vBio; uniform float uRim; uniform vec3 uG1; uniform vec3 uG2; uniform vec3 uG3; uniform vec3 uS1; uniform vec3 uS2;\n',
       color: `
         float patch1 = pdFbm(P, 0.16, 2).x, patch2 = pdFbm(P + 7.3, 0.035, 2).x;
-        vec3 lawn = mix(uG1, uG2, clamp(0.5 + patch1*0.9, 0.0, 1.0));
-        lawn = mix(lawn, uG3, clamp(patch2*1.4, 0.0, 1.0)*0.5);
+        // the ground's own colour comes from the biome (Biome.ground: grass, steppe, desert sand, rock, snow), with soft patches
+        vec3 lawn = vBio*mix(0.88, 1.1, clamp(0.5 + patch1*0.9, 0.0, 1.0));
+        lawn = mix(lawn, vBio*vec3(1.1, 1.06, 0.8), clamp(patch2*1.4, 0.0, 1.0)*0.35);
         { float pxc = length(fwidth(P)); lawn *= 1.0 + 0.045*pdFbm(P, 1.4, 2).x + 0.03*pdFbm(P, 9.0, 2).x*pdFade(pxc*18.0);
           #ifdef PD_RICH
           vec4 fl = pdCell(P*vec3(70.0, 20.0, 70.0)); lawn *= 1.0 + (fl.w - 0.5)*0.09*smoothstep(0.45, 0.2, length(fl.xyz))*pdFade(pxc*70.0);
@@ -233,6 +234,7 @@
     if (envTex) envTex.dispose(); envTex = rt.texture;
     scene.environment = envTex; scene.environmentIntensity = V.envI;
     handScene.environment = envTex; handScene.environmentIntensity = V.envI;
+    farScene.environment = envTex; farScene.environmentIntensity = V.envI;
   }
 
   // ---------- setup ----------
@@ -246,6 +248,10 @@
     scene = new T.Scene();
     scene.fog = new T.FogExp2(col(V.fog[0]), V.fog[1]);
     camera = new T.PerspectiveCamera(72, 1, 0.05, 30000); scene.add(camera);
+    // the distant world (mountains on the horizon, the sea) is drawn first in its own scene with a far-reaching camera,
+    // then the near world on top of it: one depth range could not hold both 5 cm and 160 km
+    farScene = new T.Scene(); farScene.fog = scene.fog;
+    farCam = new T.PerspectiveCamera(72, 1, 20, 400000);
     buildMaterials();
 
     // the sun: two shadow cascades fitted to the view, sharp but slightly soft edges
@@ -255,7 +261,8 @@
     sun.position.copy(sunDir).multiplyScalar(100); scene.add(sun);
 
     sky = new T.Mesh(new T.SphereGeometry(20000, 48, 24), skyMaterial(true));
-    sky.frustumCulled = false; sky.renderOrder = -10; scene.add(sky);
+    sky.frustumCulled = false; sky.renderOrder = -10; farScene.add(sky);
+    farSun = new T.DirectionalLight(col(V.sunColor), V.sunI); farSun.position.copy(sunDir); farScene.add(farSun);
 
     // first-person hand lives in its own scene (never clips into walls), lit by the same sun and sky
     handScene = new T.Scene();
@@ -273,7 +280,7 @@
       g.setAttribute('position', new T.BufferAttribute(new Float32Array([0, 0, 0, 0.01, 0, 0, 0, 0.01, 0]), 3));
       g.setAttribute('normal', new T.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
       g.setAttribute('color', new T.BufferAttribute(new Float32Array(9), 3));
-      g.setAttribute('aMat', new T.BufferAttribute(new Float32Array(3), 1)); g.setAttribute('aDepth', new T.BufferAttribute(new Float32Array(3), 1));
+      g.setAttribute('aMat', new T.BufferAttribute(new Float32Array(3), 1)); g.setAttribute('aDepth', new T.BufferAttribute(new Float32Array(3), 1)); g.setAttribute('aBio', new T.BufferAttribute(new Float32Array(9), 3));
       const m = new T.Mesh(g, mat); m.castShadow = cast; m.receiveShadow = true; m.position.set(0, -1e5, 0); scene.add(m);
     }
     Scene.resize();
@@ -282,7 +289,8 @@
   function buildComposer() {
     const rt = new T.WebGLRenderTarget(4, 4, { type: T.HalfFloatType, samples: M.samples });
     composer = new T.EffectComposer(renderer, rt);
-    composer.addPass(new T.RenderPass(scene, camera));
+    composer.addPass(new T.RenderPass(farScene, farCam));
+    const near = new T.RenderPass(scene, camera); near.clear = false; near.clearDepth = true; composer.addPass(near);
     gtao = new T.GTAOPass(scene, camera, 4, 4);
     gtao.updateGtaoMaterial({ radius: 0.32, distanceExponent: 1.5, thickness: 1.0, scale: 1.15, samples: 12 });
     gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
@@ -316,7 +324,7 @@
     if (!renderer) return;
     const w = root.innerWidth, h = root.innerHeight;
     renderer.setSize(w, h, false); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h);
-    camera.aspect = w / h; camera.updateProjectionMatrix();
+    camera.aspect = w / h; camera.updateProjectionMatrix(); farCam.aspect = w / h; farCam.updateProjectionMatrix();
     handCam.aspect = w / h; handCam.updateProjectionMatrix();
   };
 
@@ -338,7 +346,15 @@
     g.setAttribute('position', new T.BufferAttribute(m.pos, 3));
     g.setAttribute('normal', new T.BufferAttribute(m.nrm, 3));
     // dug walls show what the ground is made of there (World.materialAt, found on the thread): clay, granite, iron ore
-    const n = m.pos.length / 3, cols = new Float32Array(n * 3), mats = new Float32Array(n);
+    const n = m.pos.length / 3, cols = new Float32Array(n * 3), mats = new Float32Array(n), bio = new Float32Array(n * 3);
+    // biome of this box (the satellite picture changes over kilometres), then snow / rock / sand per vertex
+    const cx = bx + 4, cy = by + 4, cz = bz + 4, cl = Math.hypot(cx, cy, cz), lat = Math.asin(cy / cl) * 57.29578, lon = Math.atan2(-cz, cx) * 57.29578;
+    const b0 = root.Biome ? Biome.at(lat, lon, {}) : null;
+    for (let i = 0; i < n; i++) {
+      const x = bx + m.pos[i * 3], y = by + m.pos[i * 3 + 1], z = bz + m.pos[i * 3 + 2], l = Math.hypot(x, y, z);
+      if (b0) { Biome.ground(lat, lon, l - W.R, (m.nrm[i * 3] * x + m.nrm[i * 3 + 1] * y + m.nrm[i * 3 + 2] * z) / l, tmpC, b0); tmpC.convertSRGBToLinear(); bio[i * 3] = tmpC.r; bio[i * 3 + 1] = tmpC.g; bio[i * 3 + 2] = tmpC.b; }
+      else { bio[i * 3] = P.grass.r; bio[i * 3 + 1] = P.grass.g; bio[i * 3 + 2] = P.grass.b; }
+    }
     for (let i = 0; i < n; i++) {
       const id = m.mats[i];
       if (id < 0) { cols[i * 3] = P.soil.r; cols[i * 3 + 1] = P.soil.g; cols[i * 3 + 2] = P.soil.b; continue; }
@@ -346,7 +362,7 @@
       cols[i * 3] = tmpC.r; cols[i * 3 + 1] = tmpC.g; cols[i * 3 + 2] = tmpC.b;
     }
     g.setAttribute('color', new T.BufferAttribute(cols, 3)); g.setAttribute('aMat', new T.BufferAttribute(mats, 1));
-    g.setAttribute('aDepth', new T.BufferAttribute(m.depth, 1));
+    g.setAttribute('aDepth', new T.BufferAttribute(m.depth, 1)); g.setAttribute('aBio', new T.BufferAttribute(bio, 3));
     g.setIndex(new T.BufferAttribute(m.idx, 1));
     g.computeBoundingSphere();
     const mesh = new T.Mesh(g, mat);
@@ -418,6 +434,18 @@
   // Rebuilt every 8 m of walking. The work is spread over several frames (a few rows of the ring per frame) and the
   // finished ring replaces the old one, so walking has no hitch; 'force' builds it at once (start, teleport).
   let farJob = null;
+  // colour of the far ground: the biome, forests darker in the distance, snow and rock by height and slope
+  const fb = {};
+  function farColor(dx, dy, dz, h, r, x, y, z) {
+    const lat = Math.asin(dy) * 57.29578, lon = Math.atan2(-dz, dx) * 57.29578;
+    if (root.Biome && Biome.ok) {
+      Biome.at(lat, lon, fb);
+      const sl = (W.heightDir(dx + 1e-5, dy, dz) - h), sl2 = (W.heightDir(dx, dy + 1e-5, dz) - h), slope = Math.hypot(sl, sl2) / 63.7;   // rise per metre between nearby samples
+      Biome.ground(lat, lon, h, 1 / Math.sqrt(1 + slope * slope), tmpC, fb); tmpC.convertSRGBToLinear();
+      const forest = Math.min(1, fb.forest * 1.4) * Math.min(1, r / 300) * (1 - Math.max(0, Math.min(1, (h - Biome.snowLine(lat) + 700) / 500)));
+      tmpC.lerp(fb.boreal > 0.5 ? P.spruceC : P.forest, forest * 0.7 * (0.75 + 0.25 * W.noise(x / 300, y / 300, z / 300, 77)));
+    } else tmpC.copy(lawnMid);
+  }
   function farStart(p) {
     const u = p.clone().normalize();
     const e1 = new T.Vector3().crossVectors(Math.abs(u.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0), u).normalize(), e2 = new T.Vector3().crossVectors(u, e1);
@@ -432,9 +460,7 @@
         const l = Math.hypot(x, y, z), dx = x / l, dy = y / l, dz = z / l, h = W.heightDir(dx, dy, dz), rr = W.R + h - (i === 0 ? 0.35 : 0.15);
         const n = (i * NA + a) * 3;
         pos[n] = dx * rr - o.x; pos[n + 1] = dy * rr - o.y; pos[n + 2] = dz * rr - o.z;
-        const nz = W.noise(x / 60, y / 60, z / 60, 5), forest = W.noise(x / 260, y / 260, z / 260, 77) + 0.05;
-        if (h > 1900) tmpC.copy(P.snow); else if (h > 1500) tmpC.copy(P.rock).lerp(P.snow, Math.max(0, (h - 1800) / 100));
-        else tmpC.copy(lawnMid).lerp(P.grassDry, Math.max(0, nz * 0.6)).lerp(P.forest, Math.min(1, Math.max(0, forest * 2.2)) * Math.min(1, r / 400));
+        farColor(dx, dy, dz, h, r, x, y, z, i > 0 ? pos[n - NA * 3] : NaN, pos, n, o);
         cols[n] = tmpC.r; cols[n + 1] = tmpC.g; cols[n + 2] = tmpC.b;
       }
     }
@@ -452,12 +478,85 @@
     if (test.dot(J.u) < 0) { const ia = g.getIndex().array; for (let k = 0; k < ia.length; k += 3) { const s = ia[k + 1]; ia[k + 1] = ia[k + 2]; ia[k + 2] = s; } g.computeVertexNormals(); }
     if (far) { far.geometry.dispose(); far.geometry = g; } else { far = new T.Mesh(g, MAT.far); far.receiveShadow = true; scene.add(far); }
     far.position.set(J.o.x - O.x, J.o.y - O.y, J.o.z - O.z);   // built around the origin of its time
+    if (root.Biome) {   // the sea near you (sheet out to the far ring's edge)
+      const nr = 28, na = NA, wat = new Float32Array(nr * na), b = ringBasis(J.p); b.o = J.o;
+      for (let i = 0; i < nr; i++) { const r = i === 0 ? 0 : 0.5 * Math.pow(FAR_OUT * 1.02 / 0.5, (i - 1) / (nr - 2)), ang = r / W.R; for (let a = 0; a < na; a++) { const t = a / na * Math.PI * 2, c = Math.cos(ang), s2 = Math.sin(ang); const dx = b.u.x * c + (b.e1.x * Math.cos(t) + b.e2.x * Math.sin(t)) * s2, dy = b.u.y * c + (b.e1.y * Math.cos(t) + b.e2.y * Math.sin(t)) * s2, dz = b.u.z * c + (b.e1.z * Math.cos(t) + b.e2.z * Math.sin(t)) * s2; wat[i * na + a] = Biome.water(Math.asin(dy) * 57.29578, Math.atan2(-dz, dx) * 57.29578); } }
+      Sea.build(b, 0, FAR_OUT * 1.02, nr, na, wat, 'near');
+    }
   }
   Scene.updateFar = function (p, force) {
     if (force) { farStart(p); farRows(Infinity); return; }
     if (farJob) { farRows(2); return; }
     if (!farAnchor || farAnchor.distanceTo(p) > 8) { farStart(p); farRows(2); }
   };
+
+
+  // ---------- the distant world: land out to 160 km, and the sea ----------
+  // Rings around the player from just inside the near landscape's edge to the horizon (log-spaced, like the far ring),
+  // rebuilt a few rows per frame after every kilometre. The sea is a sheet at sea level wherever the water map says sea.
+  const DIST_IN = 3300, DIST_OUT = 160000, DNR = 64, DNA = 160;
+  const Distant = { mesh: null, job: null, at: null };
+  function ringIdx(nr, na) { const idx = []; for (let i = 0; i < nr - 1; i++) for (let a = 0; a < na; a++) { const a2 = (a + 1) % na, p0 = i * na + a, p1 = i * na + a2, p2 = (i + 1) * na + a, p3 = (i + 1) * na + a2; idx.push(p0, p2, p1, p1, p2, p3); } return idx; }
+  const DIDX = ringIdx(DNR, DNA);
+  function ringBasis(p) { const u = p.clone().normalize(), e1 = new T.Vector3().crossVectors(Math.abs(u.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0), u).normalize(), e2 = new T.Vector3().crossVectors(u, e1); return { u, e1, e2 }; }
+  Distant.start = function (p) { const b = ringBasis(p); this.job = Object.assign(b, { p: p.clone(), o: O.clone(), i: 0, pos: new Float32Array(DNR * DNA * 3), cols: new Float32Array(DNR * DNA * 3), water: new Float32Array(DNR * DNA) }); };
+  Distant.rows = function (budget) {
+    const J = this.job, t0 = performance.now();
+    while (J.i < DNR && (budget === Infinity || performance.now() - t0 < budget)) {
+      const i = J.i++, r = DIST_IN * Math.pow(DIST_OUT / DIST_IN, i / (DNR - 1)), ang = r / W.R, ca = Math.cos(ang), sa = Math.sin(ang);
+      for (let a = 0; a < DNA; a++) {
+        const t = a / DNA * Math.PI * 2, ex = J.e1.x * Math.cos(t) + J.e2.x * Math.sin(t), ey = J.e1.y * Math.cos(t) + J.e2.y * Math.sin(t), ez = J.e1.z * Math.cos(t) + J.e2.z * Math.sin(t);
+        const dx = J.u.x * ca + ex * sa, dy = J.u.y * ca + ey * sa, dz = J.u.z * ca + ez * sa, h = W.heightDir(dx, dy, dz), rr = W.R + h, n = (i * DNA + a) * 3;
+        J.pos[n] = dx * rr - J.o.x; J.pos[n + 1] = dy * rr - J.o.y; J.pos[n + 2] = dz * rr - J.o.z;
+        farColor(dx, dy, dz, h, r, dx * rr, dy * rr, dz * rr);
+        J.cols[n] = tmpC.r; J.cols[n + 1] = tmpC.g; J.cols[n + 2] = tmpC.b;
+        J.water[i * DNA + a] = h < 1 && root.Biome ? Biome.water(Math.asin(dy) * 57.29578, Math.atan2(-dz, dx) * 57.29578) : 0;
+      }
+    }
+    if (J.i < DNR) return;
+    this.job = null; this.at = J.p;
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(J.pos, 3)); g.setAttribute('color', new T.BufferAttribute(J.cols, 3)); g.setIndex(DIDX); g.computeVertexNormals();
+    const nn = g.getAttribute('normal'); if (v3(nn.getX(DNA * 5), nn.getY(DNA * 5), nn.getZ(DNA * 5)).dot(J.u) < 0) { const ia = g.getIndex().array; for (let k = 0; k < ia.length; k += 3) { const s2 = ia[k + 1]; ia[k + 1] = ia[k + 2]; ia[k + 2] = s2; } g.computeVertexNormals(); }
+    if (this.mesh) { this.mesh.geometry.dispose(); this.mesh.geometry = g; } else { this.mesh = new T.Mesh(g, MAT.far); farScene.add(this.mesh); }
+    this.mesh.position.set(J.o.x - O.x, J.o.y - O.y, J.o.z - O.z); this.mesh.userData.o = J.o;
+    Sea.build(J, DIST_IN * 0.98, DIST_OUT, DNR, DNA, J.water, 'far');
+  };
+  Distant.update = function (p) {
+    if (this.job) return this.rows(2);
+    if (!this.at || this.at.distanceTo(p) > 1000) { this.start(p); this.rows(this.mesh ? 2 : Infinity); }
+  };
+  Scene.debugDistant = () => ({ mesh: !!Distant.mesh, job: !!Distant.job, at: Distant.at && Distant.at.toArray().map(Math.round), visible: Distant.mesh && Distant.mesh.visible, farKids: farScene.children.length, sea: [!!Sea.near && Sea.near.visible, !!Sea.far && Sea.far.visible] });
+  Scene.composer = () => composer; Scene.debugSea = () => Sea; Scene.debugScene = () => ({ scene, farScene, far, camera, farCam });
+  Scene.rebuildDistant = p => { Distant.start(p); Distant.rows(Infinity); };
+  // the sea: sheets at sea level (near: under the near landscape's ring; far: in the distant scene)
+  const Sea = { near: null, far: null };
+  Sea.mat = () => Sea._mat || (Sea._mat = new T.MeshStandardMaterial({ color: col('#ffffff'), vertexColors: true, transparent: true, roughness: 0.06, metalness: 0, depthWrite: false }));
+  Sea.build = function (J, rIn, rOut, nr, na, water, which) {
+    let any = false; for (let k = 0; k < water.length; k++) if (water[k] > 0.05) { any = true; break; }
+    const old = this[which];
+    if (!any) { if (old) old.visible = false; return; }
+    const pos = new Float32Array(nr * na * 3), cols = new Float32Array(nr * na * 4);
+    for (let i = 0; i < nr; i++) {
+      const r = rIn > 0 ? rIn * Math.pow(rOut / rIn, i / (nr - 1)) : i === 0 ? 0 : 0.5 * Math.pow(rOut / 0.5, (i - 1) / (nr - 2)), ang = r / W.R, ca = Math.cos(ang), sa = Math.sin(ang);
+      for (let a = 0; a < na; a++) {
+        const t = a / na * Math.PI * 2, ex = J.e1.x * Math.cos(t) + J.e2.x * Math.sin(t), ey = J.e1.y * Math.cos(t) + J.e2.y * Math.sin(t), ez = J.e1.z * Math.cos(t) + J.e2.z * Math.sin(t);
+        const dx = J.u.x * ca + ex * sa, dy = J.u.y * ca + ey * sa, dz = J.u.z * ca + ez * sa, k = i * na + a, w = Math.max(0, Math.min(1, (water[k] - 0.08) * 6));
+        pos[k * 3] = dx * W.R - J.o.x; pos[k * 3 + 1] = dy * W.R - J.o.y; pos[k * 3 + 2] = dz * W.R - J.o.z;
+        cols[k * 4] = 0.07; cols[k * 4 + 1] = 0.3; cols[k * 4 + 2] = 0.5; cols[k * 4 + 3] = w * 0.9;
+      }
+    }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('color', new T.BufferAttribute(cols, 4)); g.setIndex(which === 'far' ? DIDX : ringIdx(nr, na)); g.computeVertexNormals();
+    const nn = g.getAttribute('normal'); if (v3(nn.getX(na * 4), nn.getY(na * 4), nn.getZ(na * 4)).dot(J.u) < 0) { const ia = g.getIndex().array; for (let q = 0; q < ia.length; q += 3) { const s2 = ia[q + 1]; ia[q + 1] = ia[q + 2]; ia[q + 2] = s2; } g.computeVertexNormals(); }
+    let m = old; if (m) { m.geometry.dispose(); m.geometry = g; } else { m = this[which] = new T.Mesh(g, Sea.mat()); m.renderOrder = 2; (which === 'far' ? farScene : scene).add(m); }
+    m.visible = true; m.position.set(J.o.x - O.x, J.o.y - O.y, J.o.z - O.z); m.userData.o = J.o;
+  };
+  // under water: everything turns blue and murky
+  const fogAir = { c: col(V.fog[0]), d: V.fog[1] }, fogSea = { c: col('#1d5d7a'), d: 0.045 };
+  Sea.update = function (eye) {
+    const l = eye.length(), under = l < W.R - 0.05 && root.Biome && Biome.water(Math.asin(eye.y / l) * 57.29578, Math.atan2(-eye.z, eye.x) * 57.29578) > 0.12;
+    const f = under ? fogSea : fogAir; scene.fog.color.copy(f.c); scene.fog.density = f.d;
+  };
+  Scene.inSea = p => { const l = p.length(); return root.Biome && Biome.water(Math.asin(p.y / l) * 57.29578, Math.atan2(-p.z, p.x) * 57.29578) > 0.12; };
 
   // ---------- places where nothing grows (props, the start spot) ----------
   const blocked = [];   // [x, y, z, r] in planet metres
@@ -538,19 +637,23 @@
       yield* this.scatter(p, M.treeR, 9, (X, Y, Z) => {
         const r = W.hash01(X, Y, Z), jx = W.hash01(X, Y, Z + 7), jy = W.hash01(X + 3, Y, Z), jz = W.hash01(X, Y + 5, Z);
         let x = (X + jx) * 9, y = (Y + jy) * 9, z = (Z + jz) * 9; const l = Math.hypot(x, y, z);
-        const forest = W.noise(x / 260, y / 260, z / 260, 77) + 0.05;
-        const h = W.heightDir(x / l, y / l, z / l); if (h > 1700) return;
+        const h = W.heightDir(x / l, y / l, z / l);
+        // how wooded this place is (satellite picture), patchy; none above the tree line, in deserts, on ice or in the sea
+        const lat = Math.asin(y / l) * 57.29578, lon = Math.atan2(-z, x) * 57.29578, bi = root.Biome ? Biome.at(lat, lon, this._bio || (this._bio = {})) : { forest: 0.3, boreal: 0, desert: 0, ice: 0 };
+        const treeLine = root.Biome ? Biome.snowLine(lat) - 900 : 1700;
+        if (h > treeLine + 400 || h < 0.5 || bi.ice > 0.5) return;
+        const forest = (W.noise(x / 260, y / 260, z / 260, 77) + 0.05) * 0.6 + (bi.forest - 0.3) * 0.9 - bi.desert * 0.6 - Math.max(0, (h - treeLine) / 400) * 0.6;
         const rr = W.R + h - 0.08; x = x / l * rr; y = y / l * rr; z = z / l * rr;
         if (spawn && Math.hypot(x - spawn.x, y - spawn.y, z - spawn.z) < 12) return;
         if (isBlocked(x, y, z, 1.5) || !this.alive(x, y, z)) return;
         const yaw = r * 40, s = 0.85 + W.hash01(X + 1, Y + 1, Z + 1) * 0.5, near = (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y) + (z - p.z) * (z - p.z) < near2;
         let kind = null, sc = s;
-        if (r < 0.06 + Math.max(0, forest) * 0.55) {
-          if (forest > 0.25 && r < 0.5 * forest) kind = near ? 'spruce' : 'spruceFar';
+        if (r < (0.06 + Math.max(0, forest) * 0.55) * (1 - bi.desert * 0.92)) {
+          if ((forest > 0.25 && r < 0.5 * forest) || bi.boreal > 0.3 + r * 2 || h > treeLine - 500) kind = near ? 'spruce' : 'spruceFar';
           else kind = (W.hash01(X, Z, Y) < 0.5 ? 'treeA' : 'treeB') + (near ? '' : 'far');
           if (kind === 'spruceFar') sc *= 0.75;
-        } else if (r > 0.935) { kind = near ? 'bush' : 'bushfar'; sc = 0.9 + s * 0.4; }
-        else if (r > 0.91) { kind = near ? (r > 0.922 ? 'rock1' : 'rock2') : 'rockfar'; sc = 0.4 + s * 0.6; }
+        } else if (r > 0.935 + bi.desert * 0.05) { kind = near ? 'bush' : 'bushfar'; sc = 0.9 + s * 0.4; }
+        else if (r > 0.91 - bi.desert * 0.06 - Math.max(0, Math.min(0.08, (h - treeLine) / 3000))) { kind = near ? (r > 0.922 ? 'rock1' : 'rock2') : 'rockfar'; sc = 0.4 + s * 0.6; }
         if (!kind) return;
         this.add(kind, x, y, z, sc, yaw, 0, items);
         const ob = OBST[kind]; if (ob) { const ul = Math.hypot(x, y, z); obst.push({ x, y, z, ux: x / ul, uy: y / ul, uz: z / ul, r: ob[0] * sc, h: ob[1] * sc }); }
@@ -563,7 +666,9 @@
       yield* this.scatter(p, M.grassR, 0.6, (X, Y, Z) => {
         const r = W.hash01(X, Y, Z); if (r > 0.42) return;
         let x = (X + W.hash01(X, Y, Z + 7)) * 0.6, y = (Y + W.hash01(X + 3, Y, Z)) * 0.6, z = (Z + W.hash01(X, Y + 5, Z)) * 0.6;
-        const l = Math.hypot(x, y, z), h = W.heightDir(x / l, y / l, z / l); if (h > 1900) return;
+        const l = Math.hypot(x, y, z), h = W.heightDir(x / l, y / l, z / l);
+        if (root.Biome && (X & 7) === 0 && (Z & 7) === 0) { const bb = Biome.at(Math.asin(y / l) * 57.29578, Math.atan2(-z, x) * 57.29578, this._sb || (this._sb = {})); this._dry = bb.desert * 0.8 + bb.ice; this._sl = Biome.snowLine(Math.asin(y / l) * 57.29578); }
+        if (h > (this._sl || 1900) - 300 || h < 0.3 || r > 0.42 * (1 - (this._dry || 0))) return;
         const rr = W.R + h; x = x / l * rr; y = y / l * rr; z = z / l * rr;
         if (isBlocked(x, y, z, 0.1) || !this.alive(x, y, z)) return;
         // keep things off steep slopes
@@ -1093,7 +1198,9 @@
     camera.position.set(eye.x - O.x, eye.y - O.y, eye.z - O.z); camera.quaternion.copy(q);
     camera.updateMatrixWorld();
     handCam.quaternion.copy(q); handCam.updateMatrixWorld();
+    farCam.position.copy(camera.position); farCam.quaternion.copy(camera.quaternion); farCam.updateMatrixWorld();
     sky.position.copy(camera.position);
+    Distant.update(eye); Sea.update(eye);
     Particles.update(dt); Rigs.update(dt, t); Scan.update(dt); Heavy.update(dt); Peers.update(dt);
     Hand.update(info.dig, info.walk, t, dt, info.look);
     Shadow.update(eye, q, info, dt);
@@ -1105,7 +1212,8 @@
     for (const ch of chunks.values()) if (ch.mesh) ch.mesh.position.set(ch.cx * W.CH - O.x, ch.cy * W.CH - O.y, ch.cz * W.CH - O.z);
     for (const m of fines.values()) if (m) { const b = m.userData.base; m.position.set(b[0] - O.x, b[1] - O.y, b[2] - O.z); }
     if (Scene.props) Scene.props.position.set(anchor.x - O.x, anchor.y - O.y, anchor.z - O.z);
-    Scene.updateFar(p, true); Deco.update(p, true);
+    Scene.updateFar(p, true); Deco.update(p, true); Distant.at = null;
+    for (const m of [Distant.mesh, Sea.far]) if (m && m.userData.o) m.position.set(m.userData.o.x - O.x, m.userData.o.y - O.y, m.userData.o.z - O.z);
   };
   Scene.setOrigin = function (p) { O.set(Math.round(p.x), Math.round(p.y), Math.round(p.z)); uOff.value.copy(O).sub(shadeAnchor); };
   Scene.renderer = () => renderer;
