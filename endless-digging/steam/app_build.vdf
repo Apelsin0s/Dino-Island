@@ -1,0 +1,20 @@
+"AppBuild"
+{
+	"AppID" "0000000"
+	"Desc" "Endless Digging build"
+	"ContentRoot" "../dist/"
+	"BuildOutput" "./output/"
+	"SetLive" ""
+	"Depots"
+	{
+		"0000001"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "win-unpacked/*"
+				"DepotPath" "."
+				"Recursive" "1"
+			}
+		}
+	}
+}

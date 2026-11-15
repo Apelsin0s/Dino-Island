@@ -25,80 +25,11 @@
   const TOUCH = (root.matchMedia && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in root || /[?&]touch\b/.test(location.search);
   if (TOUCH) document.documentElement.classList.add('touch');
 
-  // ---------- tools and economy ----------
-  // the tool ladder (variant 1 of the progression page): each step digs a bigger scoop
-  const TOOLS = {
-    spoon: { r: 0.045, time: 0.5, reach: 2.3, parts: 4, size: 0.3 },
-    scoop: { r: 0.065, time: 0.5, reach: 2.3, parts: 5, size: 0.4 },
-    trowel: { r: 0.085, time: 0.55, reach: 2.4, parts: 6, size: 0.5 },
-    shovel: { r: 0.12, time: 0.65, reach: 2.6, parts: 9, size: 0.75 }
-  };
-  // ---------- research tree ----------
-  // Bought at the shack. Each node needs the nodes in req; 'soon' nodes are shown but not for sale yet.
-  const NODES = [
-    { id: 'spoon', row: 0, col: 0, icon: 'spoon', root: true },
-    { id: 'scoop', row: 0, col: 1, icon: 'scoop', p: 2, req: ['spoon'] },
-    { id: 'trowel', row: 0, col: 2, icon: 'trowel', p: 15, req: ['scoop'] },
-    { id: 'shovel', row: 0, col: 3, icon: 'shovel', p: 60, req: ['trowel', 'arms1'] },
-    { id: 'sharp', row: 0, col: 4, icon: 'sharp', p: 120, req: ['shovel'] },
-    { id: 'longhandle', row: 0, col: 5, icon: 'longhandle', p: 200, req: ['sharp', 'boots1'] },
-    { id: 'pick', row: 0, col: 6, icon: 'pick', soon: true, req: ['longhandle'] },
-    { id: 'arms1', row: 1, col: 1, icon: 'arm', p: 8, req: ['scoop'] },
-    { id: 'arms2', row: 1, col: 2, icon: 'arm2', p: 25, req: ['arms1'] },
-    { id: 'arms3', row: 1, col: 3, icon: 'arm3', p: 70, req: ['arms2'] },
-    { id: 'boots1', row: 1, col: 4, icon: 'boots', p: 35, req: ['arms2'] },
-    { id: 'boots2', row: 1, col: 5, icon: 'boots2', p: 110, req: ['boots1'] },
-    { id: 'arms4', row: 1, col: 6, icon: 'arm4', p: 220, req: ['arms3', 'boots2'] },
-    { id: 'probe', row: 2, col: 1, icon: 'probe', p: 12, req: ['scoop'] },
-    { id: 'detector', row: 2, col: 2, icon: 'detector', p: 40, req: ['probe'] },
-    { id: 'detector2', row: 2, col: 3, icon: 'detector2', p: 90, req: ['detector', 'arms2'] },
-    { id: 'probe2', row: 2, col: 4, icon: 'probe2', p: 60, req: ['detector2'] },
-    { id: 'sorting', row: 2, col: 5, icon: 'sieve', p: 150, req: ['probe2'] },
-    { id: 'radar', row: 2, col: 6, icon: 'radar', soon: true, req: ['sorting'] },
-    { id: 'scales1', row: 3, col: 1, icon: 'scale', p: 20, req: ['scoop'] },
-    { id: 'scales2', row: 3, col: 2, icon: 'scale2', p: 90, req: ['scales1'] },
-    { id: 'orebuyer', row: 3, col: 3, icon: 'orebuyer', p: 140, req: ['scales2', 'probe'] },
-    { id: 'scales3', row: 3, col: 4, icon: 'crates', p: 400, req: ['orebuyer'] },
-    { id: 'bank', row: 3, col: 5, icon: 'bank', p: 600, req: ['scales3'] },
-    { id: 'auto1', row: 4, col: 1, icon: 'rig', p: 30, req: ['trowel', 'scales1'] },
-    { id: 'grease', row: 4, col: 2, icon: 'oilcan', p: 45, req: ['auto1'] },
-    { id: 'auto2', row: 4, col: 3, icon: 'rig2', p: 90, req: ['auto1'] },
-    { id: 'auger2', row: 4, col: 4, icon: 'auger', p: 160, req: ['auto2', 'grease'] },
-    { id: 'auto3', row: 4, col: 5, icon: 'rig3', p: 250, req: ['auto2'] },
-    { id: 'conveyor', row: 4, col: 6, icon: 'conveyor', p: 500, req: ['auto3', 'auger2'] },
-    { id: 'exMini', row: 5, col: 1, icon: 'excavator', p: 1500, req: ['auto3'] },
-    { id: 'truck', row: 5, col: 2, icon: 'truck', p: 4000, req: ['exMini'] },
-    { id: 'exBig', row: 5, col: 3, icon: 'excavatorBig', p: 15000, req: ['truck', 'conveyor'] },
-    { id: 'wheel', row: 5, col: 4, icon: 'wheel', p: 60000, req: ['exBig'] },
-    { id: 'quarry', row: 5, col: 5, icon: 'quarry', soon: true, req: ['wheel'] },
-    { id: 'bore', row: 6, col: 1, icon: 'borerig', p: 2500, req: ['auto3', 'detector2'] },
-    { id: 'derrick', row: 6, col: 2, icon: 'derrick', p: 10000, req: ['bore'] },
-    { id: 'shaft', row: 6, col: 3, icon: 'headframe', p: 40000, req: ['derrick', 'exBig'] },
-    { id: 'superdeep', row: 6, col: 4, icon: 'superdeep', soon: true, req: ['shaft'] }
-  ];
+  // ---------- tools, research tree and economy: rules.js (shared with the server) ----------
+  const { TOOLS, NODES, RIG_L, BITE, PTS, MATS } = root.Rules;
   const owned = new Set(NODES.filter(n => n.root).map(n => n.id));
   const has = id => owned.has(id);
-  const lvl = id => id === 'tool' ? (has('shovel') ? 'shovel' : has('trowel') ? 'trowel' : has('scoop') ? 'scoop' : 'spoon')
-    : id === 'speed' ? (has('arms4') ? 0.52 : has('arms3') ? 0.61 : has('arms2') ? 0.72 : has('arms1') ? 0.85 : 1)
-    : id === 'scale' ? (has('scales3') ? 2 : has('scales2') ? 1.5 : has('scales1') ? 1.25 : 1) * (AD.incomeMul || 1)
-    : id === 'ore' ? (has('sorting') ? 1.25 : 1) * (has('orebuyer') ? 1.5 : 1)
-    : id === 'bite' ? (has('sharp') ? 0.62 : BITE)
-    : id === 'reach' ? (has('longhandle') ? 0.7 : 0)
-    : id === 'move' ? (has('boots2') ? 1.3 : has('boots1') ? 1.15 : 1)
-    : id === 'probeD' ? (has('probe2') ? 8 : 4)
-    : id === 'rigPeriod' ? (lvl('rigLevel') > 1 ? 1.5 : 3) * (has('grease') ? 0.7 : 1)
-    : id === 'rigL' ? (has('auger2') ? 1.6 : 1)
-    : id === 'rigPay' ? (has('conveyor') ? 1.5 : 1)
-    : id === 'rigs' ? (has('auto3') ? 3 : has('auto2') ? 2 : has('auto1') ? 1 : 0)
-    : id === 'rigLevel' ? (has('auto2') ? 2 : 1) : 0;
-  const RIG_L = 1.0;                                     // a rig brings up 1 L per turn: every 3 s by hand crank, every 1.5 s with a motor
-  // every stroke takes about the same bite: the dig point moves into the ground until this share of the scoop sphere is solid
-  const BITE = 0.5;
-  const PTS = (() => { const a = [], n = 96, g = Math.PI * (3 - Math.sqrt(5)); for (let i = 0; i < n; i++) { const y = 1 - (i + 0.5) / n * 2, r = Math.sqrt(1 - y * y), rr = Math.cbrt((i * 0.618034 % 1) * 0.92 + 0.08); a.push([Math.cos(g * i) * r * rr, y * rr, Math.sin(g * i) * r * rr]); } return a; })();
-  // ---------- what the ground is made of; price per litre follows rarity in the Earth's crust (deposits.js) ----------
-  // 0 topsoil, 1 clay, 2 granite, 3 magnetite quartzite (~30 % Fe), 4 rich hematite ore (~60 % Fe: twice the iron)
-  const RESP = (root.DepositData && root.DepositData.res) || {}, FE = (RESP.fe && RESP.fe.price) || 0.29;
-  const MATS = [{ p: 0.10 }, { p: 0.14 }, { p: (RESP.stone && RESP.stone.price) || 0.14 }, { p: FE, ore: true }, { p: FE * 2, ore: true }];
+  const lvl = root.Rules.levels(has, () => AD.incomeMul);
   const EARTH_VOL = 4 / 3 * Math.PI * Math.pow(W.R, 3);
 
   // ---------- player ----------
@@ -245,6 +176,7 @@
     if (oreL > 0.001) { floater('+$' + fmtMoney(got) + ' · ' + oreL.toFixed(2) + ' ' + L.l + ' ' + L.mat[per[4] > per[3] ? 4 : 3], 'ore'); if (!pl.foundOre) { pl.foundOre = true; notice(L.firstOre); } }
     else if (litres > 0.001) floater('+$' + fmtMoney(got) + ' · ' + litres.toFixed(2) + ' ' + L.l);
     S.setPile(Math.min(1, pl.sold / 400));
+    if (ONLINE) netDig(c, R, 'hand');
     dirty = true; return true;
   }
 
@@ -260,11 +192,13 @@
   const fwdOf = (pos, yaw) => { const u = pos.clone().normalize(), q = S.frameAt(pos, yaw); return v3(1, 0, 0).applyQuaternion(q).addScaledVector(u, 0); };
   // take a bite of ground with a sphere; pays for it; returns litres
   function takeBite(c, R, show) {
+    if (ONLINE && !show) return 0;   // in co-op the server pays machines that work by themselves; only a driven one digs
     const per = [0, 0, 0, 0, 0], f = bite(c, R, per), solidN = per.reduce((a, b) => a + b, 0);
     if (f <= 0.001) return 0;
     const litres = f * 4 / 3 * Math.PI * R * R * R * 1000, k = litres / solidN;
     let main = 0; for (let i = 1; i < 5; i++) if (per[i] > per[main]) main = i;
     S.applyHole([c.x, c.y, c.z, R], W.addHole(c.x, c.y, c.z, R));
+    if (ONLINE) netDig(c, R, drive ? drive.id : 'hand');
     S.burst(c.x, c.y, c.z, S.matColor(main), show ? 12 : 6, null, R * 4);
     let got = 0; for (let i = 0; i < 5; i++) { got += per[i] * k * MATS[i].p * (MATS[i].ore ? lvl('ore') : 1); pl.earned[i] += per[i] * k; }
     got *= lvl('scale'); pl.dug += litres / 1000; pl.sold += litres; dirty = true;
@@ -275,6 +209,7 @@
       if (!has(id)) continue;
       const H = HEAVY[id], M = S.heavy(id); if (!M) continue;
       if (H.lps) {   // underground work: pay per second for what lies at its depth
+        if (ONLINE) continue;   // co-op: the server pays it
         const u = M.pos.clone().normalize(), q = M.pos.clone().addScaledVector(u, -H.depth), m = H.ore ? 3 : W.materialAt(q.x, q.y, q.z);
         let price = MATS[m].p * (MATS[m].ore ? lvl('ore') : 1); if (H.ore) price = (MATS[3].p * 0.6 + MATS[4].p * 0.4) * lvl('ore');
         const got = H.lps * dt * price * lvl('scale'); pl.money += got; heavyPay += got; pl.dug += H.lps * dt / 1000; continue;
@@ -422,6 +357,7 @@
   function buy(id) {
     const n = NODES.find(x => x.id === id);
     if (!n || n.soon || has(id) || !(n.req || []).every(has) || pl.money < n.p) return;
+    if (ONLINE) { Net.send({ t: 'buy', id }); return; }   // the server checks and answers with the new state
     pl.money -= n.p; owned.add(id); applyUpgrades(); Sound.coin(); dirty = true; save();
     const nx = NODES.find(x => (x.req || []).includes(id) && !has(x.id) && !x.soon); if (nx) selNode = nx.id;   // point at what comes next
     renderShop();
@@ -440,6 +376,7 @@
   // automation: each rig bores under itself and the soil is paid for at once
   const rigs = [];
   function updateMachines(dt) {
+    if (ONLINE) return;   // co-op: rigs are paid by the server (they stand still)
     const n = lvl('rigs'), period = lvl('rigPeriod'), RL = RIG_L * lvl('rigL');
     for (let i = 0; i < n; i++) {
       const rg = rigs[i] || (rigs[i] = { t: 0.7 * i });
@@ -463,6 +400,8 @@
   // ---------- input ----------
   const keys = {}; let mouseDown = false, locked = false, playing = false, look = { x: 0, y: 0 }, rmb = false, mapOpen = false;
   addEventListener('keydown', e => {
+    if (chatOpen) return;
+    if (e.code === 'Enter' && playing && ONLINE && !e.repeat) { openChat(true); e.preventDefault(); return; }
     if (e.code === 'KeyM' && (playing || mapOpen) && !e.repeat) { toggleMap(); e.preventDefault(); return; }
     if (mapOpen) { if (e.code === 'Escape') toggleMap(); return; }
     if (AD.open) { if (e.code === 'Escape' || e.code === 'Backquote') toggleAdmin(false); return; }
@@ -550,6 +489,7 @@
   function fmtInt(n) { return Math.round(n).toLocaleString(loc); }
   function floater(text, cls) { const el = document.createElement('div'); el.className = 'floater' + (cls ? ' ' + cls : ''); el.textContent = text; $('floaters').appendChild(el); setTimeout(() => el.remove(), 1200); }
   let noticeT = 0;
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   function notice(text) { const el = $('notice'); el.textContent = text; el.hidden = false; noticeT = 2.2; }
   function hud(dt) {
     const [lat, lon] = W.toLatLon(pl.pos.x, pl.pos.y, pl.pos.z);
@@ -734,7 +674,7 @@
     if (k === 'p') {
       if (v === 'fly') AD.fly = !AD.fly;
       if (v === 'speed') AD.speed = +w; if (v === 'dig') AD.digMul = +w; if (v === 'reach') AD.reach = +w;
-      if (v === 'home') { teleport(SPAWN_LAT, SPAWN_LON); return toggleAdmin(false); }
+      if (v === 'home') { teleport(SITE_LAT, SITE_LON); return toggleAdmin(false); }
       if (v === 'go') { const la = +$('aLat').value, lo = +$('aLon').value; if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 90) { teleport(la, lo); return toggleAdmin(false); } }
       adminSave();
     }
@@ -768,12 +708,81 @@
     statT = 0; statN = 0;
   }
 
+  // ---------- co-op (net.js, server/server.js) ----------
+  let ONLINE = false, netFailed = null, posT = 0, chatOpen = false;
+  function netState(st) {
+    if (!st) return;
+    pl.money = st.money; pl.dug = st.dug || 0; pl.sold = st.sold || 0; pl.earned = st.earned || pl.earned;
+    owned.clear(); for (const id of st.owned || []) owned.add(id);
+  }
+  // our dig is shown at once; the server measures it again and its answer is the real balance
+  function netDig(c, r, mode) {
+    Net.dig([c.x, c.y, c.z], r, mode, AD.digMul > 1 ? { adminMul: AD.digMul } : null).then(res => {
+      if (res.ok && typeof res.money === 'number') pl.money = res.money;
+      else if (!res.ok && res.why !== 'timeout') notice(L.net.refused[res.why] || L.net.refused.far);
+    });
+  }
+  function addNetHole(x, y, z, r, burst, main) {
+    S.applyHole([x, y, z, r], W.addHole(x, y, z, r));
+    if (burst && pl.pos.distanceToSquared(v3(x, y, z)) < 900) S.burst(x, y, z, S.matColor(main || 0), 4, null, Math.min(1, r * 6));
+  }
+  function netStart() {
+    const seen = new Set(), hk = (x, y, z, r) => Math.round(x * 100) + ',' + Math.round(y * 100) + ',' + Math.round(z * 100) + ',' + Math.round(r * 1000);
+    // holes of the cells around us arrive when we come near them; ours are already here
+    for (const h of W.holes) seen.add(hk(h[0], h[1], h[2], h[3]));
+    const addW = W.addHole; W.addHole = function (x, y, z, r) { seen.add(hk(x, y, z, r)); return addW(x, y, z, r); };
+    Net.on('holes', m => { const h = m.h; for (let i = 0; i + 3 < h.length; i += 4) if (!seen.has(hk(h[i], h[i + 1], h[i + 2], h[i + 3]))) addNetHole(h[i], h[i + 1], h[i + 2], h[i + 3], false); });
+    Net.on('hole', m => { const h = m.h; if (!seen.has(hk(h[0], h[1], h[2], h[3]))) addNetHole(h[0], h[1], h[2], h[3], true, m.main); });
+    Net.on('players', m => S.setPeers(m.list));
+    Net.on('left', m => S.removePeer(m.sid));
+    Net.on('money', m => { pl.money = m.money; });
+    Net.on('state', m => { netState(m.state); applyUpgrades(); if (m.bought) { Sound.coin(); const nx = NODES.find(x => (x.req || []).includes(m.bought) && !has(x.id) && !x.soon); if (nx) selNode = nx.id; } if (shopOpen) renderShop(); });
+    Net.on('chat', m => chatLine(m));
+    Net.on('kicked', m => { ONLINE = false; overlay('kicked', m); });
+    Net.on('lost', () => { notice(L.net.lost); reconnect(); });
+    sendPos();
+  }
+  function reconnect() {
+    setTimeout(() => Net.connect().then(w => { netState(w.state); applyUpgrades(); notice(L.net.back); sendPos(); }, reason => { if (reason === 'banned' || reason === 'version') overlay('kicked', { reason }); else reconnect(); }), 4000);
+  }
+  function sendPos() {
+    Net.send({ t: 'pos', p: [pl.pos.x, pl.pos.y, pl.pos.z].map(v => +v.toFixed(3)), f: [pl.fwd.x, pl.fwd.y, pl.fwd.z].map(v => +v.toFixed(3)), pitch: +pl.pitch.toFixed(3), tool: pl.tool, drive: drive ? drive.id : null });
+  }
+  function netTick(dt) { if (ONLINE && (posT += dt) > 0.1) { posT = 0; sendPos(); } }
+  // chat: Enter to write, Enter to send, Esc to cancel; heard by the players around you
+  function chatLine(m) {
+    const log = $('chatLog'); if (!log) return;
+    const el = document.createElement('div'); el.className = 'cl' + (m.sys ? ' sys' : '');
+    if (m.sys) { const f = L.net.sys[m.sys]; el.textContent = typeof f === 'string' ? f.replace('{0}', (m.args || [])[0] === undefined ? '' : m.args[0]) : String((m.args || [])[0] || m.sys); }
+    else { const b = document.createElement('b'); b.textContent = m.name + ': '; el.appendChild(b); el.appendChild(document.createTextNode(m.text)); }
+    log.appendChild(el); while (log.children.length > 40) log.firstChild.remove();
+    log.scrollTop = log.scrollHeight; log.classList.add('fresh'); clearTimeout(chatLine.t); chatLine.t = setTimeout(() => log.classList.remove('fresh'), 9000);
+  }
+  function openChat(on) {
+    const inp = $('chatIn'); if (!inp || !ONLINE) return;
+    if (on) { chatOpen = true; playing = false; mouseDown = false; for (const k in keys) keys[k] = false; if (locked) { pausedByUs = true; document.exitPointerLock(); } inp.hidden = false; inp.value = ''; inp.focus(); $('chatLog').classList.add('fresh'); }
+    else { chatOpen = false; inp.hidden = true; inp.blur(); playing = true; if (!TOUCH) lock(); }
+  }
+  function buildChat() {
+    const box = document.createElement('div'); box.id = 'chat';
+    box.innerHTML = `<div id="chatLog"></div><input id="chatIn" maxlength="200" autocomplete="off" spellcheck="false" hidden placeholder="${L.net.chatPh}">`;
+    document.body.appendChild(box);
+    const inp = $('chatIn');
+    inp.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') { const t = inp.value.trim(); if (t) Net.send({ t: 'chat', text: t }); openChat(false); }
+      else if (e.key === 'Escape') openChat(false);
+    });
+    if (TOUCH) { const b = document.createElement('button'); b.id = 'bChat'; b.className = 'tbtn'; b.textContent = L.net.chatBtn; b.addEventListener('pointerdown', e => { e.preventDefault(); openChat(!chatOpen); }); document.body.appendChild(b); }
+  }
+
   // ---------- save ----------
   const SAVE = 'endlessdigging.v3', OLD_SAVE = 'endlessdigging.v2';   // v3: real relief (v2 holes no longer fit; money is kept)
   let dirty = false, saveT = 0;
   let saveWarned = false;
   function save() {
     if (skipSave) return;
+    if (ONLINE) { lsSet('endlessdigging.coop.pos', { site: [SITE_LAT, SITE_LON], pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch }); dirty = false; return; }
     const sp = holeBase(), hr = [];
     for (const h of W.holes) hr.push(Math.round((h[0] - sp.x) * 1000), Math.round((h[1] - sp.y) * 1000), Math.round((h[2] - sp.z) * 1000), Math.round(h[3] * 1000));
     try { localStorage.setItem(SAVE, JSON.stringify({ hr, pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, open: pl.open, sold: pl.sold, earned: pl.earned, machines: machinePoses(), owned: [...owned], foundOre: !!pl.foundOre })); }
@@ -790,17 +799,19 @@
 
   // ---------- start: Kryvyi Rih, Ukraine ----------
   const SPAWN_LAT = 47.9105, SPAWN_LON = 33.3918;
+  let SITE_LAT = SPAWN_LAT, SITE_LON = SPAWN_LON;   // where the shack stands: the start, or the player's own plot in co-op
   // holes are saved relative to the start at sea level (does not depend on the relief data)
   function holeBase() { const d = W.fromLatLon(SPAWN_LAT, SPAWN_LON); return v3(d[0], d[1], d[2]).multiplyScalar(W.R); }
   function spawnPoint() {
-    const d = W.fromLatLon(SPAWN_LAT, SPAWN_LON), h = W.heightDir(d[0], d[1], d[2]);
+    const d = W.fromLatLon(SITE_LAT, SITE_LON), h = W.heightDir(d[0], d[1], d[2]);
     return v3(d[0], d[1], d[2]).multiplyScalar(W.R + h + 0.05);
   }
-  function setup() {
+  function setup(welcome) {
     if (TOUCH) S.setMobile(true);
+    if (welcome && !welcome.failed) { ONLINE = true; SITE_LAT = welcome.plot[0]; SITE_LON = welcome.plot[1]; }
     S.init(canvas);
     const sp = spawnPoint(); S.spawnPoint = sp;
-    const saved = load();
+    const saved = ONLINE ? null : load();
     const u0 = sp.clone().normalize(), n0 = v3(0, 1, 0).addScaledVector(u0, -u0.y).normalize(), fwd0 = n0.clone().applyAxisAngle(u0, -0.6);
     if (saved && saved.fresh) { pl.money = saved.money; pl.sold = saved.sold; }
     if (saved && !saved.fresh) {
@@ -819,6 +830,11 @@
         for (const k in chains) for (let i = 0; i < (saved.up[k] || 0); i++) owned.add(chains[k][i]);
       }
     } else { pl.pos.copy(sp); pl.fwd.copy(fwd0); pl.pitch = -0.12; }
+    if (ONLINE) {   // money and research live on the server; where you stood is remembered here
+      netState(welcome.state);
+      const cp = lsGet('endlessdigging.coop.pos', null);
+      if (cp && cp.site && cp.site[0] === SITE_LAT && cp.site[1] === SITE_LON && cp.pos) { pl.pos.fromArray(cp.pos); pl.fwd.fromArray(cp.fwd); pl.pitch = cp.pitch || 0; }
+    }
     frame();
     S.setOrigin(pl.pos);
     S.setRegion(sp, fwd0);
@@ -878,15 +894,30 @@
   function overlay(kind) {
     const o = $('overlay'); o.hidden = false;
     const q = S.getQuality();
+    if (kind === 'kicked') {   // the server closed the door: say why, offer solo play
+      const m = arguments[1] || {}, why = L.net.kick[m.reason] || L.net.kick.signin;
+      o.innerHTML = `<div class="card"><h1>${L.title}</h1><p class="sub">${why}${m.why ? ' — ' + esc(m.why) : ''}</p><button id="bSolo" class="big">${L.net.solo}</button></div>`;
+      $('hud').hidden = true; playing = false; if (locked) document.exitPointerLock();
+      $('bSolo').onclick = () => { Net.setMode('solo'); location.reload(); }; return;
+    }
+    const net = root.Net && Net.available;
+    const modeRow = net ? `<div class="row mode"><button id="mSolo" class="${ONLINE ? '' : 'on'}">${L.net.solo}</button><button id="mCoop" class="${ONLINE ? 'on' : ''}">${L.net.coop}</button></div>`
+      + (netFailed ? `<p class="sub warnTxt">${L.net.kick[netFailed] || L.net.offline}</p>` : '')
+      + (Net.mode() === 'coop' && !(root.Steam && root.Steam.ticket) ? `<div class="row"><span>${L.net.name}</span><input id="nameIn" maxlength="20" value="${esc(Net.guestName())}"></div>` : '')
+      + (ONLINE ? `<p class="sub">${L.net.online}</p>` : '') : '';
     o.innerHTML = kind === 'loading'
       ? `<div class="card"><h1>${L.title}</h1><p class="sub">${L.sub}</p><div class="bar"><b id="loadBar"></b></div><p class="sub" id="loadTxt">${L.loading}</p></div>`
       : `<div class="card"><h1>${kind === 'pause' ? L.pause : L.title}</h1><p class="sub">${kind === 'pause' ? L.planet : L.sub}</p>
-          <button id="bPlay" class="big">${kind === 'pause' ? L.cont : L.play}</button>
+          ${kind === 'pause' ? '' : modeRow}<button id="bPlay" class="big">${kind === 'pause' ? L.cont : L.play}</button>
           <div class="row"><span>${L.quality}</span><button id="qHi" class="${q === 'high' ? 'on' : ''}">${L.hi}</button><button id="qMid" class="${q === 'mid' ? 'on' : ''}">${L.mid}</button><button id="qLo" class="${q === 'low' ? 'on' : ''}">${L.lo}</button></div>
           <div class="row"><span>${L.langLabel}</span><select id="langSel">${Object.keys(LANGS).map(k => `<option value="${k}"${k === LANG ? ' selected' : ''}>${LANGS[k].langName || k}</option>`).join('')}</select></div>
           ${kind === 'pause' ? `<div class="row"><button id="bAdmin" class="ghost">${L.adm.title}</button><button id="bReset" class="ghost">${L.reset}</button></div>` : ''}
           <p class="keys">${TOUCH ? L.tkeys : L.keys}</p></div>`;
     if (kind === 'loading') return;
+    const ms = $('mSolo'), mc = $('mCoop'), ni = $('nameIn');
+    if (ms) ms.onclick = () => { if (ONLINE || Net.mode() === 'coop') { Net.setMode('solo'); if (dirty) save(); location.reload(); } };
+    if (mc) mc.onclick = () => { if (!ONLINE) { Net.setMode('coop'); if (dirty) save(); location.reload(); } };
+    if (ni) ni.onchange = () => Net.setGuestName(ni.value);
     $('bPlay').onclick = () => { Sound.unlock(); o.hidden = true; playing = true; $('hud').hidden = false; if (TOUCH) fullscreen(); else lock(); };
     $('qHi').onclick = () => { S.setQuality('high'); overlay(kind); };
     $('qMid').onclick = () => { S.setQuality('mid'); overlay(kind); };
@@ -931,8 +962,8 @@
       if (!drive && (digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach + lvl('reach') + AD.reach); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
       S.updateChunks(pl.pos, 5); S.updateFar(pl.pos); S.updateDeco(pl.pos, false, 3);
       if ((saveT += dt) > 5 && dirty) { saveT = 0; save(); }
-      updateMachines(dt); updateHeavy(dt); updateStats(dt); if (scanCool > 0) scanCool -= dt;
-      if (has('bank') && (pl.bankT = (pl.bankT || 0) + dt) >= 60) { pl.bankT = 0; const g2 = Math.min(10, pl.money * 0.01); pl.money += g2; floater('+$' + fmtMoney(g2) + ' · ' + L.interest); dirty = true; }
+      updateMachines(dt); updateHeavy(dt); updateStats(dt); netTick(dt); if (scanCool > 0) scanCool -= dt;
+      if (has('bank') && !ONLINE && (pl.bankT = (pl.bankT || 0) + dt) >= 60) { pl.bankT = 0; const g2 = Math.min(10, pl.money * 0.01); pl.money += g2; floater('+$' + fmtMoney(g2) + ' · ' + L.interest); dirty = true; }
       hud(dt);
     }
     S.setFrame(up);
@@ -955,8 +986,11 @@
       .then(list => W.setDem(Object.fromEntries(list))).catch(e => console.warn('relief not loaded, using invented ground:', e.message)) : Promise.resolve();
     // the mesher threads start while the relief loads; the world is built once both are ready
     const models = root.ModelCache ? ModelCache.load() : Promise.resolve(0);
-    Promise.all([dem, models]).then(() => { performance.mark('ed:dem'); return root.Mesher ? Mesher.start() : false; }).then(() => setTimeout(() => {
-      performance.mark('ed:threads'); setup(); setupTouch(); performance.mark('ed:setup');
+    // co-op: sign in while everything else loads; if the server cannot be reached the game starts solo
+    const conn = root.Net && Net.mode() === 'coop' ? Net.connect().catch(reason => ({ failed: reason })) : Promise.resolve(null);
+    let welcome = null;
+    Promise.all([dem, models, conn]).then(r => { welcome = r[2]; performance.mark('ed:dem'); return root.Mesher ? Mesher.start() : false; }).then(() => setTimeout(() => {
+      performance.mark('ed:threads'); setup(welcome); setupTouch(); if (ONLINE) { buildChat(); netStart(); } else if (welcome && welcome.failed) netFailed = welcome.failed; performance.mark('ed:setup');
       // while loading, hand the threads new work as soon as one finishes (not only once per frame)
       if (root.Mesher) Mesher.onResult = () => { if (loading) S.updateChunks(pl.pos, 4); else Mesher.onResult = null; };
       requestAnimationFrame(loop);

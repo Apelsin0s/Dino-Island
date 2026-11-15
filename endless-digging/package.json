@@ -1,15 +1,46 @@
 {
   "name": "endless-digging",
   "productName": "Endless Digging",
-  "version": "0.0.1",
+  "version": "0.5.0",
   "description": "First-person incremental digging game on a 1:1 scale planet Earth.",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
-    "vendor": "esbuild tools/three-entry.js --bundle --format=iife --minify --legal-comments=eof --outfile=src/vendor/three.min.js"
+    "vendor": "esbuild tools/three-entry.js --bundle --format=iife --minify --legal-comments=eof --outfile=src/vendor/three.min.js",
+    "start": "electron .",
+    "build:win": "electron-builder --win --dir",
+    "build:linux": "electron-builder --linux --dir",
+    "server": "node server/server.js",
+    "test:server": "node server/test/smoke.js"
   },
   "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "26.0.12",
     "esbuild": "0.28.2",
     "three": "0.186.1"
+  },
+  "dependencies": {
+    "steamworks.js": "^0.4.0"
+  },
+  "build": {
+    "appId": "com.endlessdigging.game",
+    "productName": "Endless Digging",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**",
+      "src/**",
+      "!src/**/*.map"
+    ],
+    "asarUnpack": [
+      "node_modules/steamworks.js/dist/**"
+    ],
+    "win": {
+      "target": "dir"
+    },
+    "linux": {
+      "target": "dir"
+    }
   }
 }

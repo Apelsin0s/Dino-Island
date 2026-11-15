@@ -1,0 +1,51 @@
+name: Endless Digging
+
+on:
+  push:
+    paths:
+      - 'endless-digging/**'
+      - '.github/workflows/endless-digging.yml'
+  workflow_dispatch:
+    inputs:
+      steam_branch:
+        description: 'Upload the Windows build to Steam: "" = do not upload, "beta" = beta branch, "default" = live'
+        required: false
+        default: ''
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: endless-digging } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Every script parses
+        run: for f in src/*.js src/lang/*.js server/*.js electron/*.js; do node -e "new Function(require('fs').readFileSync('$f','utf8'))" || exit 1; done
+      - name: Server tests (two players, digging, cheats, chat filter, bans, restart)
+        run: cd server && npm ci && node test/smoke.js
+
+  windows:
+    needs: test
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    defaults: { run: { working-directory: endless-digging } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install
+      - run: npx electron-builder --win --dir
+      - uses: actions/upload-artifact@v4
+        with: { name: endless-digging-win, path: endless-digging/dist/win-unpacked }
+      - name: Upload to Steam
+        if: inputs.steam_branch != ''
+        uses: game-ci/steam-deploy@v3
+        with:
+          username: ${{ secrets.STEAM_USERNAME }}
+          configVdf: ${{ secrets.STEAM_CONFIG_VDF }}
+          appId: ${{ secrets.STEAM_APP_ID }}
+          buildDescription: ${{ github.sha }}
+          rootPath: endless-digging/dist
+          depot1Path: win-unpacked
+          releaseBranch: ${{ inputs.steam_branch == 'default' && '' || inputs.steam_branch }}

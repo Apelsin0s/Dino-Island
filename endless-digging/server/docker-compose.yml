@@ -1,0 +1,15 @@
+# One server machine: the game server + Caddy in front of it (free HTTPS certificate, wss://).
+# Put your domain in Caddyfile, the secrets in .env (see .env.example), then:  docker compose up -d --build
+services:
+  game:
+    build: { context: .., dockerfile: server/Dockerfile }
+    restart: unless-stopped
+    env_file: .env
+    volumes: [ "./data:/data" ]
+  caddy:
+    image: caddy:2.8.4
+    restart: unless-stopped
+    ports: [ "80:80", "443:443" ]
+    volumes: [ "./Caddyfile:/etc/caddy/Caddyfile", "caddy-data:/data" ]
+volumes:
+  caddy-data:

@@ -351,5 +351,6 @@
  "jumpB": "Jump",
  "turn": "Turn your phone sideways for a better view",
  "openPrefix": "Open",
- "countriesN": "countries"
+ "countriesN": "countries",
+ "net": {"solo": "Solo", "coop": "Co-op", "name": "Name", "online": "Online: one shared Earth for everyone. Enter opens the chat.", "offline": "The server cannot be reached — playing solo.", "chatPh": "Say something… (Enter to send)", "chatBtn": "Chat", "lost": "Connection lost, reconnecting…", "back": "Back online", "refused": {"tool": "The server did not accept this tool", "fast": "Too fast for the server", "far": "Too far for the server"}, "kick": {"banned": "You are banned from co-op.", "version": "Please update the game to play co-op.", "signin": "Could not sign in to co-op.", "full": "The server is full, please try again later.", "elsewhere": "You signed in from another place.", "kicked": "You were removed from the server.", "offline": "The server cannot be reached — playing solo."}, "sys": {"slow": "Not so fast.", "repeat": "You just said that.", "muted": "Your chat is off for {0} min.", "autoMuted": "Your chat is off for {0} min because of bad words.", "hidden": "The filter hid your message.", "unknownCmd": "Unknown command.", "noPlayer": "No such player nearby.", "reported": "Thank you, the report was sent.", "done": "Done.", "announce": "Announcement: {0}", "who": "{0}"}}
 };

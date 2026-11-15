@@ -960,6 +960,60 @@
 
   // ---------- per frame ----------
   // eye: camera position (planet metres), q: camera orientation, info: { dig, walk, look }
+
+  // ---------- other players (co-op) ----------
+  // A simple worker figure: work boots, trousers, a shirt in the player's own colour, a hard hat; the name above.
+  const Peers = { m: new Map() };
+  function nameTex(text, color) {
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96; const c = cv.getContext('2d');
+    c.font = 'bold 44px "Nunito", sans-serif'; const w = Math.min(500, c.measureText(text).width + 64);
+    c.fillStyle = 'rgba(25,32,40,.78)'; c.beginPath(); if (c.roundRect) c.roundRect((512 - w) / 2, 14, w, 64, 32); else c.rect((512 - w) / 2, 14, w, 64); c.fill();
+    c.fillStyle = color; c.beginPath(); c.arc((512 - w) / 2 + 30, 46, 11, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, 256 + 10, 48);
+    const tx = new T.CanvasTexture(cv); tx.colorSpace = T.SRGBColorSpace; return tx;
+  }
+  function makePeer(sid, name) {
+    const hue = (sid * 0.618034) % 1, shirt = new T.Color().setHSL(hue, 0.6, 0.5), g = new T.Group();
+    const m = c => new T.MeshStandardMaterial({ color: c, roughness: 0.8 });
+    const add = (geo, mat, x, y, z) => { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
+    const skin = m(col('#e0b08c')), pants = m(col('#39475a')), boot = m(col('#3b2a20'));
+    add(new T.CapsuleGeometry(0.075, 0.62, 4, 10), pants, -0.1, 0.45, 0); add(new T.CapsuleGeometry(0.075, 0.62, 4, 10), pants, 0.1, 0.45, 0);
+    add(new T.BoxGeometry(0.13, 0.08, 0.26), boot, -0.1, 0.04, 0.04); add(new T.BoxGeometry(0.13, 0.08, 0.26), boot, 0.1, 0.04, 0.04);
+    add(new T.CapsuleGeometry(0.2, 0.42, 4, 12), m(shirt), 0, 1.12, 0).scale.set(1, 1, 0.7);
+    const armL = add(new T.CapsuleGeometry(0.06, 0.52, 4, 8), m(shirt), -0.27, 1.12, 0), armR = add(new T.CapsuleGeometry(0.06, 0.52, 4, 8), m(shirt), 0.27, 1.12, 0);
+    add(new T.SphereGeometry(0.13, 16, 12), skin, 0, 1.55, 0);
+    const hat = add(new T.SphereGeometry(0.15, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), m(col('#f2a321')), 0, 1.6, 0);
+    add(new T.CylinderGeometry(0.19, 0.19, 0.015, 20), m(col('#f2a321')), 0, 1.6, 0.03);
+    const label = new T.Sprite(new T.SpriteMaterial({ map: nameTex(name, '#' + shirt.getHexString()), depthTest: true, transparent: true }));
+    label.scale.set(1.6, 0.3, 1); label.position.set(0, 2.05, 0); g.add(label);
+    scene.add(g);
+    return { g, armL, armR, hat, pos: v3(0, 0, 0), target: v3(0, 0, 0), f: v3(1, 0, 0), walk: 0, t: Math.random() * 6, name };
+  }
+  function dropPeer(P) { scene.remove(P.g); P.g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); }
+  // list: [sid, name, x, y, z, fx, fy, fz, pitch, tool, drive] from the server
+  Scene.setPeers = function (list) {
+    const seen = new Set();
+    for (const e of list) {
+      seen.add(e[0]); let P = Peers.m.get(e[0]);
+      if (!P || P.name !== e[1]) { if (P) dropPeer(P); P = makePeer(e[0], e[1]); Peers.m.set(e[0], P); P.pos.set(e[2], e[3], e[4]); }
+      P.target.set(e[2], e[3], e[4]); P.f.set(e[5], e[6], e[7]); P.g.visible = !e[10];   // in a machine: the figure is inside it
+    }
+    for (const [sid, P] of Peers.m) if (!seen.has(sid)) { dropPeer(P); Peers.m.delete(sid); }
+  };
+  Scene.removePeer = sid => { const P = Peers.m.get(sid); if (P) { dropPeer(P); Peers.m.delete(sid); } };
+  Scene.peerCount = () => Peers.m.size;
+  const pUp = v3(0, 0, 0), pR = v3(0, 0, 0), pF = v3(0, 0, 0), pM = new T.Matrix4();
+  Peers.update = function (dt) {
+    for (const P of Peers.m.values()) {
+      const d = P.pos.distanceTo(P.target);
+      if (d > 25) P.pos.copy(P.target); else P.pos.lerp(P.target, 1 - Math.exp(-dt * 12));   // smooth between the 10-per-second updates
+      P.walk = P.walk * 0.9 + Math.min(1, d * 6) * 0.1; P.t += dt * (4 + P.walk * 6);
+      pUp.copy(P.pos).normalize(); pF.copy(P.f).addScaledVector(pUp, -P.f.dot(pUp)); if (pF.lengthSq() < 1e-6) pF.set(1, 0, 0); pF.normalize(); pR.crossVectors(pUp, pF);
+      pM.makeBasis(pR, pUp, pF); P.g.quaternion.setFromRotationMatrix(pM);
+      P.g.position.set(P.pos.x - O.x, P.pos.y - O.y, P.pos.z - O.z);
+      const sw = Math.sin(P.t) * 0.5 * P.walk; P.armL.rotation.x = sw; P.armR.rotation.x = -sw;
+    }
+  };
   Scene.render = function (eye, q, info, dt, t) {
     timeU.value = t;
     if (eye.distanceTo(O) > 800) Scene.rebase(eye);   // move the floating origin when the player wanders far from it
@@ -967,7 +1021,7 @@
     camera.updateMatrixWorld();
     handCam.quaternion.copy(q); handCam.updateMatrixWorld();
     sky.position.copy(camera.position);
-    Particles.update(dt); Rigs.update(dt, t); Scan.update(dt); Heavy.update(dt);
+    Particles.update(dt); Rigs.update(dt, t); Scan.update(dt); Heavy.update(dt); Peers.update(dt);
     Hand.update(info.dig, info.walk, t, dt, info.look);
     Shadow.update(eye, q);
     composer.render(dt);

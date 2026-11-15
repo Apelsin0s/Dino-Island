@@ -215,3 +215,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #9fc9ea; fon
 #aSave { width: 100%; min-height: 160px; background: #151a1f; color: #cfe3ff; border: 2px solid #3a444e; border-radius: 10px; font: 12px var(--mono); padding: 8px; }
 #stats { position: fixed; left: 50%; top: max(8px, env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: rgba(0, 0, 0, .65); color: #9f9; font: 12px var(--mono); padding: 4px 10px; border-radius: 8px; z-index: 15; pointer-events: none; }
 body.noHud #hud { display: none !important; }
+
+/* ---------- co-op: mode switch, chat ---------- */
+.row.mode button { min-width: 120px; }
+.card input#nameIn { font: inherit; font-weight: 700; padding: 6px 10px; border-radius: 10px; border: 1.5px solid #c9d3dd; width: 180px; }
+.warnTxt { color: #c2410c !important; font-weight: 700; }
+#chat { position: fixed; left: 14px; bottom: 64px; width: min(420px, 70vw); z-index: 30; pointer-events: none; font-size: 14px; }
+#chatLog { max-height: 34vh; overflow: hidden; display: flex; flex-direction: column; gap: 3px; opacity: 0; transition: opacity .6s; }
+#chatLog.fresh { opacity: 1; }
+#chatLog .cl { align-self: flex-start; background: rgba(25, 32, 40, .62); color: #fff; padding: 4px 10px; border-radius: 10px; overflow-wrap: anywhere; text-shadow: 0 1px 1px rgba(0,0,0,.4); }
+#chatLog .cl b { color: #ffd27a; }
+#chatLog .cl.sys { background: rgba(194, 65, 12, .72); }
+#chatIn { pointer-events: auto; margin-top: 6px; width: 100%; box-sizing: border-box; font: inherit; padding: 8px 12px; border-radius: 12px; border: 0; background: rgba(255,255,255,.94); outline: 2px solid #f08a24; }
+#bChat { position: fixed; left: 14px; top: 70px; z-index: 30; pointer-events: auto; }
+html[dir=rtl] #chat { left: auto; right: 14px; }

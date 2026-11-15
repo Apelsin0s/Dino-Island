@@ -1,0 +1,7 @@
+{
+  "steamAppId": 480,
+  "server": "wss://play.example.com",
+  "ticketIdentity": "endless-digging",
+  "version": "0.5.0",
+  "fullscreen": false
+}
