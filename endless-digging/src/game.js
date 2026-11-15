@@ -10,7 +10,18 @@
   const L = RU ? {
     title: 'Endless Digging', sub: 'Выкопай всю Землю. Начни с ложки.', play: 'Играть', cont: 'Продолжить',
     loading: 'Строим планету…', spoon: 'Ложка',
-    lang: 'ru', shop: 'Исследования', shopSub: 'Выбери узел дерева', buy: 'Купить', bought: 'Уже есть', soon: 'Скоро', need: 'Не хватает', openShop: 'исследования', close: 'Закрыть',
+    lang: 'ru',
+    saveFull: 'Сохранение не помещается в браузер: засыпь лишние ямы в панели администратора',
+    adm: { title: 'Панель администратора', code: 'Код доступа', enter: 'Войти', wrong: 'Неверный код',
+      tabs: { money: 'Деньги', research: 'Исследования', countries: 'Страны', player: 'Игрок', world: 'Мир', machines: 'Техника', save: 'Сохранение' },
+      zero: 'Обнулить', setTo: 'Сделать', apply: 'Применить', incomeX10: 'Доход ×10', unlockAll: 'Открыть всё дерево', resetAll: 'Сбросить дерево',
+      openAll: 'Открыть все', onlyUkr: 'Только Украина', closeAll: 'Закрыть все', opened: 'Открыто', search: 'Поиск страны…', teleport: 'Телепорт',
+      fly: 'Полёт', flyHint: 'WASD и мышь — лететь, Пробел — вверх, C — вниз, Shift — быстрее; сквозь всё', speed: 'Скорость', digSize: 'Размер копка', reach: 'Дальность',
+      toStart: 'На старт', lat: 'Широта', lon: 'Долгота', fillHoles: 'Засыпать все ямы', bigScan: 'Скан руды 40 м / 30 м', stats: 'Статистика (FPS)', hideHud: 'Скрыть интерфейс',
+      allMachines: 'Выдать всю технику', everything: 'Всё и сразу ($1 млрд, всё дерево, все страны)', bringHere: 'Пригнать сюда',
+      export: 'Выгрузить', import: 'Загрузить', wipe: 'Стереть сохранение', savePh: 'Здесь появится сохранение. Вставь сюда своё и нажми «Загрузить».',
+      saveHint: '«Выгрузить» копирует сохранение (JSON) — так можно перенести игру в другой браузер.', badSave: 'Это не похоже на сохранение', wipeAgain: 'Нажми «Стереть» ещё раз',
+      drawCalls: 'вызовов', tris: 'треуг.', chunks: 'кусков', holes: 'ям', fineBoxes: 'мелких' }, shop: 'Исследования', shopSub: 'Выбери узел дерева', buy: 'Купить', bought: 'Уже есть', soon: 'Скоро', need: 'Не хватает', openShop: 'исследования', close: 'Закрыть',
     soonLong: 'Появится в следующих обновлениях', needFirst: 'Сначала нужно',
     rows: ['Инструмент', 'Сила', 'Геология', 'Торговля', 'Автоматизация', 'Техника', 'Бурение'],
     eff: { perStroke: 'За взмах', perTrip: 'За ходку', stroke: 'Время взмаха', price: 'Цена грунта', rigs: 'Установки', rig1: '1 ручная', rig2: '2 с мотором', rig3: '3 с мотором', see: 'Видно', scanR: 'Радиус / глубина скана', drive: 'Управление', bucket: 'ковш', exIncome: 'Доход экскаваторов', perSec: 'В секунду', probeDepth: 'Глубина щупа', reach: 'Дальность', move: 'Скорость ходьбы', orePrice: 'Цена руды', bank: 'Доход', bankV: '+1 % в минуту', rigSpeed: 'Скорость копалок', rigTurn: 'За оборот', rigIncome: 'Доход копалок', probe: 'породы под прицелом до 4 м', detector: 'руду вокруг до 12 м' },
@@ -46,7 +57,7 @@
       usgs_prod: 'добывалось', usgs_past: 'отработано', known: 'известное месторождение' },
     resTitle: 'Ресурсы на карте', lmap: 'л',
     helperPay: 'помощники', height: 'Высота над морем', core: 'До ядра', dug: 'Выкопано', left: 'Осталось выкопать', m3: 'м³', m: 'м', km: 'км', l: 'л',
-    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать (деньги сразу) · <b>F</b> исследования · <b>E</b> скан металлоискателем · <b>R</b> сесть в технику · <b>M</b> карта · <b>Esc</b> пауза',
+    keys: '<b>WASD</b> идти · <b>Shift</b> бег · <b>Пробел</b> прыжок · <b>ЛКМ</b> копать (деньги сразу) · <b>F</b> исследования · <b>E</b> скан металлоискателем · <b>R</b> сесть в технику · <b>M</b> карта · <b>Ё</b> админ · <b>Esc</b> пауза',
     pause: 'Пауза', quality: 'Графика', hi: 'Высокая', mid: 'Средняя', lo: 'Быстрая', reset: 'Начать заново', far: 'Слишком далеко',
     clickHint: 'Кликни, чтобы управлять мышью', N: 'с. ш.', S: 'ю. ш.', E: 'в. д.', Wd: 'з. д.', planet: 'Планета Земля · радиус 6 371 км · окружность 40 030 км',
     sign: ['ПРИЁМ ГРУНТА', '$0.10 за литр'], bucket: 'Ведро', full: 'Ведро полное — неси в приёмку у лачуги', sell: 'сдать грунт', noDig: 'Здесь копать нельзя', inWay: 'Мешает — камень или дерево',
@@ -55,7 +66,18 @@
   } : {
     title: 'Endless Digging', sub: 'Dig out the whole Earth. Start with a spoon.', play: 'Play', cont: 'Continue',
     loading: 'Building the planet…', spoon: 'Spoon',
-    lang: 'en', shop: 'Research', shopSub: 'Pick a node of the tree', buy: 'Buy', bought: 'Owned', soon: 'Soon', need: 'Need', openShop: 'research', close: 'Close',
+    lang: 'en',
+    saveFull: 'The save no longer fits in the browser: fill some holes in the admin panel',
+    adm: { title: 'Admin panel', code: 'Access code', enter: 'Enter', wrong: 'Wrong code',
+      tabs: { money: 'Money', research: 'Research', countries: 'Countries', player: 'Player', world: 'World', machines: 'Machines', save: 'Save' },
+      zero: 'Zero', setTo: 'Set to', apply: 'Apply', incomeX10: 'Income ×10', unlockAll: 'Unlock the whole tree', resetAll: 'Reset the tree',
+      openAll: 'Open all', onlyUkr: 'Ukraine only', closeAll: 'Close all', opened: 'Open', search: 'Find a country…', teleport: 'Teleport',
+      fly: 'Fly', flyHint: 'WASD and mouse to fly, Space up, C down, Shift faster; through everything', speed: 'Speed', digSize: 'Dig size', reach: 'Reach',
+      toStart: 'To the start', lat: 'Lat', lon: 'Lon', fillHoles: 'Fill all holes', bigScan: 'Ore sweep 40 m / 30 m', stats: 'Stats (FPS)', hideHud: 'Hide the HUD',
+      allMachines: 'Give all machines', everything: 'Everything ($1 bn, the whole tree, all countries)', bringHere: 'Bring here',
+      export: 'Export', import: 'Import', wipe: 'Wipe the save', savePh: 'The save appears here. Paste one in and press Import.',
+      saveHint: 'Export copies the save (JSON) — move the game to another browser that way.', badSave: 'That does not look like a save', wipeAgain: 'Press Wipe once more',
+      drawCalls: 'calls', tris: 'tris', chunks: 'chunks', holes: 'holes', fineBoxes: 'fine' }, shop: 'Research', shopSub: 'Pick a node of the tree', buy: 'Buy', bought: 'Owned', soon: 'Soon', need: 'Need', openShop: 'research', close: 'Close',
     soonLong: 'Coming in a later update', needFirst: 'First you need',
     rows: ['Tool', 'Strength', 'Geology', 'Trade', 'Automation', 'Machinery', 'Drilling'],
     eff: { perStroke: 'Per stroke', perTrip: 'Per trip', stroke: 'Stroke time', price: 'Soil price', rigs: 'Rigs', rig1: '1 hand-crank', rig2: '2 motor', rig3: '3 motor', see: 'Shows', scanR: 'Sweep radius / depth', drive: 'Drive it', bucket: 'bucket', exIncome: 'Excavator income', perSec: 'Per second', probeDepth: 'Probe depth', reach: 'Reach', move: 'Walking speed', orePrice: 'Ore price', bank: 'Income', bankV: '+1 % a minute', rigSpeed: 'Rig speed', rigTurn: 'Per turn', rigIncome: 'Rig income', probe: 'the ground under the crosshair to 4 m', detector: 'ore around you to 12 m' },
@@ -91,7 +113,7 @@
       usgs_prod: 'producer', usgs_past: 'past producer', known: 'well-known deposit' },
     resTitle: 'Resources on the map', lmap: 'L',
     helperPay: 'helpers', height: 'Above sea level', core: 'To the core', dug: 'Dug out', left: 'Left to dig', m3: 'm³', m: 'm', km: 'km', l: 'L',
-    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig (paid at once) · <b>F</b> research · <b>E</b> detector sweep · <b>R</b> get into a machine · <b>M</b> map · <b>Esc</b> pause',
+    keys: '<b>WASD</b> walk · <b>Shift</b> run · <b>Space</b> jump · <b>LMB</b> dig (paid at once) · <b>F</b> research · <b>E</b> detector sweep · <b>R</b> get into a machine · <b>M</b> map · <b>`</b> admin · <b>Esc</b> pause',
     pause: 'Paused', quality: 'Graphics', hi: 'High', mid: 'Medium', lo: 'Fast', reset: 'Start over', far: 'Too far',
     clickHint: 'Click to control with the mouse', N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planet Earth · radius 6,371 km · circumference 40,030 km',
     sign: ['SOIL WANTED', '$0.10 per litre'], bucket: 'Bucket', full: 'Bucket is full — take it to the bin by the shack', sell: 'hand in soil', noDig: "Can't dig here", inWay: 'A rock or a tree is in the way',
@@ -159,7 +181,7 @@
   const has = id => owned.has(id);
   const lvl = id => id === 'tool' ? (has('shovel') ? 'shovel' : has('trowel') ? 'trowel' : has('scoop') ? 'scoop' : 'spoon')
     : id === 'speed' ? (has('arms4') ? 0.52 : has('arms3') ? 0.61 : has('arms2') ? 0.72 : has('arms1') ? 0.85 : 1)
-    : id === 'scale' ? (has('scales3') ? 2 : has('scales2') ? 1.5 : has('scales1') ? 1.25 : 1)
+    : id === 'scale' ? (has('scales3') ? 2 : has('scales2') ? 1.5 : has('scales1') ? 1.25 : 1) * (AD.incomeMul || 1)
     : id === 'ore' ? (has('sorting') ? 1.25 : 1) * (has('orebuyer') ? 1.5 : 1)
     : id === 'bite' ? (has('sharp') ? 0.62 : BITE)
     : id === 'reach' ? (has('longhandle') ? 0.7 : 0)
@@ -181,7 +203,7 @@
   const EARTH_VOL = 4 / 3 * Math.PI * Math.pow(W.R, 3);
 
   // ---------- player ----------
-  const pl = { pos: v3(0, 0, 0), vel: v3(0, 0, 0), fwd: v3(0, 0, -1), pitch: 0, grounded: false, tool: 'spoon', dig: -1, dug: 0, money: 0, sold: 0, earned: [0, 0, 0, 0, 0] };
+  const pl = { pos: v3(0, 0, 0), vel: v3(0, 0, 0), fwd: v3(0, 0, -1), pitch: 0, grounded: false, tool: 'spoon', dig: -1, dug: 0, money: 0, sold: 0, earned: [0, 0, 0, 0, 0], open: ['UKR'] };
   const fmtMoney = v => v < 0.1 ? v.toFixed(3) : v.toFixed(2);
   const RAD = 0.3, EYE = 1.62, G = 9.81, JUMP = 4.3, WALK = 4.2, RUN = 7.0;   // real gravity; a jump of about 0.9 m
   const SPHERES = [0.31, 0.9, 1.42];
@@ -244,10 +266,18 @@
   function step(dt) {
     frame();
     const k = keys;
+    if (AD.fly) {   // admin: fly through everything; Space up, C down, Shift faster
+      const d = lookDir(), wish = v3(0, 0, 0);
+      let mx = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), mz = (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0);
+      if (stick.id !== null) { mx = stick.x; mz = -stick.y; }
+      wish.addScaledVector(d, mz).addScaledVector(right, mx).addScaledVector(up, (k.Space ? 1 : 0) - (k.KeyC || k.ControlLeft ? 1 : 0));
+      if (wish.lengthSq() > 1e-4) pl.pos.addScaledVector(wish.normalize(), 12 * AD.speed * (k.ShiftLeft || k.ShiftRight ? 4 : 1) * dt);
+      pl.vel.set(0, 0, 0); pl.grounded = false; return 0;
+    }
     let mx = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0), mz = (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), amt = 1;
     let run = k.ShiftLeft || k.ShiftRight;
     if (stick.id !== null) { mx = stick.x; mz = -stick.y; amt = Math.min(1, Math.hypot(mx, mz) * 1.25); run = amt >= 1 && Math.hypot(mx, mz) > 0.92; }
-    const sp = (run ? RUN : WALK) * lvl('move');
+    const sp = (run ? RUN : WALK) * lvl('move') * AD.speed;
     const wish = v3(0, 0, 0).addScaledVector(pl.fwd, mz).addScaledVector(right, mx);
     if (wish.lengthSq() > 0.0001) wish.normalize().multiplyScalar(sp * amt);
     // fixed small physics steps: the same feel at any frame rate
@@ -299,7 +329,7 @@
     const tool = TOOLS[pl.tool];
     if (hit.obstacle) { notice(L.inWay); Sound.thud(); return false; }
     // the scoop goes where you aim: dig into a fresh spot for a full bite, into an old hole for less (until you dig past it)
-    const R = tool.r * (has('sharp') ? 1.08 : 1), c = hit.p.clone().addScaledVector(hit.d, R * 0.45);
+    const R = tool.r * (has('sharp') ? 1.08 : 1) * AD.digMul, c = hit.p.clone().addScaledVector(hit.d, R * 0.45);
     if (W.blocked(c.x, c.y, c.z, R + 0.05)) { notice(L.noDig); Sound.thud(); return false; }
     const per = [0, 0, 0, 0, 0], f = bite(c, R, per), solidN = per.reduce((a, b) => a + b, 0);
     const litres = f * 4 / 3 * Math.PI * Math.pow(R, 3) * 1000, k = solidN ? litres / solidN : 0;
@@ -406,6 +436,7 @@
     if (Math.abs(mz) > 0.05) {
       const np = M.pos.clone().addScaledVector(fwdOf(M.pos, M.yaw), mz * H.speed * dt), g = S.groundBelow(np, 2.5);
       let hitB = false; for (const b of W.blockers) { if (b === M.block) continue; if (Math.hypot(g.x - b[0], g.y - b[1], g.z - b[2]) < b[4] + 1.6 * M.scale) { hitB = true; break; } }
+      if (!hitB && W.obstacleAt(g.x, g.y, g.z, 1.2 * M.scale)) hitB = true;
       if (!hitB && Math.abs(g.clone().sub(M.pos).dot(u)) < 1.2 * M.scale) { S.moveHeavy(drive.id, g, M.yaw); pl.machines = machinePoses(); }
     }
     pl.pos.copy(M.pos);
@@ -535,6 +566,8 @@
   addEventListener('keydown', e => {
     if (e.code === 'KeyM' && (playing || mapOpen) && !e.repeat) { toggleMap(); e.preventDefault(); return; }
     if (mapOpen) { if (e.code === 'Escape') toggleMap(); return; }
+    if (AD.open) { if (e.code === 'Escape' || e.code === 'Backquote') toggleAdmin(false); return; }
+    if (e.code === 'Backquote' && !e.repeat && !loading) { toggleAdmin(true); e.preventDefault(); return; }
     if (shopOpen) { if (e.code === 'Escape' || e.code === 'KeyF') toggleShop(false); return; }
     if (!playing) return;
     keys[e.code] = true;
@@ -567,11 +600,11 @@
   let pausedByUs = false;
   document.addEventListener('pointerlockchange', () => {
     locked = document.pointerLockElement === canvas;
-    if (!locked && playing && !pausedByUs && !mapOpen && !shopOpen) pause(true);
+    if (!locked && playing && !pausedByUs && !mapOpen && !shopOpen && !AD.open) pause(true);
     pausedByUs = false;
     $('clickHint').hidden = locked || !playing || TOUCH;
   });
-  addEventListener('keydown', e => { if (e.code === 'Escape' && playing && !locked && !mapOpen) pause(true); });
+  addEventListener('keydown', e => { if (e.code === 'Escape' && playing && !locked && !mapOpen && !AD.open) pause(true); });
   function setTool(t) { pl.tool = t; }
 
   // ---------- the world map ----------
@@ -640,7 +673,7 @@
   // ---------- geology: the probe reads the column under the crosshair, the detector looks for ore around ----------
   let geoT = 0, scanInfo = null, scanCool = 0;
   // the metal detector: press E (or the button) for one sweep; ore pockets in range get marks on the ground with their depth
-  const scanRange = () => has('detector2') ? { r: 15, d: 8 } : { r: 8, d: 4 };
+  const scanRange = () => scanBig ? { r: 40, d: 30 } : has('detector2') ? { r: 15, d: 8 } : { r: 8, d: 4 };
   function scan() {
     if (!has('detector') || !playing || scanCool > 0) return;
     const { r, d } = scanRange(); scanCool = 2.5;
@@ -675,7 +708,7 @@
     geoT = 0;
   }
   function geology(dt) {
-    const el = $('geo'); if (!has('probe')) { el.hidden = true; return; }
+    const el = $('geo'); if (!has('probe') || drive) { el.hidden = true; return; }
     if ((geoT -= dt) > 0) return; geoT = 0.25;
     let txt = '';
     const h = rayHit(TOOLS[pl.tool].reach + 1.5);
@@ -694,11 +727,158 @@
     el.innerHTML = txt; el.hidden = !txt;
   }
 
+  // ---------- admin panel (for testing): ` (Ё) or the button in the pause menu, then the code ----------
+  // The code is checked by its hash only, so it is not written out here. This is a test tool, not real security:
+  // anyone who reads the page source can find their way around it.
+  const ADMIN_HASH = 0x0e69bf0f;   // FNV-1a of the code
+  const fnv = s => { let h = 0x811c9dc5; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; } return h; };
+  const AD = { open: false, tab: 'money', fly: false, speed: 1, digMul: 1, reach: 0, stats: false, hideHud: false, filter: '' };
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  Object.assign(AD, lsGet('endlessdigging.admincfg', {}), { open: false });
+  let adminOK = lsGet('endlessdigging.admin', false);
+  const adminSave = () => lsSet('endlessdigging.admincfg', { tab: AD.tab, fly: AD.fly, speed: AD.speed, digMul: AD.digMul, reach: AD.reach, stats: AD.stats, hideHud: AD.hideHud });
+  function toggleAdmin(on) {
+    if (on === undefined) on = !AD.open;
+    if (on === AD.open) return;
+    const el = $('admin');
+    if (on) {
+      if (loading) return;
+      AD.open = true; AD.wasPlaying = playing; playing = false; mouseDown = false; for (const k in keys) keys[k] = false;
+      if (locked) { pausedByUs = true; document.exitPointerLock(); }
+      $('overlay').hidden = true; renderAdmin(); el.hidden = false;
+    } else {
+      AD.open = false; el.hidden = true; playing = true; $('hud').hidden = false; if (!TOUCH) lock();
+    }
+  }
+  const A_ = L.adm;
+  function adminTabs() {
+    return ['money', 'research', 'countries', 'player', 'world', 'machines', 'save'].map(k => `<button class="atab${AD.tab === k ? ' on' : ''}" data-tab="${k}">${A_.tabs[k]}</button>`).join('');
+  }
+  function btn(act, text, cls) { return `<button class="abtn${cls ? ' ' + cls : ''}" data-act="${act}">${text}</button>`; }
+  function chip(act, on, text) { return `<button class="achip${on ? ' on' : ''}" data-act="${act}">${text}</button>`; }
+  function adminBody() {
+    const C = root.Countries || [], open = new Set(pl.open);
+    switch (AD.tab) {
+      case 'money': return `<div class="arow big">$${pl.money.toLocaleString(RU ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 })}</div>
+        <div class="arow">${btn('m:1e6', '+ $1 000 000', 'main')}${btn('m:1e3', '+ $1 000')}${btn('m:1e9', '+ $1 000 000 000')}${btn('m:x2', '× 2')}${btn('m:0', A_.zero, 'warn')}</div>
+        <div class="arow"><label>${A_.setTo} $<input id="aMoney" type="number" min="0" step="1" value="${Math.round(pl.money)}"></label>${btn('m:set', A_.apply)}</div>
+        <div class="arow">${chip('m:mul', AD.incomeMul > 1, A_.incomeX10)}</div>`;
+      case 'research': return `<div class="arow">${btn('r:all', A_.unlockAll, 'main')}${btn('r:none', A_.resetAll, 'warn')}</div>
+        <div class="agrid">${NODES.filter(n => !n.root).map(n => `<label class="acheck${n.soon ? ' dim' : ''}"><input type="checkbox" data-node="${n.id}"${has(n.id) ? ' checked' : ''}${n.soon ? ' disabled' : ''}>${L.node[n.id][0]}${n.soon ? ' · ' + L.soon : ''}</label>`).join('')}</div>`;
+      case 'countries': {
+        const f = AD.filter.trim().toLowerCase(), list = C.filter(c => !f || c.ru.toLowerCase().includes(f) || c.en.toLowerCase().includes(f));
+        return `<div class="arow">${btn('c:all', A_.openAll, 'main')}${btn('c:ukr', A_.onlyUkr)}${btn('c:none', A_.closeAll, 'warn')}<span class="acount">${A_.opened}: ${open.size} / ${C.length}</span></div>
+          <div class="arow"><input id="aFilter" type="search" placeholder="${A_.search}" value="${AD.filter.replace(/"/g, '&quot;')}"></div>
+          <div class="alist">${list.map(c => `<div class="aitem"><label class="acheck"><input type="checkbox" data-country="${c.id}"${open.has(c.id) ? ' checked' : ''}>${RU ? c.ru : c.en}</label><button class="abtn small" data-act="tp:${c.id}">${A_.teleport}</button></div>`).join('')}</div>`;
+      }
+      case 'player': return `<div class="arow">${chip('p:fly', AD.fly, A_.fly)}<span class="ahint">${A_.flyHint}</span></div>
+        <div class="arow"><span class="alab">${A_.speed}</span>${[1, 3, 10, 30].map(v => chip('p:speed:' + v, AD.speed === v, '×' + v)).join('')}</div>
+        <div class="arow"><span class="alab">${A_.digSize}</span>${[1, 2, 5, 10].map(v => chip('p:dig:' + v, AD.digMul === v, '×' + v)).join('')}</div>
+        <div class="arow"><span class="alab">${A_.reach}</span>${[0, 5, 20].map(v => chip('p:reach:' + v, AD.reach === v, '+' + v + ' ' + L.m)).join('')}</div>
+        <div class="arow">${btn('p:home', A_.toStart, 'main')}<label>${A_.lat} <input id="aLat" type="number" step="0.0001" value="${W.toLatLon(pl.pos.x, pl.pos.y, pl.pos.z)[0].toFixed(4)}"></label><label>${A_.lon} <input id="aLon" type="number" step="0.0001" value="${W.toLatLon(pl.pos.x, pl.pos.y, pl.pos.z)[1].toFixed(4)}"></label>${btn('p:go', A_.teleport)}</div>`;
+      case 'world': return `<div class="arow">${btn('w:fill', A_.fillHoles, 'warn')}${btn('w:scan', A_.bigScan, 'main')}</div>
+        <div class="arow">${chip('w:stats', AD.stats, A_.stats)}${chip('w:hud', AD.hideHud, A_.hideHud)}</div>
+        <div class="arow"><span class="alab">${L.quality}</span>${chip('w:q:high', S.getQuality() === 'high', L.hi)}${chip('w:q:mid', S.getQuality() === 'mid', L.mid)}${chip('w:q:low', S.getQuality() === 'low', L.lo)}</div>`;
+      case 'machines': return `<div class="arow">${btn('h:all', A_.allMachines, 'main')}${btn('h:everything', A_.everything)}</div>
+        <div class="arow">${['exMini', 'exBig'].map(id => btn('h:here:' + id, A_.bringHere + ': ' + L.node[id][0])).join('')}</div>
+`;
+      case 'save': return `<div class="arow">${btn('s:export', A_.export, 'main')}${btn('s:import', A_.import)}${btn('s:wipe', A_.wipe, 'warn')}</div>
+        <textarea id="aSave" spellcheck="false" placeholder="${A_.savePh}"></textarea><div class="ahint">${A_.saveHint}</div>`;
+    }
+    return '';
+  }
+  function renderAdmin() {
+    const el = $('admin');
+    if (!adminOK) {
+      el.innerHTML = `<div class="adminCard login"><div class="aHead"><h2>${A_.title}</h2><button class="aClose" data-act="close" aria-label="${L.close}">✕</button></div>
+        <label>${A_.code}<input id="aCode" type="password" autocomplete="off"></label><div class="arow">${btn('login', A_.enter, 'main')}</div><div class="ahint" id="aMsg"></div></div>`;
+    } else {
+      el.innerHTML = `<div class="adminCard"><div class="aHead"><h2>${A_.title}</h2><div class="atabs">${adminTabs()}</div><button class="aClose" data-act="close" aria-label="${L.close}">✕</button></div><div class="aBody">${adminBody()}</div></div>`;
+    }
+    for (const b of el.querySelectorAll('[data-tab]')) b.onclick = () => { AD.tab = b.dataset.tab; adminSave(); renderAdmin(); };
+    for (const b of el.querySelectorAll('[data-act]')) b.onclick = () => adminAct(b.dataset.act);
+    for (const c of el.querySelectorAll('[data-node]')) c.onchange = () => { if (c.checked) owned.add(c.dataset.node); else owned.delete(c.dataset.node); applyUpgrades(); dirty = true; };
+    for (const c of el.querySelectorAll('[data-country]')) c.onchange = () => { const s2 = new Set(pl.open); if (c.checked) s2.add(c.dataset.country); else s2.delete(c.dataset.country); setOpen([...s2]); renderAdmin(); };
+    const fi = $('aFilter'); if (fi) { fi.oninput = () => { AD.filter = fi.value; const pos = fi.selectionStart; renderAdmin(); const f2 = $('aFilter'); f2.focus(); f2.setSelectionRange(pos, pos); }; }
+    const code = $('aCode'); if (code) { code.focus(); code.onkeydown = e => { if (e.key === 'Enter') adminAct('login'); }; }
+  }
+  function setOpen(ids) { pl.open = ids; MapV.setOpen(ids); dirty = true; updateOpenLabel(); }
+  function updateOpenLabel() {
+    const C = root.Countries || [], names = C.filter(c => pl.open.includes(c.id)).map(c => RU ? c.ru : c.en);
+    $('mapOpen').textContent = (RU ? 'Открыто: ' : 'Open: ') + (names.length <= 3 ? names.join(', ') || '—' : names.length + (RU ? ' стран' : ' countries'));
+  }
+  function teleport(lat, lon) {
+    if (drive) toggleDrive();
+    const d = W.fromLatLon(lat, lon), h = W.heightDir(d[0], d[1], d[2]);
+    const p = v3(d[0], d[1], d[2]).multiplyScalar(W.R + h + 0.2);
+    pl.pos.copy(S.groundBelow(p, 3)).addScaledVector(p.clone().normalize(), 0.05); pl.vel.set(0, 0, 0); frame();
+    S.rebase(pl.pos); S.shadeAt(pl.pos, pl.fwd); dirty = true;
+  }
+  function adminAct(a) {
+    const [k, v, w] = a.split(':');
+    if (a === 'close') return toggleAdmin(false);
+    if (a === 'login') {
+      if (fnv(($('aCode').value || '').trim().toLowerCase()) === ADMIN_HASH) { adminOK = true; lsSet('endlessdigging.admin', true); renderAdmin(); }
+      else $('aMsg').textContent = A_.wrong;
+      return;
+    }
+    if (k === 'm') {
+      if (v === 'set') pl.money = Math.max(0, +$('aMoney').value || 0);
+      else if (v === 'x2') pl.money *= 2; else if (v === '0') pl.money = 0; else if (v === 'mul') AD.incomeMul = AD.incomeMul > 1 ? 1 : 10;
+      else pl.money += +v;
+      dirty = true;
+    }
+    if (k === 'r') { owned.clear(); for (const n of NODES) if (n.root || (v === 'all' && !n.soon)) owned.add(n.id); applyUpgrades(); dirty = true; }
+    if (k === 'c') { setOpen(v === 'all' ? (root.Countries || []).map(c => c.id) : v === 'ukr' ? ['UKR'] : []); }
+    if (k === 'tp') { const c = (root.Countries || []).find(x => x.id === v); if (c) { teleport(c.c[1], c.c[0]); return toggleAdmin(false); } }
+    if (k === 'p') {
+      if (v === 'fly') AD.fly = !AD.fly;
+      if (v === 'speed') AD.speed = +w; if (v === 'dig') AD.digMul = +w; if (v === 'reach') AD.reach = +w;
+      if (v === 'home') { teleport(SPAWN_LAT, SPAWN_LON); return toggleAdmin(false); }
+      if (v === 'go') { const la = +$('aLat').value, lo = +$('aLon').value; if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 90) { teleport(la, lo); return toggleAdmin(false); } }
+      adminSave();
+    }
+    if (k === 'w') {
+      if (v === 'fill') { W.clearHoles(); S.resetChunks(); S.updateDeco(pl.pos, true); dirty = true; }
+      if (v === 'scan') { const had = owned.has('detector2'), had1 = owned.has('detector'); owned.add('detector'); owned.add('detector2'); scanCool = 0; playing = true; scanBig = true; scan(); scanBig = false; playing = false; if (!had) owned.delete('detector2'); if (!had1) owned.delete('detector'); return toggleAdmin(false); }
+      if (v === 'stats') { AD.stats = !AD.stats; $('stats').hidden = !AD.stats; }
+      if (v === 'hud') { AD.hideHud = !AD.hideHud; document.body.classList.toggle('noHud', AD.hideHud); }
+      if (v === 'q') S.setQuality(w);
+      adminSave();
+    }
+    if (k === 'h') {
+      if (v === 'all' || v === 'everything') { for (const n of NODES) if (!n.soon) owned.add(n.id); if (v === 'everything') { pl.money += 1e9; setOpen((root.Countries || []).map(c => c.id)); } applyUpgrades(); dirty = true; }
+      if (v === 'here') { if (!has(w)) { owned.add(w); applyUpgrades(); } const M = S.heavy(w); if (M) { const f = pl.fwd.clone(), g = S.groundBelow(pl.pos.clone().addScaledVector(f, 6 * M.scale), 4); S.moveHeavy(w, g, M.yaw); pl.machines = machinePoses(); dirty = true; } }
+    }
+    if (k === 's') {
+      const ta = $('aSave');
+      if (v === 'export') { save(); ta.value = localStorage.getItem(SAVE) || ''; ta.select(); try { navigator.clipboard.writeText(ta.value).catch(() => {}); } catch (e) {} return; }
+      if (v === 'import') { try { const s2 = JSON.parse(ta.value); if (!s2 || typeof s2 !== 'object') throw 0; localStorage.setItem(SAVE, JSON.stringify(s2)); location.reload(); } catch (e) { ta.value = A_.badSave; } return; }
+      if (v === 'wipe') { if (!AD.wipeArmed) { AD.wipeArmed = true; notice(A_.wipeAgain); return; } wipeSave(); return; }
+    }
+    renderAdmin();
+  }
+  function wipeSave() { try { localStorage.removeItem(SAVE); localStorage.removeItem(OLD_SAVE); } catch (e) {} skipSave = true; location.reload(); }
+  let scanBig = false, skipSave = false, statT = 0, statN = 0;
+  function updateStats(dt) {
+    if (!AD.stats) return;
+    statN++; if ((statT += dt) < 0.5) return;
+    const info = S.renderer().info;
+    $('stats').textContent = `FPS ${Math.round(statN / statT)} · ${A_.drawCalls} ${info.render.calls} · ${A_.tris} ${(info.render.triangles / 1e6).toFixed(2)}M · ${A_.chunks} ${S.chunkCount()} · ${A_.holes} ${W.holes.length} · ${A_.fineBoxes} ${W.fineSet.size}`;
+    statT = 0; statN = 0;
+  }
+
   // ---------- save ----------
   const SAVE = 'endlessdigging.v3', OLD_SAVE = 'endlessdigging.v2';   // v3: real relief (v2 holes no longer fit; money is kept)
   let dirty = false, saveT = 0;
+  let saveWarned = false;
   function save() {
-    try { localStorage.setItem(SAVE, JSON.stringify({ holes: W.holes.map(h => h.map(v => Math.round(v * 1000) / 1000)), pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, bucket: pl.bucket, sold: pl.sold, earned: pl.earned, machines: machinePoses(), owned: [...owned], foundOre: !!pl.foundOre })); } catch (e) {}
+    if (skipSave) return;
+    const sp = holeBase(), hr = [];
+    for (const h of W.holes) hr.push(Math.round((h[0] - sp.x) * 1000), Math.round((h[1] - sp.y) * 1000), Math.round((h[2] - sp.z) * 1000), Math.round(h[3] * 1000));
+    try { localStorage.setItem(SAVE, JSON.stringify({ hr, pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, open: pl.open, sold: pl.sold, earned: pl.earned, machines: machinePoses(), owned: [...owned], foundOre: !!pl.foundOre })); }
+    catch (e) { if (!saveWarned) { saveWarned = true; notice(L.saveFull); } }
     dirty = false;
   }
   function load() {
@@ -711,6 +891,8 @@
 
   // ---------- start: Kryvyi Rih, Ukraine ----------
   const SPAWN_LAT = 47.9105, SPAWN_LON = 33.3918;
+  // holes are saved relative to the start at sea level (does not depend on the relief data)
+  function holeBase() { const d = W.fromLatLon(SPAWN_LAT, SPAWN_LON); return v3(d[0], d[1], d[2]).multiplyScalar(W.R); }
   function spawnPoint() {
     const d = W.fromLatLon(SPAWN_LAT, SPAWN_LON), h = W.heightDir(d[0], d[1], d[2]);
     return v3(d[0], d[1], d[2]).multiplyScalar(W.R + h + 0.05);
@@ -724,6 +906,8 @@
     if (saved && saved.fresh) { pl.money = saved.money; pl.sold = saved.sold; }
     if (saved && !saved.fresh) {
       for (const h of saved.holes || []) W.addHole(h[0], h[1], h[2], h[3]);
+      const hb = holeBase(); if (saved.hr) for (let i = 0; i + 3 < saved.hr.length; i += 4) W.addHole(hb.x + saved.hr[i] / 1000, hb.y + saved.hr[i + 1] / 1000, hb.z + saved.hr[i + 2] / 1000, saved.hr[i + 3] / 1000);
+      if (saved.open) pl.open = saved.open;
       pl.pos.fromArray(saved.pos); pl.fwd.fromArray(saved.fwd); pl.pitch = saved.pitch || 0; pl.dug = saved.dug || 0;
       pl.machines = saved.machines || null;
       pl.money = saved.money || 0; pl.sold = saved.sold || 0; pl.foundOre = !!saved.foundOre; pl.earned = saved.earned || [0, 0, 0, 0, 0];
@@ -744,7 +928,8 @@
     S.setPile(Math.min(1, pl.sold / 400));
     applyUpgrades();
     S.updateFar(pl.pos, true); S.updateDeco(pl.pos, true);
-    MapV.init(S.renderer(), $('mapUI'), L);
+    MapV.init(S.renderer(), $('mapUI'), L); MapV.setOpen(pl.open);
+    $('stats').hidden = !AD.stats; document.body.classList.toggle('noHud', !!AD.hideHud);
     addEventListener('resize', () => S.resize());
   }
 
@@ -799,7 +984,7 @@
       : `<div class="card"><h1>${kind === 'pause' ? L.pause : L.title}</h1><p class="sub">${kind === 'pause' ? L.planet : L.sub}</p>
           <button id="bPlay" class="big">${kind === 'pause' ? L.cont : L.play}</button>
           <div class="row"><span>${L.quality}</span><button id="qHi" class="${q === 'high' ? 'on' : ''}">${L.hi}</button><button id="qMid" class="${q === 'mid' ? 'on' : ''}">${L.mid}</button><button id="qLo" class="${q === 'low' ? 'on' : ''}">${L.lo}</button></div>
-          ${kind === 'pause' ? `<button id="bReset" class="ghost">${L.reset}</button>` : ''}
+          ${kind === 'pause' ? `<div class="row"><button id="bAdmin" class="ghost">${L.adm.title}</button><button id="bReset" class="ghost">${L.reset}</button></div>` : ''}
           <p class="keys">${TOUCH ? L.tkeys : L.keys}</p></div>`;
     if (kind === 'loading') return;
     $('bPlay').onclick = () => { Sound.unlock(); o.hidden = true; playing = true; $('hud').hidden = false; if (TOUCH) fullscreen(); else lock(); };
@@ -808,9 +993,9 @@
     $('qLo').onclick = () => { S.setQuality('low'); overlay(kind); };
     const r = $('bReset'); if (r) r.onclick = () => {
       if (!r.dataset.armed) { r.dataset.armed = '1'; r.textContent = L.resetAsk; r.classList.add('warn'); return; }   // second press confirms
-      W.clearHoles(); Object.assign(pl, { dug: 0, money: 0, sold: 0, earned: [0, 0, 0, 0, 0], foundOre: false }); owned.clear(); for (const n of NODES) if (n.root) owned.add(n.id); applyUpgrades(); S.resetChunks(); S.updateDeco(pl.pos, true); S.setPile(0);
-      pl.pos.copy(spawnPoint()); pl.vel.set(0, 0, 0); save(); overlay(kind);
+      wipeSave();   // a clean start: machines, rigs and holes all go
     };
+    const ab = $('bAdmin'); if (ab) ab.onclick = () => toggleAdmin(true);
   }
   function pause(on) { if (on) { playing = false; mouseDown = false; for (const k in keys) keys[k] = false; stick.id = lookT.id = null; stick.x = stick.y = 0; const sb = $('stick'); if (sb) sb.hidden = true; overlay('pause'); if (dirty) save(); } }
 
@@ -837,13 +1022,13 @@
       if (!drive && pl.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { pl.dig = 0; pl.didHit = false; S.setSpoonFull(false); }
       if (pl.dig >= 0) {
         const prev = pl.dig; pl.dig += dt / (tool.time * lvl('speed'));
-        if (prev < 0.45 && pl.dig >= 0.45 && !pl.didHit) { pl.didHit = true; const h = rayHit(tool.reach + lvl('reach')); if (h) doDig(h); }
+        if (prev < 0.45 && pl.dig >= 0.45 && !pl.didHit) { pl.didHit = true; const h = rayHit(tool.reach + lvl('reach') + AD.reach); if (h) doDig(h); }
         if (pl.dig >= 1) { pl.dig = mouseDown ? 0 : -1; pl.didHit = false; if (mouseDown) S.setSpoonFull(false); }
       }
-      if (!drive && (digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach + lvl('reach')); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
+      if (!drive && (digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach + lvl('reach') + AD.reach); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
       S.updateChunks(pl.pos, 5); S.updateFar(pl.pos); S.updateDeco(pl.pos, false, 3);
       if ((saveT += dt) > 5 && dirty) { saveT = 0; save(); }
-      updateMachines(dt); updateHeavy(dt); if (scanCool > 0) scanCool -= dt;
+      updateMachines(dt); updateHeavy(dt); updateStats(dt); if (scanCool > 0) scanCool -= dt;
       if (has('bank') && (pl.bankT = (pl.bankT || 0) + dt) >= 60) { pl.bankT = 0; const g2 = Math.min(10, pl.money * 0.01); pl.money += g2; floater('+$' + fmtMoney(g2) + ' · ' + L.interest); dirty = true; }
       hud(dt);
     }
@@ -856,7 +1041,7 @@
   root.addEventListener('load', () => {
     $('clickHint').textContent = L.clickHint; $('leftLbl').textContent = L.left;
     $('resTitle').textContent = L.resTitle;
-    $('mapTitle').textContent = L.map; $('mapHint').textContent = TOUCH ? L.mapTouch : L.mapHint; $('mapOpen').textContent = L.open; $('mapLocked').textContent = L.locked;
+    $('mapTitle').textContent = L.map; $('mapHint').textContent = TOUCH ? L.mapTouch : L.mapHint; $('mapOpen').textContent = L.open; if (root.Countries) updateOpenLabel(); $('mapLocked').textContent = L.locked;
     document.title = L.title;
     for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = Icons.svg(el.dataset.icon);
     overlay('loading');
@@ -869,14 +1054,14 @@
       setup(); setupTouch();
       requestAnimationFrame(loop);
       addEventListener('beforeunload', () => { if (dirty) save(); });
-      root.__game = { pl, W, S, owned, scan, toggleDrive, get drive() { return drive; },
+      root.__game = { pl, W, S, owned, scan, toggleAdmin, adminAct, teleport, toggleDrive, get drive() { return drive; },
         driveTest() {   // test helper: drive forward 2 s, turn the camera to the ground ahead, dig three strokes
           for (let i = 0; i < 40; i++) { keys.KeyW = true; driveStep(0.05); } keys.KeyW = false;
           drive.camPitch = -0.6; const m0 = pl.money; let n = 0; mouseDown = true; locked = true;
           for (let i = 0; i < 80; i++) { driveStep(0.05); } mouseDown = false; locked = false;
           return 'moved, money +' + (pl.money - m0).toFixed(2) + ', holes ' + W.holes.length;
         },
-        snapDrive(adv) { const c = driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); }, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach + lvl('reach')); return h ? doDig(h) : false; }, toggleMap, setTool,
+        snapDrive(adv) { const c = driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); }, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach + lvl('reach') + AD.reach); return h ? doDig(h) : false; }, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },
         mapSnap(steps) { for (let i = 0; i < (steps || 1); i++) MapV.render(0.1); return canvas.toDataURL('image/jpeg', 0.9); } };
     }, 30));

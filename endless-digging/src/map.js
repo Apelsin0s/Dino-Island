@@ -13,12 +13,23 @@
   const ease = x => x < 0 ? 0 : x > 1 ? 1 : 1 - Math.pow(1 - x, 3);
   const back = x => { x = Math.min(1, Math.max(0, x)); const c = 1.4; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
 
+  let openSet = new Set(['UKR']);
+  // which countries are open: rebuild the masks (the rest stays dark and locked)
+  MapView.setOpen = function (ids) {
+    openSet = new Set(ids);
+    if (!mat) return;
+    for (const k of ['tMask', 'tMaskD']) mat.uniforms[k].value.dispose();
+    mat.uniforms.tMask.value = maskCanvas([-180, 180, -90, 90], 2048, 1024, 1.5); mat.uniforms.tMaskD.value = maskCanvas(D.detail.box, 2048, 1024, 3.5);
+  };
+  MapView.openIds = () => [...openSet];
   // mask canvas for a lon/lat box: red = open region, green = its outline
   function maskCanvas(box, w, h, line) {
     const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const c = cv.getContext('2d');
     c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
     const P = (p) => [(p[0] - box[0]) / (box[1] - box[0]) * w, (box[3] - p[1]) / (box[3] - box[2]) * h];
-    const path = () => { c.beginPath(); for (const name in D.open) for (const ring of D.open[name]) { ring.forEach((p, i) => { const q = P(p); i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); }); c.closePath(); } };
+    // the open countries (all outlines from countries.js; the old single-region list if that file is missing)
+    const rings = root.Countries ? root.Countries.filter(k => openSet.has(k.id)).flatMap(k => k.r) : Object.values(D.open).flat();
+    const path = () => { c.beginPath(); for (const ring of rings) { ring.forEach((p, i) => { const q = P(p); i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); }); c.closePath(); } };
     path(); c.fillStyle = '#f00'; c.fill('evenodd');
     path(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#0f0'; c.lineWidth = line; c.lineJoin = 'round'; c.stroke();
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.NoColorSpace; return tex;
@@ -128,13 +139,16 @@
   function placeMarkers(s, w, h) {
     if (!layer) return;
     const placed = [], camN = camera.position.clone().normalize(), close = view.dist < 1.9, q = new T.Vector3();
+    // keep marks out from under the title and the legend
+    const lg = ui.querySelector('.mapLegend'), hd = ui.querySelector('.mapHead'), r0 = ui.getBoundingClientRect();
+    const yMax = lg ? lg.getBoundingClientRect().top - r0.top - 12 : h, yMin = hd ? hd.getBoundingClientRect().bottom - r0.top + 12 : 0;
     let shown = 0;
     for (const m of marks) {
       let vis = false;
       if (s > 0.9 && (close || m.ua || m.pri > 30)) {
         if (m.v.dot(camN) > 0.2) {
           q.copy(m.v).project(camera); const x = (q.x * 0.5 + 0.5) * w, y = (-q.y * 0.5 + 0.5) * h;
-          if (x > -20 && x < w + 20 && y > -20 && y < h + 20) {
+          if (x > -20 && x < w + 20 && y > yMin && y < yMax) {
             let free = true; const gap = m.ua ? 16 : 20;
             for (const p of placed) if (Math.abs(p[0] - x) < gap && Math.abs(p[1] - y) < gap) { free = false; break; }
             if (free && shown < 260) { placed.push([x, y]); vis = true; shown++; m.el.style.transform = `translate(${x}px, ${y}px)`; }

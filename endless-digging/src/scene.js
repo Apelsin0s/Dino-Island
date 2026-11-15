@@ -61,16 +61,32 @@
 
   // ---------- local frame of the region ----------
   // Shading noise and the sky use local coordinates: x = right, y = up, z = back (as the player first stands).
-  const LF = new T.Matrix3(), LX = v3(1, 0, 0), LY = v3(0, 1, 0), LZ = v3(0, 0, 1), anchor = v3(0, 0, 0);
+  const LF = new T.Matrix3(), LX = v3(1, 0, 0), LY = v3(0, 1, 0), LZ = v3(0, 0, 1), shadeAnchor = v3(0, 0, 0);
+  // the start site keeps its own fixed axes (shack, rigs, machines); the shading frame above moves with the player on long trips
+  const anchor = v3(0, 0, 0), PX = v3(1, 0, 0), PY = v3(0, 1, 0), PZ = v3(0, 0, 1);
   const uLF = { value: LF }, uOff = { value: v3(0, 0, 0) };
   const toWorld = (x, y, z) => v3(0, 0, 0).addScaledVector(LX, x).addScaledVector(LY, y).addScaledVector(LZ, z);
   // spawn: point on the planet, fwd: the direction the player faces at the start
   Scene.setRegion = function (spawn, fwd) {
     anchor.copy(spawn).normalize().multiplyScalar(W.R);
-    LY.copy(spawn).normalize(); LZ.copy(fwd).addScaledVector(LY, -fwd.dot(LY)).normalize().negate(); LX.crossVectors(LY, LZ).normalize();
+    shadeFrame(spawn, fwd);
+    PX.copy(LX); PY.copy(LY); PZ.copy(LZ);
+    sunDir.copy(toWorld(V.sun[0], V.sun[1], V.sun[2])).normalize();
+    if (sun) sun.position.copy(sunDir).multiplyScalar(100);
+    if (handSun) handSun.position.copy(sunDir);
+    if (renderer) buildEnv();
+  };
+
+  function shadeFrame(p, fwd) {
+    shadeAnchor.copy(p).normalize().multiplyScalar(W.R);
+    LY.copy(p).normalize(); LZ.copy(fwd).addScaledVector(LY, -fwd.dot(LY)).normalize().negate(); LX.crossVectors(LY, LZ).normalize();
     LF.set(LX.x, LX.y, LX.z, LY.x, LY.y, LY.z, LZ.x, LZ.y, LZ.z);
     sunDir.copy(toWorld(V.sun[0], V.sun[1], V.sun[2])).normalize();
-    uOff.value.copy(O).sub(anchor);
+    uOff.value.copy(O).sub(shadeAnchor);
+  }
+  // after a long trip (teleport): sky, sun and ground patterns follow the player; the start site stays where it is
+  Scene.shadeAt = function (p, fwd) {
+    shadeFrame(p, fwd);
     if (sun) sun.position.copy(sunDir).multiplyScalar(100);
     if (handSun) handSun.position.copy(sunDir);
     if (renderer) buildEnv();
@@ -576,9 +592,9 @@
   }
   Scene.addProps = function (labels) {
     const g = new T.Group(); g.position.set(anchor.x - O.x, anchor.y - O.y, anchor.z - O.z);
-    g.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(LX, LY, LZ));
-    const groundAt = (lx, lz) => { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz), l = w.length(); return W.heightDir(w.x / l, w.y / l, w.z / l); };
-    const worldAt = (lx, ly, lz) => anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).addScaledVector(LY, ly);
+    g.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(PX, PY, PZ));
+    const groundAt = (lx, lz) => { const w = anchor.clone().addScaledVector(PX, lx).addScaledVector(PZ, lz), l = w.length(); return W.heightDir(w.x / l, w.y / l, w.z / l); };
+    const worldAt = (lx, ly, lz) => anchor.clone().addScaledVector(PX, lx).addScaledVector(PZ, lz).addScaledVector(PY, ly);
     const block = (lx, lz, r, solidR) => { const w = worldAt(lx, groundAt(lx, lz), lz); W.blockers.push([w.x, w.y, w.z, r, solidR === undefined ? r : solidR]); blocked.push([w.x, w.y, w.z, r + 0.3]); };
     const place = (obj, lx, lz, yaw, sink) => {
       // sit on the lowest ground under the footprint so nothing floats
@@ -618,9 +634,9 @@
     const lx = st[0], lz = st[1], gy = W.heightDir(...anchorDir(lx, lz));
     g.position.set(lx, gy - 0.02, lz); g.rotation.y = i * 1.3; Scene.props.add(g);
     Rigs.list[i] = { g, auger, level, spot: { lx, lz }, hit: 0, depth: old ? old.depth : 0 };
-    if (!old) { const w2 = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).addScaledVector(LY, gy); W.blockers.push([w2.x, w2.y, w2.z, 0.75, 0.75, 'rig']); }
+    if (!old) { const w2 = anchor.clone().addScaledVector(PX, lx).addScaledVector(PZ, lz).addScaledVector(PY, gy); W.blockers.push([w2.x, w2.y, w2.z, 0.75, 0.75, 'rig']); }
   };
-  function anchorDir(lx, lz) { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz).normalize(); return [w.x, w.y, w.z]; }
+  function anchorDir(lx, lz) { const w = anchor.clone().addScaledVector(PX, lx).addScaledVector(PZ, lz).normalize(); return [w.x, w.y, w.z]; }
   // the ground point under rig i (planet metres), jittered a little
   Scene.machineSpot = function (i, jx, jz) {
     const rg = Rigs.list[i]; if (!rg) return null;
@@ -641,21 +657,21 @@
 
   // ---------- heavy machinery: excavators (drivable), dump truck, bucket-wheel excavator, drilling rigs, mine headframe ----------
   // Machines live in planet coordinates (they can drive away); each frame they are placed relative to the floating origin.
-  // pose: pos (ground point, planet metres) and yaw (radians in the local frame: 0 = along LX, i.e. to the right of the start view)
+  // pose: pos (ground point, planet metres) and yaw (radians in the local frame: 0 = along PX, i.e. to the right of the start view)
   const Heavy = { m: {} };
   const HSITE = {
     exMini: [9, -12, 0.5, 2.2], truck: [18, -1, 0, 0], exBig: [24, -27, 2.4, 5.5], wheel: [64, -54, 2.6, 24],
     bore: [-18, -17, 0.3, 4.5], derrick: [-34, -32, 0.2, 9], shaft: [-32, -66, 0.8, 16]
   };
   function frameAt(pos, yaw, out) {   // model axes at a point: X forward (yaw), Y up, Z = X x Y
-    const up = pos.clone().normalize(), e = LX.clone().addScaledVector(up, -LX.dot(up)).normalize(), n = new T.Vector3().crossVectors(up, e);
+    const up = pos.clone().normalize(), e = PX.clone().addScaledVector(up, -PX.dot(up)).normalize(), n = new T.Vector3().crossVectors(up, e);
     const f = e.clone().multiplyScalar(Math.cos(yaw)).addScaledVector(n, -Math.sin(yaw)), z = new T.Vector3().crossVectors(f, up);
     return (out || new T.Quaternion()).setFromRotationMatrix(new T.Matrix4().makeBasis(f, up, z));
   }
   Scene.frameAt = frameAt;
   Scene.groundBelow = function (p, from) {   // the solid ground under a point (searching down from 'from' metres above)
     const u = p.clone().normalize(), q = p.clone().addScaledVector(u, from || 3);
-    for (let i = 0; i < 120 && W.solid(q.x, q.y, q.z) <= 0; i++) q.addScaledVector(u, -0.1);
+    for (let i = 0; i < 600 && W.solid(q.x, q.y, q.z) <= 0; i++) q.addScaledVector(u, -0.1);   // down to 60 m: deep pits too
     for (let i = 0; i < 10 && W.solid(q.x, q.y, q.z) > 0; i++) q.addScaledVector(u, 0.02);
     return q;
   };
@@ -675,13 +691,13 @@
     else if (id === 'derrick') { const d = A.derrick(); mesh(d.tower); parts.block = mesh(d.block, g, d.blockAt); parts.blockY = d.blockAt[1]; }
     else if (id === 'shaft') { const h = A.headframe(); mesh(h.frame); parts.sheaves = h.sheaveAt.map(a => mesh(h.sheave, g, a)); }
     scene.add(g);
-    const groundAt = (lx, lz) => { const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz), l = w.length(); return w.multiplyScalar((W.R + W.heightDir(w.x / l, w.y / l, w.z / l)) / l); };
+    const groundAt = (lx, lz) => { const w = anchor.clone().addScaledVector(PX, lx).addScaledVector(PZ, lz), l = w.length(); return w.multiplyScalar((W.R + W.heightDir(w.x / l, w.y / l, w.z / l)) / l); };
     const pos = saved ? new T.Vector3().fromArray(saved.pos) : groundAt(st[0], st[1]);
     const M = Heavy.m[id] = { id, g, parts, pos, yaw: saved ? saved.yaw : st[2], scale, upperYaw: 0, armDip: 0, t: Math.random() * 10, auto: true, block: null };
     if (st[3]) {   // nothing grows there and nothing can be dug under the machine; it is solid to walk into
       M.block = [pos.x, pos.y, pos.z, st[3], st[3] * 0.85, 'machine:' + id]; W.blockers.push(M.block); blocked.push([pos.x, pos.y, pos.z, st[3] + 1.5]);
       if (id === 'shaft') { const w = groundAt(st[0] - 14, st[1] + 8); W.blockers.push([w.x, w.y, w.z, 8, 7]); blocked.push([w.x, w.y, w.z, 9]); }
-      Deco.update(Scene.spawnPoint || pos, true);
+      Deco.update(Deco.anchor || pos, true);
     }
     return M;
   };
@@ -695,7 +711,7 @@
       const M = this.m[id]; M.t += dt;
       if (id === 'truck') {   // drives an oval between the small pit and the shack
         const st = HSITE.truck, a = M.t * 0.18, lx = st[0] + Math.cos(a) * 6, lz = st[1] + Math.sin(a) * 3;
-        const w = anchor.clone().addScaledVector(LX, lx).addScaledVector(LZ, lz), l = w.length(); M.pos.copy(w).multiplyScalar((W.R + W.heightDir(w.x / l, w.y / l, w.z / l)) / l);
+        const w = anchor.clone().addScaledVector(PX, lx).addScaledVector(PZ, lz), l = w.length(); M.pos.copy(w).multiplyScalar((W.R + W.heightDir(w.x / l, w.y / l, w.z / l)) / l);
         M.yaw = Math.atan2(-Math.cos(a) * 3, -Math.sin(a) * 6);
       }
       M.g.position.set(M.pos.x - O.x, M.pos.y - O.y, M.pos.z - O.z); M.g.quaternion.copy(frameAt(M.pos, M.yaw, q));
@@ -934,13 +950,13 @@
   };
   Scene.rebase = function (p) {
     O.set(Math.round(p.x), Math.round(p.y), Math.round(p.z));
-    uOff.value.copy(O).sub(anchor);
+    uOff.value.copy(O).sub(shadeAnchor);
     for (const ch of chunks.values()) if (ch.mesh) ch.mesh.position.set(ch.cx * W.CH - O.x, ch.cy * W.CH - O.y, ch.cz * W.CH - O.z);
     for (const m of fines.values()) if (m) { const b = m.userData.base; m.position.set(b[0] - O.x, b[1] - O.y, b[2] - O.z); }
     if (Scene.props) Scene.props.position.set(anchor.x - O.x, anchor.y - O.y, anchor.z - O.z);
     Scene.updateFar(p, true); Deco.update(p, true);
   };
-  Scene.setOrigin = function (p) { O.set(Math.round(p.x), Math.round(p.y), Math.round(p.z)); uOff.value.copy(O).sub(anchor); };
+  Scene.setOrigin = function (p) { O.set(Math.round(p.x), Math.round(p.y), Math.round(p.z)); uOff.value.copy(O).sub(shadeAnchor); };
   Scene.renderer = () => renderer;
   // compile every shader up front (in parallel where the browser can), so the first frames don't stall
   Scene.compile = function () {
