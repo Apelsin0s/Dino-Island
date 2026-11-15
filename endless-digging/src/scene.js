@@ -684,7 +684,7 @@
   // pose: pos (ground point, planet metres) and yaw (radians in the local frame: 0 = along PX, i.e. to the right of the start view)
   const Heavy = { m: {} };
   const HSITE = {
-    exMini: [9, -12, 0.5, 2.2], truck: [18, -1, 0, 0], exBig: [24, -27, 2.4, 5.5], wheel: [64, -54, 2.6, 24],
+    exMini: [9, -12, 0.5, 2.2], truck: [18, -1, 0, 3.2], exBig: [24, -27, 2.4, 5.5], wheel: [64, -54, 2.6, 24],
     bore: [-18, -17, 0.3, 4.5], derrick: [-34, -32, 0.2, 9], shaft: [-32, -66, 0.8, 16]
   };
   function frameAt(pos, yaw, out) {   // model axes at a point: X forward (yaw), Y up, Z = X x Y
@@ -707,7 +707,9 @@
     if (id === 'exMini' || id === 'exBig') {
       const e = A.excavator(id === 'exBig' ? '#f2c230' : '#f08a24'); mesh(e.base);
       parts.upper = new T.Group(); g.add(parts.upper); mesh(e.upper, parts.upper);
-      parts.arm = new T.Group(); parts.arm.position.set(e.armAt[0], e.armAt[1], e.armAt[2]); parts.upper.add(parts.arm); mesh(e.arm, parts.arm);
+      parts.boom = new T.Group(); parts.boom.position.set(e.armAt[0], e.armAt[1], e.armAt[2]); parts.upper.add(parts.boom); mesh(e.boom, parts.boom);
+      parts.stick = new T.Group(); parts.stick.position.set(e.elbow[0], e.elbow[1], 0); parts.boom.add(parts.stick); mesh(e.stick, parts.stick);
+      parts.ik = { at: e.armAt, L1: Math.hypot(e.elbow[0], e.elbow[1]), a1: Math.atan2(e.elbow[1], e.elbow[0]), L2: Math.hypot(e.tip[0], e.tip[1]), a2: Math.atan2(e.tip[1], e.tip[0]), rb: 0, rs: 0 };
       scale = id === 'exBig' ? 2.7 : 1; g.scale.setScalar(scale);
     } else if (id === 'truck') { mesh(A.dumpTruck()); }
     else if (id === 'wheel') { const b = A.bucketWheel(); mesh(b.base); parts.wheel = mesh(b.wheel, g, b.wheelAt); }
@@ -728,6 +730,22 @@
   Scene.heavy = id => Heavy.m[id];
   // a machine was driven somewhere: move its no-dig, solid footprint with it
   Scene.moveHeavy = function (id, pos, yaw) { const M = Heavy.m[id]; if (!M) return; M.pos.copy(pos); M.yaw = yaw; if (M.block) { M.block[0] = pos.x; M.block[1] = pos.y; M.block[2] = pos.z; } };
+  const hv = new T.Vector3();
+  // where an excavator's bucket should go (planet metres); hold = seconds to keep it there (auto digging), or until changed
+  Scene.setArmTarget = function (id, p, hold, depth) { const M = Heavy.m[id]; if (!M) return; M.target = p ? p.clone() : null; M.targetT = hold; M.dipDepth = depth; };
+  // the spot the bucket will dig: a ring on the ground (white = can dig, red = out of reach)
+  let mark = null;
+  Scene.setBucketMark = function (p, r, ok) {
+    if (!mark) {
+      const g = new T.RingGeometry(0.78, 1, 48); g.rotateX(-Math.PI / 2);
+      mark = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+      mark.renderOrder = 5; scene.add(mark);
+    }
+    mark.visible = !!p; if (!p) return;
+    mark.material.color.set(ok ? 0xffffff : 0xff5a3c);
+    const u = p.clone().normalize(); mark.position.set(p.x - O.x, p.y - O.y, p.z - O.z).addScaledVector(u, 0.06);
+    mark.quaternion.setFromUnitVectors(Y_AX, u); mark.scale.setScalar(Math.max(0.2, r));
+  };
   Scene.heavyDig = function (id, dip) { const M = Heavy.m[id]; if (M) M.armDip = dip === undefined ? 1 : dip; };
   Heavy.update = function (dt) {
     const q = new T.Quaternion();
@@ -737,14 +755,29 @@
         const st = HSITE.truck, a = M.t * 0.18, lx = st[0] + Math.cos(a) * 6, lz = st[1] + Math.sin(a) * 3;
         const w = anchor.clone().addScaledVector(PX, lx).addScaledVector(PZ, lz), l = w.length(); M.pos.copy(w).multiplyScalar((W.R + W.heightDir(w.x / l, w.y / l, w.z / l)) / l);
         M.yaw = Math.atan2(-Math.cos(a) * 3, -Math.sin(a) * 6);
+        if (M.block) { M.block[0] = M.pos.x; M.block[1] = M.pos.y; M.block[2] = M.pos.z; }   // it is solid where it is now
       }
       M.g.position.set(M.pos.x - O.x, M.pos.y - O.y, M.pos.z - O.z); M.g.quaternion.copy(frameAt(M.pos, M.yaw, q));
       const P = M.parts;
-      if (P.upper) {
+      if (P.boom) {
+        // the bucket goes to its target: the upper body turns to it, boom and stick bend (two-joint reach) so the
+        // bucket hangs above the spot and goes into the ground during a stroke
         M.armDip = Math.max(0, M.armDip - dt * 1.4);
-        const k = M.armDip > 0.5 ? (1 - M.armDip) * 2 : M.armDip * 2;
-        if (M.auto) P.upper.rotation.y = Math.sin(M.t * 0.6) * 0.35; else P.upper.rotation.y += (M.upperYaw - P.upper.rotation.y) * Math.min(1, dt * 4);
-        P.arm.rotation.z = -0.15 - k * 0.55;
+        const k = M.armDip > 0.5 ? (1 - M.armDip) * 2 : M.armDip * 2, I = P.ik;
+        if (M.targetT !== undefined && (M.targetT -= dt) < 0) { M.target = null; M.targetT = undefined; }
+        M.g.updateMatrixWorld(true);
+        let yawT, hr, hy;
+        if (M.target) { const lp = M.g.worldToLocal(hv.copy(M.target).sub(O)); yawT = Math.atan2(-lp.z, lp.x); hr = Math.hypot(lp.x, lp.z); hy = lp.y; }
+        else { yawT = M.auto ? Math.sin(M.t * 0.6) * 0.35 : P.upper.rotation.y; hr = 3.0; hy = 0.2; }
+        let dyw = yawT - P.upper.rotation.y; dyw = Math.atan2(Math.sin(dyw), Math.cos(dyw)); P.upper.rotation.y += dyw * Math.min(1, dt * 4);
+        const along = hr * Math.cos(yawT - P.upper.rotation.y);
+        let X = along - I.at[0], Y = hy + 0.75 * (1 - k) - (M.dipDepth || 0.25) * k - I.at[1];
+        let d = Math.hypot(X, Y); const mx = I.L1 + I.L2 - 0.02, mn = Math.abs(I.L1 - I.L2) + 0.4;
+        if (d > mx) { X *= mx / d; Y *= mx / d; d = mx; } else if (d < mn) { if (d < 1e-3) { X = mn; Y = 0; } else { X *= mn / d; Y *= mn / d; } d = mn; }
+        const c1 = Math.acos(Math.max(-1, Math.min(1, (I.L1 * I.L1 + d * d - I.L2 * I.L2) / (2 * I.L1 * d))));
+        const th1 = Math.atan2(Y, X) + c1, ex = I.L1 * Math.cos(th1), ey = I.L1 * Math.sin(th1), th2 = Math.atan2(Y - ey, X - ex);
+        const rb = th1 - I.a1, rs = th2 - I.a2 - rb, f = Math.min(1, dt * 10);
+        I.rb += (rb - I.rb) * f; I.rs += (rs - I.rs) * f; P.boom.rotation.z = I.rb; P.stick.rotation.z = I.rs;
       }
       if (P.wheel) { P.wheel.rotation.z -= dt * 0.8; }
       if (P.pipe) P.pipe.rotation.y += dt * 6;
@@ -930,31 +963,71 @@
   Scene._hand = Hand;
 
   // ---------- the digger's shadow: an unseen body and hand that only cast shadows ----------
+  // The digger's shadow: an ordinary person (invisible, only casts the shadow) that moves like you do —
+  // legs step with your speed, the free arm swings, the body leans when running or digging, legs tuck in a jump,
+  // the head follows where you look and the right arm holds the tool exactly where it is on screen.
   const Shadow = {
-    group: new T.Group(), body: new T.Group(), hold: new T.Group(),
+    group: new T.Group(), body: new T.Group(), hold: new T.Group(), ph: 0, amp: 0, air: 0,
     build(handGeo, spoonGeo, handQ) {
-      const mat = MAT.shadowOnly, add = (parent, m) => { m.castShadow = true; m.frustumCulled = false; parent.add(m); };
-      const cap = (rad, a, b) => { const m = new T.Mesh(new T.CapsuleGeometry(rad, a.distanceTo(b), 4, 12), mat); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(Y_AX, b.clone().sub(a).normalize()); add(this.body, m); };
-      // an ordinary person in work clothes: legs, hips, torso, shoulders, arms (right one reaching forward with the spoon,
-      // left one down holding the bucket), neck and head
-      cap(0.07, v3(-0.1, 0.08, 0), v3(-0.1, 0.86, 0)); cap(0.07, v3(0.1, 0.08, 0), v3(0.1, 0.86, 0));
-      cap(0.15, v3(0, 0.98, 0), v3(0, 1.12, 0)); cap(0.165, v3(0, 1.16, 0), v3(0, 1.3, 0));
-      cap(0.075, v3(-0.17, 1.4, 0), v3(0.17, 1.4, 0));
-      cap(0.05, v3(-0.23, 1.38, 0), v3(-0.27, 0.88, 0.02)); cap(0.05, v3(0.23, 1.38, 0), v3(0.33, 1.12, -0.2));
-      cap(0.045, v3(0, 1.45, 0), v3(0, 1.53, 0));
-      const head = new T.Mesh(new T.SphereGeometry(1, 16, 12), mat); head.scale.set(0.095, 0.12, 0.105); head.position.set(0, 1.64, 0); add(this.body, head);
-      const bucket = new T.Mesh(new T.CylinderGeometry(0.12, 0.09, 0.22, 16), mat); bucket.position.set(-0.29, 0.72, 0.03); add(this.body, bucket);
+      const mat = MAT.shadowOnly, add = (parent, m) => { m.castShadow = true; m.frustumCulled = false; parent.add(m); return m; };
+      const capY = (parent, rad, len, y0) => { const m = new T.Mesh(new T.CapsuleGeometry(rad, len, 4, 10), mat); m.position.y = y0 - len / 2; return add(parent, m); };   // hangs down from its joint
+      const joint = (parent, x, y, z) => { const g = new T.Group(); g.position.set(x, y, z); parent.add(g); return g; };
+      // legs: hip -> thigh -> knee -> shin -> foot
+      this.legs = [-0.1, 0.1].map(x => {
+        const hip = joint(this.body, x, 0.9, 0); capY(hip, 0.075, 0.36, -0.04);
+        const knee = joint(hip, 0, -0.44, 0); capY(knee, 0.065, 0.34, -0.03);
+        const foot = new T.Mesh(new T.BoxGeometry(0.11, 0.07, 0.26), mat); foot.position.set(0, -0.43, -0.05); add(knee, foot);
+        return { hip, knee };
+      });
+      // upper body turns at the hips (lean)
+      this.torso = joint(this.body, 0, 0.92, 0);
+      const t2 = this.torso;
+      { const m = new T.Mesh(new T.CapsuleGeometry(0.15, 0.14, 4, 12), mat); m.position.y = 0.13; add(t2, m); }
+      { const m = new T.Mesh(new T.CapsuleGeometry(0.165, 0.14, 4, 12), mat); m.position.y = 0.31; add(t2, m); }
+      { const m = new T.Mesh(new T.CapsuleGeometry(0.075, 0.34, 4, 10), mat); m.rotation.z = Math.PI / 2; m.position.y = 0.48; add(t2, m); }
+      this.neck = joint(t2, 0, 0.55, 0);
+      { const m = new T.Mesh(new T.CapsuleGeometry(0.045, 0.06, 4, 8), mat); m.position.y = 0.04; add(this.neck, m); }
+      { const m = new T.Mesh(new T.SphereGeometry(1, 16, 12), mat); m.scale.set(0.095, 0.12, 0.105); m.position.set(0, 0.17, 0); add(this.neck, m); }
+      // left arm swings; right arm reaches for the tool
+      this.armL = joint(t2, -0.23, 0.47, 0); capY(this.armL, 0.05, 0.24, -0.02);
+      this.elbowL = joint(this.armL, 0, -0.3, 0); capY(this.elbowL, 0.045, 0.22, -0.02);
+      this.shR = joint(t2, 0.23, 0.47, 0);
+      this.armR = new T.Mesh(new T.CapsuleGeometry(0.05, 1, 4, 10), mat); add(this.shR, this.armR);
       const hd = new T.Group(); hd.quaternion.copy(handQ); add(hd, new T.Mesh(handGeo, mat)); this.toolMesh = new T.Mesh(spoonGeo, mat); this.spoonGeo = spoonGeo; add(hd, this.toolMesh); this.hold.add(hd); this.hd = hd;
       this.group.add(this.body); scene.add(this.group); camera.add(this.hold);
     },
     setTool(q, geo) { this.hd.quaternion.copy(q); this.toolMesh.geometry = geo || this.spoonGeo; },
-    update(eye, q) {
+    update(eye, q, info, dt) {
+      info = info || {}; dt = Math.min(0.1, dt || 0.016);
       // body stands under the eye, facing where the camera looks (projected on the ground)
       const fwd = v3(0, 0, -1).applyQuaternion(q); fwd.addScaledVector(up, -fwd.dot(up)); if (fwd.lengthSq() < 1e-6) fwd.set(1, 0, 0).addScaledVector(up, -up.x); fwd.normalize();
       const right = new T.Vector3().crossVectors(fwd, up).normalize();
-      this.body.position.set(eye.x - O.x, eye.y - O.y, eye.z - O.z).addScaledVector(up, -1.62);
+      // walking rhythm: a stride is about 1.4 m, so the steps match the real speed
+      const walk = info.walk || 0, speed = walk * 7;
+      this.amp += (Math.min(1, walk * 1.6) - this.amp) * Math.min(1, dt * 8);
+      this.ph += dt * speed * 2.3;
+      this.air += ((info.air ? 1 : 0) - this.air) * Math.min(1, dt * 10);
+      const a = this.amp * (1 - this.air), sn = Math.sin(this.ph);
+      this.legs.forEach((L, i) => {
+        const s2 = i ? -sn : sn, back = Math.max(0, -Math.sin(this.ph + (i ? Math.PI : 0) + 0.6));
+        L.hip.rotation.x = s2 * 0.5 * a + this.air * 0.55;
+        L.knee.rotation.x = -(0.08 + back * 0.85 * a + this.air * 1.0);
+      });
+      const dig = info.dig >= 0 ? Math.sin(Math.min(1, info.dig) * Math.PI) : 0;
+      this.torso.rotation.x = -(0.05 + 0.14 * a * (walk > 0.7 ? 1 : 0.5) + 0.22 * dig);
+      this.neck.rotation.x = Math.max(-0.6, Math.min(0.5, (info.pitch || 0) * 0.6)) - this.torso.rotation.x * 0.5;
+      this.armL.rotation.x = -sn * 0.55 * a + this.air * -0.4; this.elbowL.rotation.x = 0.25 + 0.3 * a;
+      const bob = Math.abs(Math.cos(this.ph)) * 0.035 * a;
+      this.body.position.set(eye.x - O.x, eye.y - O.y, eye.z - O.z).addScaledVector(up, -1.62 - bob + this.air * 0.1);
       this.body.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(right, up, fwd.clone().negate()));
       this.hold.position.copy(Hand.hold.position); this.hold.quaternion.copy(Hand.hold.quaternion);
+      // right arm: from the shoulder to the hand that holds the tool (where the first-person hand is)
+      this.body.updateMatrixWorld(true); this.hold.updateMatrixWorld(true);
+      const hand = this.hd.getWorldPosition(new T.Vector3()), sh = this.shR.getWorldPosition(new T.Vector3());
+      const toLocal = this.shR.worldToLocal(hand.clone()), len = Math.max(0.2, Math.min(0.75, toLocal.length()));
+      this.armR.scale.set(1, len / 1.1, 1);
+      this.armR.position.copy(toLocal).setLength(len / 2);
+      this.armR.quaternion.setFromUnitVectors(Y_AX, toLocal.clone().normalize());
     }
   };
 
@@ -1023,7 +1096,7 @@
     sky.position.copy(camera.position);
     Particles.update(dt); Rigs.update(dt, t); Scan.update(dt); Heavy.update(dt); Peers.update(dt);
     Hand.update(info.dig, info.walk, t, dt, info.look);
-    Shadow.update(eye, q);
+    Shadow.update(eye, q, info, dt);
     composer.render(dt);
   };
   Scene.rebase = function (p) {

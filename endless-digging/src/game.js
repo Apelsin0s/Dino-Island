@@ -183,8 +183,8 @@
   // ---------- heavy machinery ----------
   // auto: an excavator nobody drives digs its own pit in front of it; virtual: machines that work underground (paid per second)
   const HEAVY = {
-    exMini: { drive: true, r: 0.35, period: 2.6, pit: 3.6, spread: 1.6, speed: 4, turn: 0.9, reach: 5.2, stroke: 1.2, cam: 7 },
-    exBig: { drive: true, r: 0.7, period: 3.2, pit: 9, spread: 3.5, speed: 2.6, turn: 0.5, reach: 13, stroke: 1.8, cam: 17 },
+    exMini: { drive: true, r: 0.35, period: 2.6, pit: 3.2, spread: 1.4, speed: 4, turn: 0.9, reach: 3.8, stroke: 1.2, cam: 7 },
+    exBig: { drive: true, r: 0.7, period: 3.2, pit: 8.5, spread: 3, speed: 2.6, turn: 0.5, reach: 10.2, stroke: 1.8, cam: 17 },
     truck: {}, wheel: { lps: 400, depth: 6 }, bore: { lps: 15, depth: 40 }, derrick: { lps: 60, depth: 200 }, shaft: { lps: 200, depth: 400, ore: true }
   };
   const HEAVY_IDS = ['exMini', 'truck', 'exBig', 'wheel', 'bore', 'derrick', 'shaft'];
@@ -221,7 +221,7 @@
       const p = M.pos.clone().addScaledVector(f, H.pit * (0.8 + Math.random() * 0.4)).addScaledVector(new T.Vector3().crossVectors(f, u), (Math.random() - 0.5) * H.spread * 2);
       const g = S.groundBelow(p, 6), c = g.addScaledVector(u, -H.r * 0.35);
       if (W.blocked(c.x, c.y, c.z, H.r * 0.5)) continue;
-      S.heavyDig(id);
+      S.heavyDig(id); S.setArmTarget(id, g, H.period * 0.9, H.r * 0.9 / M.scale);
       const res = takeBite(c, H.r, false); if (res) { const k = has('truck') ? 2 : 1; pl.money += res.got * k; heavyPay += res.got * k; }
     }
     if ((heavyPayT += dt) > 8) { if (heavyPay > 0.01) floater('+$' + fmtMoney(heavyPay) + ' · ' + L.machines, 'ore'); heavyPay = 0; heavyPayT = 0; }
@@ -233,61 +233,97 @@
   function toggleDrive() {
     if (drive) {   // get out beside the machine
       const M = drive.M; M.auto = true; if (M.block) M.block[3] = drive.blockR;
-      const u = M.pos.clone().normalize(), side = new T.Vector3().crossVectors(fwdOf(M.pos, M.yaw), u).normalize();
-      pl.pos.copy(S.groundBelow(M.pos.clone().addScaledVector(side, 2.6 * M.scale), 4)).addScaledVector(u, 0.05); pl.vel.set(0, 0, 0);
-      drive = null; S.setDriving(false); pl.machines = machinePoses(); dirty = true; return;
+      const u = M.pos.clone().normalize(), f = fwdOf(M.pos, M.yaw), side = new T.Vector3().crossVectors(f, u).normalize();
+      // step out on whichever side is free (left, right, behind, in front)
+      let out = null;
+      for (const d of [side, side.clone().negate(), f.clone().negate(), f]) {
+        const g = S.groundBelow(M.pos.clone().addScaledVector(d, 2.4 * M.scale), 4 * M.scale);
+        if (!W.obstacleAt(g.x, g.y, g.z, 0.4) && !W.blockers.some(b => b !== M.block && Math.hypot(g.x - b[0], g.y - b[1], g.z - b[2]) < b[4] + 0.5)) { out = g; break; }
+      }
+      pl.pos.copy(out || S.groundBelow(M.pos.clone().addScaledVector(side, 2.4 * M.scale), 4 * M.scale)).addScaledVector(u, 0.05); pl.vel.set(0, 0, 0);
+      S.setArmTarget(drive.id, null); S.setBucketMark(null);
+      drive = null; S.setDriving(false); document.body.classList.remove('driving'); pl.machines = machinePoses(); dirty = true; return;
     }
     const id = nearDrivable(); if (!id) return;
     const M = S.heavy(id); M.auto = false;
     drive = { id, M, H: HEAVY[id], camYaw: M.yaw, camPitch: -0.45, dig: -1, blockR: M.block ? M.block[3] : 0 };
     if (M.block) M.block[3] = 0;   // its own footprint must not stop its own bucket
-    S.setDriving(true); notice(L.driveHint);
+    S.setDriving(true); document.body.classList.add('driving'); notice(L.driveHint);
   }
   function machinePoses() { const o = {}; for (const id of HEAVY_IDS) { const M = S.heavy(id); if (M && HEAVY[id].drive) o[id] = { pos: M.pos.toArray(), yaw: M.yaw }; } return o; }
-  // the driving camera: behind and above the machine, turned with the mouse
+  // the driving camera: behind and above the machine, turned with the mouse; never inside the ground
   function driveCam() {
     const M = drive.M, u = M.pos.clone().normalize(), f = fwdOf(M.pos, drive.camYaw), dir = f.clone().multiplyScalar(Math.cos(drive.camPitch)).addScaledVector(u, Math.sin(drive.camPitch)).normalize();
     const pivot = M.pos.clone().addScaledVector(u, 2.4 * M.scale), eye = pivot.clone().addScaledVector(dir, -drive.H.cam);
+    for (let i = 0; i < 60 && W.solid(eye.x, eye.y, eye.z) > -0.4; i++) eye.addScaledVector(u, 0.25);
     const rt = new T.Vector3().crossVectors(dir, u).normalize(), upc = new T.Vector3().crossVectors(rt, dir);
     return { eye, dir, q: new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(rt, upc, dir.clone().negate())) };
   }
-  function driveAim(cam) {   // where the bucket would dig: along the view, within the arm's reach of the machine
-    const M = drive.M, H = drive.H, u = M.pos.clone().normalize();
-    for (let t = H.cam * 0.6; t < H.cam + H.reach * 1.6; t += 0.15) {
-      const p = cam.eye.clone().addScaledVector(cam.dir, t);
-      if (W.solid(p.x, p.y, p.z) > 0) {
-        const d = p.clone().sub(M.pos), along = d.dot(u), hd = d.addScaledVector(u, -along).length();
-        return { p, ok: hd < H.reach * M.scale / (M.scale) && hd > 1.4 * M.scale && along > -H.reach };
-      }
+  // where the bucket digs: the ground you look at, brought within the arm's reach (never "too far": it digs at the
+  // edge of its reach). Only a spot deeper than the arm can go is refused. ok = it can dig there.
+  function driveTarget(cam) {
+    const M = drive.M, u = M.pos.clone().normalize(), I = M.parts.ik, sc = M.scale;
+    let hit = null;
+    for (let t = 0.5; t < drive.H.cam + drive.H.reach * 3; t += 0.12) { const p = cam.eye.clone().addScaledVector(cam.dir, t); if (W.solid(p.x, p.y, p.z) > 0) { hit = p; break; } }
+    const fwdM = fwdOf(M.pos, M.yaw);
+    let hv = hit ? hit.clone().sub(M.pos) : cam.dir.clone(); hv.addScaledVector(u, -hv.dot(u));
+    let hd = hit ? hv.length() : drive.H.reach * 0.8;
+    if (hv.lengthSq() < 1e-6) hv.copy(fwdM); hv.normalize();
+    const minR = (I.at[0] + 0.9) * sc, maxR = drive.H.reach, reachL = (I.L1 + I.L2 - 0.08) * sc;
+    hd = Math.max(minR, Math.min(maxR, hd));
+    // the arm's pivot; a spot too deep for the arm at that distance is dug closer to the machine (like digging a pit)
+    const pivot = M.pos.clone().addScaledVector(u, I.at[1] * sc).addScaledVector(hv, I.at[0] * sc);
+    let g = null, ok = false;
+    for (let r = hd; r >= minR - 1e-6; r -= 0.25 * sc) {
+      const gg = S.groundBelow(M.pos.clone().addScaledVector(hv, r), 4 * sc);
+      if (!g) g = gg;
+      if (gg.distanceTo(pivot) < reachL) { g = gg; ok = true; break; }
     }
-    return null;
+    return { p: g, ok, dir: hv };
+  }
+  // can the machine stand at np? its footprint must not overlap buildings, other machines, trees or rocks
+  function machineFits(M, np, yaw) {
+    const u = np.clone().normalize(), f = fwdOf(np, yaw), sd = new T.Vector3().crossVectors(f, u).normalize(), hl = 1.35 * M.scale, hw = 0.85 * M.scale;
+    for (const [a, c] of [[0, 0], [1, 1], [1, -1], [-1, 1], [-1, -1], [1, 0], [-1, 0]]) {
+      const p = np.clone().addScaledVector(f, a * hl).addScaledVector(sd, c * hw);
+      for (const b of W.blockers) {
+        if (b === M.block) continue;
+        const dx = p.x - b[0], dy = p.y - b[1], dz = p.z - b[2], along = dx * u.x + dy * u.y + dz * u.z;
+        if (Math.hypot(dx - u.x * along, dy - u.y * along, dz - u.z * along) < b[4] && Math.abs(along) < 12) return false;
+      }
+      if (W.obstacleAt(p.x, p.y, p.z, 0.15)) return false;
+    }
+    return true;
   }
   function driveStep(dt) {
     const M = drive.M, H = drive.H, k = keys, u = M.pos.clone().normalize();
-    let mz = (k.KeyW ? 1 : 0) - (k.KeyS ? 1 : 0), mx = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0);
-    if (stick.id !== null) { mz = -stick.y; mx = stick.x; }
-    M.yaw -= mx * H.turn * dt * (mz < 0 ? -1 : 1); drive.camYaw -= mx * H.turn * dt * (mz < 0 ? -1 : 1);
+    let mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0), mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0);
+    if (stick.id !== null) { mz = -stick.y; mx = stick.x; if (Math.abs(mz) < 0.15) mz = 0; if (Math.abs(mx) < 0.15) mx = 0; }
+    // tracks: turning works standing still too; backing up turns the other way, like any vehicle
+    const turnBy = mx * H.turn * dt * (mz < 0 ? -1 : 1);
+    if (turnBy && machineFits(M, M.pos, M.yaw - turnBy)) { M.yaw -= turnBy; drive.camYaw -= turnBy; S.moveHeavy(drive.id, M.pos, M.yaw); }
     if (Math.abs(mz) > 0.05) {
-      const np = M.pos.clone().addScaledVector(fwdOf(M.pos, M.yaw), mz * H.speed * dt), g = S.groundBelow(np, 2.5);
-      let hitB = false; for (const b of W.blockers) { if (b === M.block) continue; if (Math.hypot(g.x - b[0], g.y - b[1], g.z - b[2]) < b[4] + 1.6 * M.scale) { hitB = true; break; } }
-      if (!hitB && W.obstacleAt(g.x, g.y, g.z, 1.2 * M.scale)) hitB = true;
-      if (!hitB && Math.abs(g.clone().sub(M.pos).dot(u)) < 1.2 * M.scale) { S.moveHeavy(drive.id, g, M.yaw); pl.machines = machinePoses(); }
-    }
+      const np = M.pos.clone().addScaledVector(fwdOf(M.pos, M.yaw), mz * H.speed * dt), g = S.groundBelow(np, 2.5 * M.scale);
+      const step = g.clone().sub(M.pos).dot(u);
+      if (step < 0.9 * M.scale && step > -2.5 * M.scale && machineFits(M, g, M.yaw)) { S.moveHeavy(drive.id, g, M.yaw); drive.moved = true; }
+      else if (!drive.bumpT || drive.bumpT < t) { drive.bumpT = t + 1.2; Sound.thud(); }
+    } else if (drive.moved) { drive.moved = false; pl.machines = machinePoses(); dirty = true; }
     pl.pos.copy(M.pos);
-    // the bucket
-    const cam = driveCam(), aim = driveAim(cam);
-    if (aim) { const lp = M.g.worldToLocal(aim.p.clone().sub(S.origin)); M.upperYaw = Math.atan2(-lp.z, lp.x); }
-    $('cross').classList.toggle('hit', !!(aim && aim.ok));
+    // the bucket follows where you look; the ring shows where it will dig
+    const cam = driveCam(), tg = driveTarget(cam);
+    S.setArmTarget(drive.id, tg.p, undefined, H.r * 0.9 / M.scale); S.setBucketMark(tg.p, H.r * 1.3, tg.ok);
     if (drive.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { drive.dig = 0; drive.hit = false; S.heavyDig(drive.id, 1); }
     if (drive.dig >= 0) {
       const prev = drive.dig; drive.dig += dt / (H.stroke * lvl('speed'));
       if (prev < 0.5 && drive.dig >= 0.5 && !drive.hit) {
         drive.hit = true;
-        if (aim && aim.ok) {
-          const c = aim.p.clone().addScaledVector(cam.dir, H.r * 0.35);
-          if (W.blocked(c.x, c.y, c.z, H.r * 0.4)) notice(L.noDig);
+        if (!tg.ok) notice(L.outReach);
+        else {
+          const c = tg.p.clone().addScaledVector(tg.p.clone().normalize(), -H.r * 0.4);
+          const bl = W.blocked(c.x, c.y, c.z, H.r * 0.4);
+          if (bl && bl !== M.block) { notice(bl.r !== undefined ? L.inWay : L.noDig); Sound.thud(); }
           else { const res = takeBite(c, H.r, true); if (res) { pl.money += res.got; floater('+$' + fmtMoney(res.got) + ' · ' + res.litres.toFixed(0) + ' ' + L.l + (res.oreL > 1 ? ' · ' + L.mat[3] : ''), res.oreL > 1 ? 'ore' : ''); Sound.dig('shovel', 0); S.setPile(Math.min(1, pl.sold / 400)); } }
-        } else notice(L.outReach);
+        }
       }
       if (drive.dig >= 1) { drive.dig = mouseDown ? 0 : -1; if (mouseDown) S.heavyDig(drive.id, 1); }
     }
@@ -969,7 +1005,7 @@
     S.setFrame(up);
     look.x *= 0.88; look.y *= 0.88;
     if (drive) { const c = driveCamNow || driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, dt, t); }
-    else S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: pl.dig, walk, look }, dt, t);
+    else S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: pl.dig, walk: playing ? walk : 0, look, air: !pl.grounded && !AD.fly, pitch: pl.pitch }, dt, t);
   }
 
   root.addEventListener('load', () => {
@@ -1002,6 +1038,8 @@
           for (let i = 0; i < 80; i++) { driveStep(0.05); } mouseDown = false; locked = false;
           return 'moved, money +' + (pl.money - m0).toFixed(2) + ', holes ' + W.holes.length;
         },
+        driveDig() { mouseDown = true; locked = true; driveStep(0.05); mouseDown = false; for (let i = 0; i < 200 && drive.dig >= 0; i++) driveStep(0.05); locked = false; },   // test helper: one bucket stroke where the camera looks
+        snapPose(pitch, info, n) { pl.pitch = pitch; for (let i = 0; i < (n || 1); i++) S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), Object.assign({ dig: -1, walk: 0, look }, info), 0.05, t += 0.05); return canvas.toDataURL('image/jpeg', 0.9); },   // test helper
         snapDrive(adv) { const c = driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); }, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach + lvl('reach') + AD.reach); return h ? doDig(h) : false; }, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },
         mapSnap(steps) { for (let i = 0; i < (steps || 1); i++) MapV.render(0.1); return canvas.toDataURL('image/jpeg', 0.9); } };

@@ -93,13 +93,13 @@
   }
   // Returns what has to be re-meshed: { coarse: [keys], fine: [keys] }
   function addHole(x, y, z, r) {
-    const h = [x, y, z, r]; holes.push(h);
-    for (const [a, b, c] of boxesTouching(LC, x, y, z, r + VOX * 2)) { const k = key(a, b, c); push(holeIndex, k, h); if (r >= BIG) push(bigIndex, k, h); }
-    if (r < BIG) for (const [a, b, c] of boxesTouching(LF, x, y, z, r + LF.VOX * 2)) push(smallIndex, key(a, b, c), h);
+    const h = [x, y, z, r]; holes.push(h); const rk = r + holeK(r);
+    for (const [a, b, c] of boxesTouching(LC, x, y, z, rk + VOX * 2)) { const k = key(a, b, c); push(holeIndex, k, h); if (r >= BIG) push(bigIndex, k, h); }
+    if (r < BIG) for (const [a, b, c] of boxesTouching(LF, x, y, z, rk + LF.VOX * 2)) push(smallIndex, key(a, b, c), h);
     const coarse = new Set(), fine = [];
-    if (r >= BIG) for (const [a, b, c] of boxesTouching(LC, x, y, z, r + VOX * 1.5)) coarse.add(key(a, b, c));
+    if (r >= BIG) for (const [a, b, c] of boxesTouching(LC, x, y, z, rk + VOX * 1.5)) coarse.add(key(a, b, c));
     // fine boxes around the hole, with a margin so its edge never meets the coarse mesh
-    for (const [a, b, c] of boxesTouching(LF, x, y, z, r + 0.45)) {
+    for (const [a, b, c] of boxesTouching(LF, x, y, z, rk + 0.45)) {
       const k = key(a, b, c), wx = (a + 0.5) * LF.CH, wy = (b + 0.5) * LF.CH, wz = (c + 0.5) * LF.CH;
       if (Math.abs(depthAt(wx, wy, wz)) > LF.CH * 0.9 + 0.05 && !holeNear(wx, wy, wz, LF.CH)) continue;   // nowhere near the surface
       const isNew = !fineSet.has(k);
@@ -108,19 +108,23 @@
     }
     return { coarse: [...coarse], fine };
   }
-  function fineTouches(a, b, c, h) { const p = h[3] + LF.VOX * 2, c0 = LF.CH; return h[0] + p > a * c0 && h[0] - p < (a + 1) * c0 && h[1] + p > b * c0 && h[1] - p < (b + 1) * c0 && h[2] + p > c * c0 && h[2] - p < (c + 1) * c0; }
-  function holeNear(x, y, z, pad) { const l = holeIndex.get(key(Math.floor(x / CH), Math.floor(y / CH), Math.floor(z / CH))); if (l) for (const h of l) if (Math.hypot(x - h[0], y - h[1], z - h[2]) < h[3] + pad) return true; return false; }
+  function fineTouches(a, b, c, h) { const p = h[3] + holeK(h[3]) + LF.VOX * 2, c0 = LF.CH; return h[0] + p > a * c0 && h[0] - p < (a + 1) * c0 && h[1] + p > b * c0 && h[1] - p < (b + 1) * c0 && h[2] + p > c * c0 && h[2] - p < (c + 1) * c0; }
+  function holeNear(x, y, z, pad) { const l = holeIndex.get(key(Math.floor(x / CH), Math.floor(y / CH), Math.floor(z / CH))); if (l) for (const h of l) if (Math.hypot(x - h[0], y - h[1], z - h[2]) < h[3] + holeK(h[3]) + pad) return true; return false; }
   function clearHoles() { holes.length = 0; holeIndex.clear(); bigIndex.clear(); smallIndex.clear(); fineSet.clear(); fineByChunk.clear(); }
   const isFineCell = (x, y, z) => fineSet.has(key(Math.floor(x / LF.CH), Math.floor(y / LF.CH), Math.floor(z / LF.CH)));
 
+  // Holes are joined smoothly: where two holes (or a hole and the open air) come within k of each other the ground
+  // between them goes too, so no paper-thin walls or lips are left (they cannot be drawn on a 0.4 m grid anyway).
+  const holeK = r => Math.min(0.9, r * 0.45);
+  const cut = (s, d, k) => { const h = Math.max(k - Math.abs(s - d), 0) / k; return Math.min(s, d) - h * h * k * 0.25; };
   // Solid-ness at any point (≈ signed distance to the surface, positive inside the ground).
   function solid(px, py, pz) {
     const l = Math.hypot(px, py, pz);
     let s = R + heightDir(px / l, py / l, pz / l) - l;
     const list = bigIndex.get(key(Math.floor(px / CH), Math.floor(py / CH), Math.floor(pz / CH)));
-    if (list) for (const h of list) { const d = Math.hypot(px - h[0], py - h[1], pz - h[2]) - h[3]; if (d < s) s = d; }
+    if (list) for (const h of list) { const d = Math.hypot(px - h[0], py - h[1], pz - h[2]) - h[3]; if (d < s + 0.9) s = cut(s, d, holeK(h[3])); }
     const sl = smallIndex.get(key(Math.floor(px / LF.CH), Math.floor(py / LF.CH), Math.floor(pz / LF.CH)));
-    if (sl) for (const h of sl) { const d = Math.hypot(px - h[0], py - h[1], pz - h[2]) - h[3]; if (d < s) s = d; }
+    if (sl) for (const h of sl) { const d = Math.hypot(px - h[0], py - h[1], pz - h[2]) - h[3]; if (d < s + 0.9) s = cut(s, d, holeK(h[3])); }
     return s;
   }
   // How deep a point is under the untouched surface (m). Negative = above it.
@@ -159,13 +163,13 @@
   }
   // Apply one hole to sampled density (only the samples in its box).
   function carve(c, h) {
-    const { VOX: vox, S: s } = c.L, d = c.d, ox = c.ox, oy = c.oy, oz = c.oz, r = h[3] + vox * 1.5;
+    const { VOX: vox, S: s } = c.L, d = c.d, ox = c.ox, oy = c.oy, oz = c.oz, k = holeK(h[3]), r = h[3] + vox * 1.5 + k;
     const i0 = Math.max(0, Math.floor((h[0] - r - ox) / vox)), i1 = Math.min(s - 1, Math.ceil((h[0] + r - ox) / vox));
     const j0 = Math.max(0, Math.floor((h[1] - r - oy) / vox)), j1 = Math.min(s - 1, Math.ceil((h[1] + r - oy) / vox));
     const k0 = Math.max(0, Math.floor((h[2] - r - oz) / vox)), k1 = Math.min(s - 1, Math.ceil((h[2] + r - oz) / vox));
-    for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-      const v = Math.hypot(ox + i * vox - h[0], oy + j * vox - h[1], oz + k * vox - h[2]) - h[3];
-      const n = i + s * (j + s * k); if (v < d[n]) d[n] = v;
+    for (let kk = k0; kk <= k1; kk++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const v = Math.hypot(ox + i * vox - h[0], oy + j * vox - h[1], oz + kk * vox - h[2]) - h[3];
+      const n = i + s * (j + s * kk); if (v < d[n] + 0.9) d[n] = cut(d[n], v, k);
     }
   }
 

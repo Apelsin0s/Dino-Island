@@ -541,11 +541,15 @@
     const up = kit(); up.box(1.8, 0.7, 1.5, -0.3, 1.1, 0, paint, 0.12); up.box(0.9, 1.1, 0.8, 0.25, 1.9, 0.3, paint, 0.1);
     up.box(0.8, 0.9, 0.04, 0.25, 1.95, 0.71, '#4d9fe8', 0.02); up.box(0.04, 0.8, 0.7, 0.71, 1.95, 0.3, '#4d9fe8', 0.02); up.box(0.5, 0.5, 1.4, -1.15, 1.05, 0, '#3b4048', 0.12);
     up.cyl(0.05, 0.05, 0.5, -0.9, 1.7, -0.4, '#3b4048');
-    // arm: boom up and out, stick down, bucket; pivot at the front of the upper body
-    const arm = kit(); arm.box(1.9, 0.26, 0.26, 0.85, 0.55, 0, paint, 0.08, 0, 0, 0.55); arm.box(1.5, 0.22, 0.22, 2.0, 0.35, 0, paint, 0.07, 0, 0, -1.0);
-    arm.box(0.5, 0.45, 0.6, 2.4, -0.35, 0, '#59616b', 0.08); for (let i = 0; i < 4; i++) arm.box(0.06, 0.16, 0.06, 2.62, -0.62, -0.22 + i * 0.15, '#c9d2da', 0.02);
-    arm.cyl(0.05, 0.05, 1.2, 1.2, 0.95, 0.16, '#c9d2da', 'x');
-    return { base: base.done(), upper: up.done(), arm: arm.done(), armAt: [0.6, 1.2, 0] };
+    // arm in two parts that bend, so the bucket can reach anywhere within its length:
+    // boom from the pivot (front of the upper body) up and out to the elbow; stick from the elbow down to the bucket
+    const E = [1.65, 1.0], Wr = [0.75, -1.45];
+    const boom = kit(), lb = Math.hypot(E[0], E[1]); boom.box(lb + 0.2, 0.26, 0.26, E[0] / 2, E[1] / 2, 0, paint, 0.08, 0, 0, Math.atan2(E[1], E[0]));
+    boom.cyl(0.05, 0.05, 1.0, E[0] * 0.45, E[1] * 0.45 + 0.22, 0.16, '#c9d2da', 'x');
+    const stick = kit(), ls = Math.hypot(Wr[0], Wr[1]); stick.box(ls + 0.15, 0.22, 0.22, Wr[0] / 2, Wr[1] / 2, 0, paint, 0.07, 0, 0, Math.atan2(Wr[1], Wr[0]));
+    stick.box(0.5, 0.45, 0.6, Wr[0] + 0.05, Wr[1] - 0.12, 0, '#59616b', 0.08); for (let i = 0; i < 4; i++) stick.box(0.06, 0.16, 0.06, Wr[0] + 0.25, Wr[1] - 0.38, -0.22 + i * 0.15, '#c9d2da', 0.02);
+    // tip: the point that digs (relative to the elbow)
+    return { base: base.done(), upper: up.done(), boom: boom.done(), stick: stick.done(), armAt: [0.6, 1.2, 0], elbow: E, tip: [Wr[0] + 0.15, Wr[1] - 0.35] };
   };
   A.dumpTruck = function () {   // a mining dump truck about 9 m long
     const k = kit(), y = '#f2c230';
