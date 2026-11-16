@@ -58,10 +58,28 @@
     }).catch(e => { wPend.delete(k); console.warn('water not loaded', k, e.message); });
     wPend.set(k, pr); return pr;
   }
-  T.ensure = (lat, lon, m) => { const ks = around(lat, lon, m === undefined ? 0.3 : m); return Promise.all(ks.map(load).concat(ks.map(loadWater), near(lat, lon, 0.5).map(loadPatch))); };
+  // HD relief (~40 m Terrarium tiles at zoom 12): in the Steam build (it may use the internet), or with ?hd in the address
+  const cfg = root.ED_CONFIG || {};
+  T.hd = (cfg.steam && cfg.hd !== false) || /[?&]hd\b/.test(location.search);
+  const HDURL = cfg.hdUrl || 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/12/{x}/{y}.png';
+  const hdPend = new Map();
+  function loadHD(x, y) {
+    const k = 'h:' + x + '_' + y; if (T.loaded.has(k)) return Promise.resolve(); if (hdPend.has(k)) return hdPend.get(k);
+    const pr = fetch(HDURL.replace('{x}', x).replace('{y}', y)).then(r => { if (!r.ok) throw new Error(k + ' ' + r.status); return r.blob(); }).then(createImageBitmap).then(bm => {
+      const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(256, 256) : Object.assign(document.createElement('canvas'), { width: 256, height: 256 });
+      const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(bm, 0, 0);
+      W.setHDTile(x, y, W.decodeTerrarium(g.getImageData(0, 0, 256, 256).data)); T.loaded.add(k); hdPend.delete(k); if (T.onBlock) T.onBlock(k, null, [x, y]);
+    }).catch(e => { hdPend.delete(k); console.warn('HD relief tile not loaded', k, e.message); });
+    hdPend.set(k, pr); return pr;
+  }
+  const hdAround = (lat, lon, r) => { const [x, y] = W.hdTileOf(lat, lon), out = []; for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) out.push(loadHD((x + i + 4096) % 4096, y + j)); return out; };
+  // never wait more than a few seconds for the internet
+  const capped = (ps, ms) => Promise.race([Promise.all(ps), new Promise(r => setTimeout(r, ms))]);
+  T.ensure = (lat, lon, m) => { const ks = around(lat, lon, m === undefined ? 0.3 : m); return Promise.all(ks.map(load).concat(ks.map(loadWater), near(lat, lon, 0.5).map(loadPatch), T.hd ? [capped(hdAround(lat, lon, 2), 8000)] : [])); };
   T.watch = (lat, lon) => {   // fetch ahead while walking or driving
     for (const k of around(lat, lon, 1.5)) { if (!T.loaded.has(k) && !pending.has(k)) load(k); loadWater(k); }
     for (const p of near(lat, lon, 1.5)) loadPatch(p);
+    if (T.hd) hdAround(lat, lon, 3);
   };
   root.Terrain = T;
 })(window);

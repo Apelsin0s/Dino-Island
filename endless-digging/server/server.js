@@ -12,6 +12,7 @@ const http = require('http'), fs = require('fs'), path = require('path'), crypto
 const { WebSocketServer } = require('ws');
 const { W, Rules } = require('./world').load();
 const mod = require('./moderation'), steam = require('./steam');
+const toLL = (x, y, z) => { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; };
 
 const PORT = +process.env.PORT || 8790;
 const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -23,6 +24,7 @@ const SPAWN = [47.9105, 33.3918];                                   // Kryvyi Ri
 const CELL = 64, SEE_CELLS = 3, SEE_PLAYERS = 220;                 // holes within ±3 cells (≈200 m), players within 220 m
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 fs.mkdirSync(DATA, { recursive: true });
+const HD = require('./hd')(W, DATA);   // ~40 m relief tiles, like the Steam game
 
 // ---------- storage (plain files; swap for a database when one process is not enough) ----------
 const F = n => path.join(DATA, n);
@@ -116,8 +118,9 @@ const handlers = {
     const l = Math.hypot(p[0], p[1], p[2]); if (l < W.R - 20000 || l > W.R + 10000) return;
     c.pos = p; c.f = Array.isArray(m.f) && m.f.length === 3 && m.f.every(Number.isFinite) ? m.f : (c.f || [1, 0, 0]); c.pitch = +m.pitch || 0; c.tool = String(m.tool || 'spoon').slice(0, 12); c.drive = m.drive ? String(m.drive).slice(0, 12) : null;
     seeCells(c);
+    if (HD.on) { const ll = toLL(p[0], p[1], p[2]), t = W.hdTileOf(ll[0], ll[1]), tk = t.join('_'); if (tk !== c.hdTile) { c.hdTile = tk; HD.around(ll[0], ll[1], 2); } }
   },
-  dig(c, m) {
+  async dig(c, m) {
     const now = Date.now(), cc = m.c; if (!c.pos || !Array.isArray(cc) || cc.length !== 3 || !cc.every(Number.isFinite)) return;
     const T = Rules.TOOLS, mode = m.mode || 'hand';
     let maxR, reach, gap;
@@ -131,6 +134,7 @@ const handlers = {
     if (now - (c.lastDig || 0) < gap) return send(c, { t: 'dig', seq: m.seq, ok: false, why: 'fast' });
     if (Math.hypot(cc[0] - c.pos[0], cc[1] - c.pos[1], cc[2] - c.pos[2]) > reach) return send(c, { t: 'dig', seq: m.seq, ok: false, why: 'far' });
     c.lastDig = now;
+    if (HD.on) { const ll = toLL(cc[0], cc[1], cc[2]); await HD.around(ll[0], ll[1], 1); }   // the ground there is measured on the same relief as the game
     const s = Rules.scoop(W, cc, r, c.lvl);
     if (s.litres < 1e-6) return send(c, { t: 'dig', seq: m.seq, ok: true, got: 0 });
     const h = [cc[0], cc[1], cc[2], r], key = addHole(h);
@@ -215,7 +219,7 @@ const server = http.createServer((req, res) => {
   if (req.method === 'OPTIONS') { res.setHeader('Access-Control-Allow-Headers', 'content-type'); res.end(); return; }
   if (req.url === '/health') {
     res.setHeader('content-type', 'application/json');
-    return res.end(JSON.stringify({ ok: true, protocol: PROTOCOL, players: [...clients.values()].filter(c => c.acc).length, holes: holes.length, accounts: Object.keys(accounts).length, uptime: Math.round(process.uptime()), memMB: Math.round(process.memoryUsage().rss / 1048576) }));
+    return res.end(JSON.stringify({ ok: true, protocol: PROTOCOL, players: [...clients.values()].filter(c => c.acc).length, holes: holes.length, accounts: Object.keys(accounts).length, hdTiles: HD.count(), uptime: Math.round(process.uptime()), memMB: Math.round(process.memoryUsage().rss / 1048576) }));
   }
   if (req.url === '/api/error' && req.method === 'POST') {   // the game reports its own crashes here (no personal data)
     const ip = req.socket.remoteAddress, n = (errLimit.get(ip) || 0) + 1; errLimit.set(ip, n);

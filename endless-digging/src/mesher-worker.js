@@ -12,6 +12,7 @@ onmessage = e => {
   else if (m.t === 'patch') W.setPatchData(m.id, m.d);
   else if (m.t === 'winfo') W.setWaterInfo(m.info);
   else if (m.t === 'water') W.setWaterBlock(m.k, m.o);
+  else if (m.t === 'hd') W.setHDTile(m.x, m.y, m.d);
   else if (m.t === 'holes') { const h = m.h; for (let i = 0; i + 3 < h.length; i += 4) W.addHole(h[i], h[i + 1], h[i + 2], h[i + 3]); }
   else if (m.t === 'clear') W.clearHoles();
   else if (m.t === 'ping') postMessage({ t: 'pong' });

@@ -1041,11 +1041,12 @@
     });
     Promise.all([dem, models, conn, terr, root.Biome ? Biome.ready : 0]).then(r => { welcome = r[2]; performance.mark('ed:dem'); return root.Mesher ? Mesher.start() : false; }).then(() => setTimeout(() => {
       // a relief block that arrives later (you walked or drove towards another one): rebuild the ground around you
-      Terrain.onBlock = (k, patch) => {
+      Terrain.onBlock = (k, patch, hd) => {
         if (loading) return;
         const ll = W.toLatLon(pl.pos.x, pl.pos.y, pl.pos.z);
+        if (hd) { const [x, y] = W.hdTileOf(ll[0], ll[1]); if (Math.abs(x - hd[0]) > 1 || Math.abs(y - hd[1]) > 1) return; }   // a tile further out: the landscape picks it up as you go
         if (patch) { const bx = patch.box, m = 0.06; if (ll[0] < bx[2] - m || ll[0] > bx[3] + m || ll[1] < bx[0] - m * 1.5 || ll[1] > bx[1] + m * 1.5) { S.rebuildDistant(pl.pos); return; } }
-        else if (![[0, 0], [0.05, 0.05], [-0.05, -0.05], [0.05, -0.05], [-0.05, 0.05]].some(([a, b]) => W.blockKey(ll[0] + a, ll[1] + b) === k)) return;
+        else if (!hd && ![[0, 0], [0.05, 0.05], [-0.05, -0.05], [0.05, -0.05], [-0.05, 0.05]].some(([a, b]) => W.blockKey(ll[0] + a, ll[1] + b) === k)) return;
         S.resetChunks(); S.updateFar(pl.pos, true); S.updateDeco(pl.pos, true);
         if (W.solid(pl.pos.x, pl.pos.y, pl.pos.z) > 0) { pl.pos.setLength(W.R + W.heightAt(pl.pos.x, pl.pos.y, pl.pos.z) + 0.1); pl.vel.set(0, 0, 0); }
       };

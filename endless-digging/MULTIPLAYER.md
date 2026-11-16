@@ -47,6 +47,15 @@ Production (one machine): `server/docker-compose.yml` runs the server behind Cad
 Fill `server/.env` from `.env.example`, put the domain in `Caddyfile`, `docker compose up -d --build`.
 Steam build: put the app id and `wss://` address into `electron/config.json`; `npm install && npx electron-builder --win --dir`.
 
+## The ground (same on the game, the mesher threads and the server)
+
+- Whole Earth: `src/dem/world/` (15° blocks, 1/30° grid), built by `tools/build-world-dem.py`.
+- ~40 m patches of 57 famous places: `src/dem/patches/`, `tools/build-patches.py`.
+- Lakes and rivers: `src/dem/water/`, `tools/build-water.py` (lake beds and river channels are cut into the ground).
+- HD relief (Steam build + server): Terrarium zoom-12 tiles (~40 m) streamed around each player; the server caches
+  them in `DATA_DIR/tiles` and loads the tile under a dig before measuring it (`HD_TILES=0` turns it off — then the
+  game must not use them either, or digs are measured on different ground).
+
 ## Capacity and growing
 
 One process: hundreds of players at once (each sends ~11 small messages a second; holes go only to who can see them).

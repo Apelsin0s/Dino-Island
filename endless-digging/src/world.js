@@ -82,6 +82,39 @@
     return cr(row(y - 1), row(y), row(y + 1), row(y + 2), ty);
   }
 
+
+  // ---------- HD relief: Terrarium tiles at zoom 12 (~40 m), streamed around the player ----------
+  // Only where the game may reach the internet (Steam build) and on the server, which loads the same tiles around
+  // every player, so both measure the same ground. Where a tile is missing the 3.7 km grid is used; next to a missing
+  // neighbour the tile fades out over 32 pixels, so there is never a cliff at the edge of what is loaded.
+  const HDZ = 12, HDN = 4096, HDP = HDN * 256, hdTiles = new Map();
+  let hdCount = 0;
+  function setHDTile(x, y, data) { hdTiles.set(x * 8192 + y, data); hdCount++; lastHD = null; }
+  const hasHD = (x, y) => hdTiles.has((((x % HDN) + HDN) % HDN) * 8192 + y);
+  const mercY = lat => { const sn = Math.sin(Math.max(-85.05, Math.min(85.05, lat)) * Math.PI / 180); return 0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI); };
+  let lastHD = null;
+  function hdPix(X, Y) {   // one pixel (metres) anywhere, NaN when its tile is not loaded
+    const tx = ((Math.floor(X / 256) % HDN) + HDN) % HDN, ty = Math.floor(Y / 256), d = hdTiles.get(tx * 8192 + ty);
+    return d ? d[(Y - ty * 256) * 256 + (((X % 256) + 256) % 256)] : NaN;
+  }
+  function hdAt(lat, lon) {   // bicubic height and the edge fade in hdFade
+    if (!hdCount) return NaN;
+    const fx = (lon + 180) / 360 * HDP - 0.5, fy = mercY(lat) * HDP - 0.5, x = Math.floor(fx), y = Math.floor(fy), tx = fx - x, ty = fy - y;
+    const row = j => cr(hdPix(x - 1, j), hdPix(x, j), hdPix(x + 1, j), hdPix(x + 2, j), tx);
+    const v = cr(row(y - 1), row(y), row(y + 1), row(y + 2), ty);
+    if (v !== v) return NaN;
+    const X = Math.floor(fx / 256), Y = Math.floor(fy / 256), px = fx - X * 256, py = fy - Y * 256;
+    let f = 1;
+    if (!hasHD(X - 1, Y)) f = Math.min(f, px / 32); if (!hasHD(X + 1, Y)) f = Math.min(f, (255 - px) / 32);
+    if (!hasHD(X, Y - 1)) f = Math.min(f, py / 32); if (!hasHD(X, Y + 1)) f = Math.min(f, (255 - py) / 32);
+    hdFade = Math.max(0, Math.min(1, f)); return v;
+  }
+  let hdFade = 0;
+  // which tile a place is in (for loaders)
+  function hdTileOf(lat, lon) { return [Math.floor((lon + 180) / 360 * HDN), Math.floor(mercY(lat) * HDN)]; }
+  // a Terrarium PNG's pixels (RGBA bytes) -> metres
+  function decodeTerrarium(rgba) { const out = new Float32Array(65536); for (let i = 0; i < 65536; i++) out[i] = rgba[i * 4] * 256 + rgba[i * 4 + 1] + rgba[i * 4 + 2] / 256 - 32768; return out; }
+
   // ---------- lakes and rivers (dem/water/*.txt, tools/build-water.py) ----------
   // Per 15° block: a 1/120° lake raster (lake id * 16 + cells inside the shore) and river segments
   // [lat0, lon0, lat1, lon1, level0, level1, width]. The ground is cut down to the lake bed / river bed here,
@@ -201,6 +234,7 @@
       if (hu === hu) h = h + (hu - h) * DEM.ukraine.fade;
     }
     if (PATCHES.length) h = patchBlend(h, lat, lon);   // famous places (~40 m)
+    if (hdCount) { const v = hdAt(lat, lon); if (v === v) { const k = hdFade * hdFade * (3 - 2 * hdFade); h = h + (v - h) * k; } }   // HD tiles (~40 m), Steam build and server
     if (DEM) {   // the start (~20 m)
       const hl = demAt(DEM.local, lat, lon);
       if (hl === hl) { const f = DEM.local.fade, k = f * f * (3 - 2 * f); h = h + (hl - h) * k; }
@@ -486,6 +520,6 @@
   function fromLatLon(lat, lon) { const a = lat * Math.PI / 180, b = lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), -Math.cos(a) * Math.sin(b)]; }
   function toLatLon(x, y, z) { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; }
 
-  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, setWorldDem, setWorldBlock, setBlockLoader, decodeBlock, setPatches, setPatchData, setPatchLoader, decodePatch, patches: () => PATCHES, setWaterInfo, setWaterLoader, setWaterBlock, waterAt, riversNear, blockKey, blockOf, worldAt, hasBlock: k => blocks.has(k), heightAt, solid, depthAt, addHole, clearHoles, holes, key,
+  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, setWorldDem, setWorldBlock, setBlockLoader, decodeBlock, setPatches, setPatchData, setPatchLoader, decodePatch, patches: () => PATCHES, setWaterInfo, setWaterLoader, setWaterBlock, waterAt, riversNear, setHDTile, hdTileOf, hasHD, decodeTerrarium, HDZ, blockKey, blockOf, worldAt, hasBlock: k => blocks.has(k), heightAt, solid, depthAt, addHole, clearHoles, holes, key,
     chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, buildMesh, fineSet, blockers, blocked, materialAt, kryvbas, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
 })(typeof window !== 'undefined' ? window : globalThis);

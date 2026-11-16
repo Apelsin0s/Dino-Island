@@ -9,8 +9,11 @@
     "dev": "ALLOW_GUESTS=1 node server.js",
     "test": "node test/smoke.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
+    "pngjs": "^7.0.0",
     "ws": "8.18.0"
   }
 }
