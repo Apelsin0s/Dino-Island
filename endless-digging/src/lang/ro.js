@@ -10,7 +10,7 @@
     probe: 'solul de sub țintă până la 4 m', detector: 'minereu în jur până la 12 m' },
   node: {
     spoon: ['Lingură', 'De aici începe totul. O gropiță pe lovitură.'], scoop: ['Făraș', 'Un făraș de metal: de două ori mai mult pământ pe lovitură.'],
-    trowel: ['Lopățică de grădină', 'O lopățică ascuțită care intră ușor în argilă.'], shovel: ['Cazma', 'O cazma adevărată. Ai nevoie de brațe puternice.'], pick: ['Târnăcop', 'Sparge roca sub 16 m.'],
+    trowel: ['Lopățică de grădină', 'O lopățică ascuțită care intră ușor în argilă.'], shovel: ['Cazma', 'O cazma adevărată. Ai nevoie de brațe puternice.'], pick: ["Târnăcop", "Sparge roca: calcar, granit, bazalt și minereu. Se folosește singur când ținești piatra."],
     arms1: ['Brațe puternice I', 'Lovituri cu 15 % mai rapide.'], arms2: ['Brațe puternice II', 'Și mai rapide.'], arms3: ['Brațe puternice III', 'Sapi ca o mașină.'],
     probe: ['Sondă', 'O sondă de oțel: arată solul de sub țintă, 4 m în jos.'], detector: ['Detector de metale', 'Apasă E: o scanare în jur — minereul pe o rază de 8 m și până la 4 m adâncime e marcat cu adâncimea lui.'],
     detector2: ['Detector puternic', 'Scanează 15 m în jur și până la 8 m adâncime.'], radar: ['Georadar', 'O hartă a minereului de sub teren.'],
@@ -27,7 +27,7 @@
     shaft: ['Turn de extracție', 'Mina ta: 200 L de minereu pe secundă de la 400 m.'], superdeep: ['Foraj superadânc', 'Mai adânc decât a săpat cineva vreodată.'],
     auto1: ['Foreză cu manivelă', 'Un trepied cu melc lângă colibă: forează singur, banii sunt ai tăi.'], auto2: ['Foreză cu motor', 'Un motor pe foreză — de două ori mai repede și încă una.'], auto3: ['A treia foreză', 'Încă o foreză cu motor.']
   },
-  mat: ['pământ negru', 'argilă', 'granit', 'cuarțit cu magnetit', 'minereu de hematit'], firstOre: 'Minereu! Minereul de fier valorează mai mult decât pământul',
+  mat: ['pământ negru', 'argilă', 'granit', 'cuarțit cu magnetit', 'minereu de hematit', "nisip și pietriș", "calcar", "bazalt", "cărbune"], firstOre: 'Minereu! Minereul de fier valorează mai mult decât pământul',
   probeL: 'Sondă', detL: 'Detector', noOre: 'niciun minereu găsit', machines: 'utilaje', getIn: 'urcă', getOut: 'coboară',
   driveHint: 'WASD — condus, mouse — privit, clic stânga — săpat cu cupa, R — cobori', outReach: 'Cupa nu ajunge', interest: 'dobândă',
   found: 'pungi găsite:', nearest: 'cea mai apropiată', scanB: 'scanare', ahead: 'în față', behind: 'în spate', leftS: 'în stânga', rightS: 'în dreapta', depthL: 'adâncime',
@@ -41,5 +41,6 @@
   N: 'N', S: 'S', E: 'E', Wd: 'V', planet: 'Planeta Pământ · rază 6.371 km · circumferință 40.030 km', sign: ['CUMPĂRĂM PĂMÂNT', '$0,10 pe litru'],
   noDig: 'Aici nu se poate săpa', inWay: 'O piatră sau un copac e în cale', map: 'Harta lumii', mapHint: 'Trage ca să rotești · rotița pentru zoom · M ca să închizi', mapTouch: 'Trage ca să rotești · două degete pentru zoom',
   openPrefix: 'Deschis', countriesN: 'țări', locked: 'Restul lumii e încă închis', here: 'Ești aici', resetAsk: 'Mai apasă o dată: gropile, banii și cumpărăturile se pierd',
-  dig: 'Sapă', jumpB: 'Sari', turn: 'Întoarce telefonul pe orizontală, e mai comod', saveFull: 'Salvarea nu mai încape în browser'
+  dig: 'Sapă', jumpB: 'Sari', turn: 'Întoarce telefonul pe orizontală, e mai comod', saveFull: 'Salvarea nu mai încape în browser',
+ "needPick": "Prea tare: roca cere un târnăcop (cercetare F)"
 };

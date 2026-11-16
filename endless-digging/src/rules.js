@@ -6,7 +6,8 @@
     spoon: { r: 0.045, time: 0.5, reach: 2.3, parts: 4, size: 0.3 },
     scoop: { r: 0.065, time: 0.5, reach: 2.3, parts: 5, size: 0.4 },
     trowel: { r: 0.085, time: 0.55, reach: 2.4, parts: 6, size: 0.5 },
-    shovel: { r: 0.12, time: 0.65, reach: 2.6, parts: 9, size: 0.75 }
+    shovel: { r: 0.12, time: 0.65, reach: 2.6, parts: 9, size: 0.75 },
+    pick: { r: 0.08, time: 0.7, reach: 2.6, parts: 7, size: 0.5 }   // breaks rock (limestone, granite, basalt, ore)
   };
   // ---------- research tree ----------
   // Bought at the shack. Each node needs the nodes in req; 'soon' nodes are shown but not for sale yet.
@@ -17,7 +18,7 @@
     { id: 'shovel', row: 0, col: 3, icon: 'shovel', p: 60, req: ['trowel', 'arms1'] },
     { id: 'sharp', row: 0, col: 4, icon: 'sharp', p: 120, req: ['shovel'] },
     { id: 'longhandle', row: 0, col: 5, icon: 'longhandle', p: 200, req: ['sharp', 'boots1'] },
-    { id: 'pick', row: 0, col: 6, icon: 'pick', soon: true, req: ['longhandle'] },
+    { id: 'pick', row: 0, col: 6, icon: 'pick', p: 350, req: ['longhandle'] },
     { id: 'arms1', row: 1, col: 1, icon: 'arm', p: 8, req: ['scoop'] },
     { id: 'arms2', row: 1, col: 2, icon: 'arm2', p: 25, req: ['arms1'] },
     { id: 'arms3', row: 1, col: 3, icon: 'arm3', p: 70, req: ['arms2'] },
@@ -41,6 +42,7 @@
     { id: 'auger2', row: 4, col: 4, icon: 'auger', p: 160, req: ['auto2', 'grease'] },
     { id: 'auto3', row: 4, col: 5, icon: 'rig3', p: 250, req: ['auto2'] },
     { id: 'conveyor', row: 4, col: 6, icon: 'conveyor', p: 500, req: ['auto3', 'auger2'] },
+    { id: 'pump', row: 4, col: 7, icon: 'pump', p: 160, req: ['auto1'] },   // keeps pits dry below the water table
     { id: 'exMini', row: 5, col: 1, icon: 'excavator', p: 1500, req: ['auto3'] },
     { id: 'truck', row: 5, col: 2, icon: 'truck', p: 4000, req: ['exMini'] },
     { id: 'exBig', row: 5, col: 3, icon: 'excavatorBig', p: 15000, req: ['truck', 'conveyor'] },
@@ -59,7 +61,12 @@
   // what the ground is made of; price per litre follows rarity in the Earth's crust (deposits.js)
   // 0 topsoil, 1 clay, 2 granite, 3 magnetite quartzite (~30 % Fe), 4 rich hematite ore (~60 % Fe: twice the iron)
   const RESP = (root.DepositData && root.DepositData.res) || {}, FE = (RESP.fe && RESP.fe.price) || 0.29;
-  const MATS = [{ p: 0.10 }, { p: 0.14 }, { p: (RESP.stone && RESP.stone.price) || 0.14 }, { p: FE, ore: true }, { p: FE * 2, ore: true }];
+  // 5 sand and gravel, 6 limestone, 7 basalt, 8 coal
+  const MATS = [{ p: 0.10 }, { p: 0.14 }, { p: (RESP.stone && RESP.stone.price) || 0.14 }, { p: FE, ore: true }, { p: FE * 2, ore: true },
+    { p: 0.11 }, { p: 0.16 }, { p: 0.2 }, { p: (RESP.coal && RESP.coal.price) || 0.6, ore: true }];
+  const NM = MATS.length, HARD = [1, 1, 6, 2.5, 2, 0.8, 3, 6, 2];
+  // the share of a bite that needs a pickaxe
+  function hardShare(per) { let h = 0, n = 0; for (let i = 0; i < per.length; i++) { n += per[i]; if (HARD[i] >= 3) h += per[i]; } return n ? h / n : 0; }
   // upgrade effects for a set of owned nodes: levels(has)(id)
   function levels(has, incomeMul) {
     const lvl = id => id === 'tool' ? (has('shovel') ? 'shovel' : has('trowel') ? 'trowel' : has('scoop') ? 'scoop' : 'spoon')
@@ -85,12 +92,12 @@
   }
   // a scoop of radius r at c (before it is dug): litres per material and the money it brings
   function scoop(W, c, r, lvl) {
-    const per = [0, 0, 0, 0, 0], f = bite(W, c, r, per), solidN = per.reduce((a, b) => a + b, 0);
+    const per = new Array(NM).fill(0), f = bite(W, c, r, per), solidN = per.reduce((a, b) => a + b, 0);
     const litres = f * 4 / 3 * Math.PI * r * r * r * 1000, k = solidN ? litres / solidN : 0, by = per.map(v => v * k);
-    let got = 0; for (let i = 0; i < 5; i++) got += by[i] * MATS[i].p * (MATS[i].ore ? lvl('ore') : 1);
-    let main = 0; for (let i = 1; i < 5; i++) if (per[i] > per[main]) main = i;
+    let got = 0; for (let i = 0; i < NM; i++) got += by[i] * MATS[i].p * (MATS[i].ore ? lvl('ore') : 1);
+    let main = 0; for (let i = 1; i < NM; i++) if (per[i] > per[main]) main = i;
     return { litres, by, got: got * lvl('scale'), main, per, k };
   }
   const canBuy = (id, has, money) => { const n = NODES.find(x => x.id === id); return !!n && !n.soon && !n.root && !has(id) && (n.req || []).every(has) && money >= n.p ? n : null; };
-  root.Rules = { TOOLS, NODES, RIG_L, BITE, PTS, MATS, levels, bite, scoop, canBuy };
+  root.Rules = { TOOLS, NODES, RIG_L, BITE, PTS, MATS, NM, HARD, hardShare, levels, bite, scoop, canBuy };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -187,6 +187,14 @@
     }
     return out;
   }
+  // the water table: groundwater stands this high under the ground (5-14 m down, shallow near rivers and lakes)
+  const WT2 = {};
+  function waterTable(x, y, z) {
+    const l = Math.hypot(x, y, z), dx = x / l, dy = y / l, dz = z / l, h = heightDir(dx, dy, dz);
+    let d = 5 + 9 * (noise(dx * R / 2500, dy * R / 2500, dz * R / 2500, 221) * 0.5 + 0.5);
+    if (WTR) { waterAt(Math.asin(dy) * 57.29578, Math.atan2(-dz, dx) * 57.29578, WT2); if (WT2.lf > 0) d = Math.min(d, 0.8); else if (WT2.rd < 600) d = Math.min(d, 1.5 + WT2.rd / 600 * 3); }
+    return h - d;
+  }
   const WT = {};
   // cut the ground to the water: lake beds and shelving shores, river channels with low banks
   function carveWater(h, lat, lon) {
@@ -280,7 +288,14 @@
     if (r < BIG) for (const [a, b, c] of boxesTouching(LF, x, y, z, rk + LF.VOX * 2)) push(smallIndex, key(a, b, c), h);
     const coarse = new Set(), fine = [];
     if (r >= BIG) for (const [a, b, c] of boxesTouching(LC, x, y, z, rk + VOX * 1.5)) coarse.add(key(a, b, c));
-    // fine boxes around the hole, with a margin so its edge never meets the coarse mesh
+    // big holes live on the coarse grid: only fine boxes that already exist there are re-meshed (no new ones —
+    // a 3 m hole would otherwise make thousands of 0.8 m boxes)
+    if (r >= BIG) {
+      const seen = new Set();
+      for (const [a, b, c] of boxesTouching(LC, x, y, z, rk + VOX * 2)) { const l = fineByChunk.get(key(a, b, c)); if (l) for (const [fa, fb, fc] of l) { const fk = key(fa, fb, fc); if (!seen.has(fk) && fineTouches(fa, fb, fc, h)) { seen.add(fk); fine.push(fk); } } }
+      return { coarse: [...coarse], fine };
+    }
+    // small holes: fine boxes around the hole, with a margin so its edge never meets the coarse mesh
     for (const [a, b, c] of boxesTouching(LF, x, y, z, rk + 0.45)) {
       const k = key(a, b, c), wx = (a + 0.5) * LF.CH, wy = (b + 0.5) * LF.CH, wz = (c + 0.5) * LF.CH;
       if (Math.abs(depthAt(wx, wy, wz)) > LF.CH * 0.9 + 0.05 && !holeNear(wx, wy, wz, LF.CH)) continue;   // nowhere near the surface
@@ -497,29 +512,44 @@
     }
     return best * side;
   }
+  // What the ground is made of. 0 topsoil, 1 clay / loess, 2 granite (bedrock), 3 magnetite quartzite, 4 hematite,
+  // 5 sand and gravel, 6 limestone, 7 basalt, 8 coal. Kryvbas keeps its own ore strip; elsewhere the layers are
+  // soil -> clay with sand lenses (2-16 m) -> limestone with coal seams (0-50 m thick, where the region has it)
+  // -> bedrock: granite, or basalt in volcanic provinces. Thicknesses change slowly from region to region.
   function materialAt(x, y, z) {
     const l = Math.hypot(x, y, z), d = R + heightDir(x / l, y / l, z / l) - l;
     if (d < 1.4 + noise(x / 7, y / 7, z / 7, 61) * 0.25) return 0;
     const lat = Math.asin(y / l) * 57.29577951308232, lon = Math.atan2(-z, x) * 57.29577951308232;
     const across = kryvbas(lat, lon), zone = 1 - Math.min(1, Math.max(0, (Math.abs(across) - 3.0) / 2.0));
-    if (d < 16) {
-      if (zone > 0 && d > 1.7) {
-        const n = noise(x / 1.8, y / 1.8, z / 1.8, 101) * 0.8 + noise(x / 0.55, y / 0.55, z / 0.55, 103) * 0.25;
-        if (n > 0.44 - 0.12 * zone) return n > 0.64 && d > 2.6 ? 4 : 3;
+    if (zone > 0) {
+      if (d < 16) {
+        if (d > 1.7) {
+          const n = noise(x / 1.8, y / 1.8, z / 1.8, 101) * 0.8 + noise(x / 0.55, y / 0.55, z / 0.55, 103) * 0.25;
+          if (n > 0.44 - 0.12 * zone) return n > 0.64 && d > 2.6 ? 4 : 3;
+        }
+        return 1;
       }
-      return 1;
-    }
-    if (zone > 0) {   // steeply dipping bands a few metres wide
-      const b = Math.sin(across * 1000 * 2 * Math.PI / 7 + d * 0.35 + noise(x / 9, y / 9, z / 9, 107) * 2.2);
+      const b = Math.sin(across * 1000 * 2 * Math.PI / 7 + d * 0.35 + noise(x / 9, y / 9, z / 9, 107) * 2.2);   // steeply dipping bands
       if (b > 0.25 - 0.3 * (1 - zone)) return noise(x / 4, y / 4, z / 4, 109) > 0.35 ? 4 : 3;
+      return 2;
     }
-    return 2;
+    const clayB = 9 + noise(x / 3000, y / 3000, z / 3000, 201) * 7;
+    if (d < clayB) return noise(x / 6, y / 6, z / 6, 203) > 0.42 ? 5 : 1;
+    const limeB = clayB + Math.max(0, 18 + noise(x / 5000, y / 5000, z / 5000, 205) * 34);
+    if (d < limeB) {
+      const donbas = lat > 47.4 && lat < 49.2 && lon > 37 && lon < 40.3 ? 0.35 : 0;
+      if (noise(x / 20000, y / 20000, z / 20000, 209) + donbas > 0.12 && Math.sin(d * 0.9 + noise(x / 400, y / 400, z / 400, 207) * 3) > 0.9) return 8;
+      return 6;
+    }
+    return noise(x / 8000, y / 8000, z / 8000, 211) > 0.5 ? 7 : 2;
   }
+  // how hard each material is to dig: from 3 up it takes a pickaxe
+  const HARD = [1, 1, 6, 2.5, 2, 0.8, 3, 6, 2];
 
   // ---------- geography helpers ----------
   function fromLatLon(lat, lon) { const a = lat * Math.PI / 180, b = lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), -Math.cos(a) * Math.sin(b)]; }
   function toLatLon(x, y, z) { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; }
 
-  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, setWorldDem, setWorldBlock, setBlockLoader, decodeBlock, setPatches, setPatchData, setPatchLoader, decodePatch, patches: () => PATCHES, setWaterInfo, setWaterLoader, setWaterBlock, waterAt, riversNear, setHDTile, hdTileOf, hasHD, decodeTerrarium, HDZ, blockKey, blockOf, worldAt, hasBlock: k => blocks.has(k), heightAt, solid, depthAt, addHole, clearHoles, holes, key,
-    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, buildMesh, fineSet, blockers, blocked, materialAt, kryvbas, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
+  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, setWorldDem, setWorldBlock, setBlockLoader, decodeBlock, setPatches, setPatchData, setPatchLoader, decodePatch, patches: () => PATCHES, setWaterInfo, setWaterLoader, setWaterBlock, waterAt, riversNear, setHDTile, hdTileOf, hasHD, decodeTerrarium, HDZ, waterTable, blockKey, blockOf, worldAt, hasBlock: k => blocks.has(k), heightAt, solid, depthAt, addHole, clearHoles, holes, key,
+    chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, buildMesh, fineSet, blockers, blocked, materialAt, HARD, kryvbas, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -10,7 +10,7 @@
     probe: 'o solo sob a mira até 4 m', detector: 'minério ao redor até 12 m' },
   node: {
     spoon: ['Colher', 'Tudo começa aqui. Um buraquinho por golpe.'], scoop: ['Pazinha', 'Uma pá de metal: o dobro de terra por golpe.'],
-    trowel: ['Pá de jardim', 'Uma pá pontuda que entra fácil no barro.'], shovel: ['Pá', 'Uma pá de verdade. Precisa de braços fortes.'], pick: ['Picareta', 'Quebra a rocha abaixo de 16 m.'],
+    trowel: ['Pá de jardim', 'Uma pá pontuda que entra fácil no barro.'], shovel: ['Pá', 'Uma pá de verdade. Precisa de braços fortes.'], pick: ["Picareta", "Quebra rocha: calcário, granito, basalto e minério. É usada sozinha quando você mira na pedra."],
     arms1: ['Braços fortes I', 'Golpes 15 % mais rápidos.'], arms2: ['Braços fortes II', 'Mais rápidos ainda.'], arms3: ['Braços fortes III', 'Você cava como uma máquina.'],
     probe: ['Sonda', 'Uma sonda de aço: mostra o solo sob a mira, 4 m para baixo.'], detector: ['Detector de metais', 'Aperte E: uma varredura ao redor — o minério a 8 m e até 4 m de profundidade é marcado com a profundidade.'],
     detector2: ['Detector potente', 'Varre 15 m ao redor e até 8 m de profundidade.'], radar: ['Georradar', 'Um mapa do minério sob o terreno.'],
@@ -27,7 +27,7 @@
     shaft: ['Castelo de mina', 'Sua própria mina: 200 L de minério por segundo a 400 m.'], superdeep: ['Poço superprofundo', 'Mais fundo do que alguém já cavou.'],
     auto1: ['Perfuratriz de manivela', 'Um tripé com rosca perto do barraco: perfura sozinho e o dinheiro é seu.'], auto2: ['Perfuratriz a motor', 'Um motor na perfuratriz — o dobro da velocidade e uma segunda máquina.'], auto3: ['Terceira perfuratriz', 'Mais uma perfuratriz a motor.']
   },
-  mat: ['terra preta', 'argila', 'granito', 'quartzito com magnetita', 'minério de hematita'], firstOre: 'Minério! Minério de ferro vale mais que terra',
+  mat: ['terra preta', 'argila', 'granito', 'quartzito com magnetita', 'minério de hematita', "areia e cascalho", "calcário", "basalto", "carvão"], firstOre: 'Minério! Minério de ferro vale mais que terra',
   probeL: 'Sonda', detL: 'Detector', noOre: 'nenhum minério encontrado', machines: 'máquinas', getIn: 'entrar', getOut: 'sair',
   driveHint: 'WASD para dirigir, mouse para olhar, clique esquerdo para cavar com a caçamba, R para sair', outReach: 'A caçamba não alcança', interest: 'juros',
   found: 'bolsões encontrados:', nearest: 'o mais próximo', scanB: 'varredura', ahead: 'à frente', behind: 'atrás', leftS: 'à esquerda', rightS: 'à direita', depthL: 'profundidade',
@@ -41,5 +41,6 @@
   N: 'N', S: 'S', E: 'L', Wd: 'O', planet: 'Planeta Terra · raio 6.371 km · circunferência 40.030 km', sign: ['COMPRAMOS TERRA', '$0,10 o litro'],
   noDig: 'Não dá para cavar aqui', inWay: 'Uma pedra ou árvore está no caminho', map: 'Mapa do mundo', mapHint: 'Arraste para girar · roda para zoom · M para fechar', mapTouch: 'Arraste para girar · dois dedos para zoom',
   openPrefix: 'Aberto', countriesN: 'países', locked: 'O resto do mundo ainda está fechado', here: 'Você está aqui', resetAsk: 'Aperte de novo: buracos, dinheiro e compras serão perdidos',
-  dig: 'Cavar', jumpB: 'Pular', turn: 'Vire o celular de lado, fica melhor', saveFull: 'O progresso não cabe mais no navegador'
+  dig: 'Cavar', jumpB: 'Pular', turn: 'Vire o celular de lado, fica melhor', saveFull: 'O progresso não cabe mais no navegador',
+ "needPick": "Duro demais: a rocha precisa de uma picareta (pesquisa F)"
 };

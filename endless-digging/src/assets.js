@@ -500,6 +500,15 @@
     return { metal: merge([b, col]), wood: shaft };
   };
 
+  A.pick = function () {   // a pickaxe (кирка): long handle, a steel head across its end, pointed on both sides
+    const shaft = new T.CylinderGeometry(0.017, 0.02, 0.74, 16); shaft.rotateX(PI / 2); shaft.translate(0, 0, -0.1);
+    const eye = new T.BoxGeometry(0.05, 0.05, 0.07); eye.translate(0, 0, -0.47);
+    const up = new T.CylinderGeometry(0.003, 0.022, 0.2, 12); up.translate(0, 0.12, 0); up.rotateX(-0.22); up.translate(0, 0, -0.47);
+    const dn = new T.CylinderGeometry(0.006, 0.024, 0.17, 12); dn.rotateZ(PI); dn.translate(0, -0.1, 0); dn.rotateX(0.22); dn.translate(0, 0, -0.47);
+    const head = merge([eye, up, dn]); head.rotateZ(PI / 2);   // the head across, seen from the side in the first-person pose
+    return { metal: head, wood: shaft };
+  };
+
   // =====================================================================================
   // A helper: a worker in an orange vest and a cap. Returns { body, arm } (vertex coloured); the arm (with a trowel)
   // pivots at the right shoulder, at arm.userData.pivot.

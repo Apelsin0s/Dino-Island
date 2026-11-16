@@ -10,7 +10,7 @@
     probe: 'đất dưới tâm ngắm đến 4 m', detector: 'quặng xung quanh đến 12 m' },
   node: {
     spoon: ['Thìa', 'Mọi thứ bắt đầu từ đây. Mỗi nhát một hố nhỏ.'], scoop: ['Muỗng xúc', 'Muỗng kim loại: gấp đôi đất mỗi nhát.'],
-    trowel: ['Bay làm vườn', 'Bay nhọn, dễ cắm vào đất sét.'], shovel: ['Xẻng', 'Một chiếc xẻng thật sự. Cần đôi tay khỏe.'], pick: ['Cuốc chim', 'Phá đá dưới 16 m.'],
+    trowel: ['Bay làm vườn', 'Bay nhọn, dễ cắm vào đất sét.'], shovel: ['Xẻng', 'Một chiếc xẻng thật sự. Cần đôi tay khỏe.'], pick: ["Cuốc chim", "Phá đá: đá vôi, granit, bazan và quặng. Tự lấy ra khi bạn nhắm vào đá."],
     arms1: ['Tay khỏe I', 'Nhát nhanh hơn 15%.'], arms2: ['Tay khỏe II', 'Còn nhanh hơn.'], arms3: ['Tay khỏe III', 'Bạn đào như máy.'],
     probe: ['Que dò', 'Que dò thép: hiện đất dưới tâm ngắm, sâu 4 m.'], detector: ['Máy dò kim loại', 'Nhấn E: quét một lần xung quanh — quặng trong 8 m và sâu đến 4 m được đánh dấu kèm độ sâu.'],
     detector2: ['Máy dò mạnh', 'Quét 15 m xung quanh và sâu đến 8 m.'], radar: ['Radar địa chất', 'Bản đồ quặng dưới khu đất.'],
@@ -27,7 +27,7 @@
     shaft: ['Tháp giếng mỏ', 'Mỏ của riêng bạn: 200 L quặng mỗi giây từ độ sâu 400 m.'], superdeep: ['Giếng siêu sâu', 'Sâu hơn bất kỳ ai từng đào.'],
     auto1: ['Khoan tay quay', 'Giá ba chân có mũi khoan cạnh lán: tự khoan, tiền là của bạn.'], auto2: ['Khoan động cơ', 'Gắn động cơ lên máy khoan — nhanh gấp đôi, thêm một chiếc nữa.'], auto3: ['Máy khoan thứ ba', 'Thêm một máy khoan động cơ.']
   },
-  mat: ['đất mặt', 'đất sét', 'đá granit', 'quarzit magnetit', 'quặng hematit'], firstOre: 'Quặng! Quặng sắt đắt hơn đất',
+  mat: ['đất mặt', 'đất sét', 'đá granit', 'quarzit magnetit', 'quặng hematit', "cát và sỏi", "đá vôi", "bazan", "than đá"], firstOre: 'Quặng! Quặng sắt đắt hơn đất',
   probeL: 'Que dò', detL: 'Máy dò', noOre: 'không tìm thấy quặng', machines: 'máy móc', getIn: 'lên xe', getOut: 'xuống xe',
   driveHint: 'WASD lái, chuột nhìn, chuột trái đào bằng gầu, R xuống xe', outReach: 'Gầu không với tới', interest: 'lãi',
   found: 'túi quặng tìm thấy:', nearest: 'gần nhất', scanB: 'quét', ahead: 'phía trước', behind: 'phía sau', leftS: 'bên trái', rightS: 'bên phải', depthL: 'độ sâu',
@@ -41,5 +41,6 @@
   N: 'B', S: 'N', E: 'Đ', Wd: 'T', planet: 'Hành tinh Trái Đất · bán kính 6.371 km · chu vi 40.030 km', sign: ['THU MUA ĐẤT', '$0,10 mỗi lít'],
   noDig: 'Không thể đào ở đây', inWay: 'Có đá hoặc cây cản đường', map: 'Bản đồ thế giới', mapHint: 'Kéo để xoay · cuộn để phóng to · M để đóng', mapTouch: 'Kéo để xoay · hai ngón để phóng to',
   openPrefix: 'Đã mở', countriesN: 'quốc gia', locked: 'Phần còn lại của thế giới tạm thời đóng', here: 'Bạn ở đây', resetAsk: 'Nhấn lần nữa: hố, tiền và đồ đã mua sẽ mất',
-  dig: 'Đào', jumpB: 'Nhảy', turn: 'Xoay ngang điện thoại để dễ chơi hơn', saveFull: 'Dữ liệu lưu không còn vừa trong trình duyệt'
+  dig: 'Đào', jumpB: 'Nhảy', turn: 'Xoay ngang điện thoại để dễ chơi hơn', saveFull: 'Dữ liệu lưu không còn vừa trong trình duyệt',
+ "needPick": "Quá cứng: đá cần cuốc chim (nghiên cứu F)"
 };

@@ -10,7 +10,7 @@
     probe: 'grunt pod celownikiem do 4 m', detector: 'rudę dookoła do 12 m' },
   node: {
     spoon: ['Łyżka', 'Od niej wszystko się zaczyna. Mały dołek na zamach.'], scoop: ['Szufelka', 'Metalowa szufelka: dwa razy więcej ziemi na zamach.'],
-    trowel: ['Łopatka ogrodowa', 'Ostra łopatka, łatwo wchodzi w glinę.'], shovel: ['Łopata', 'Prawdziwy szpadel. Potrzeba silnych rąk.'], pick: ['Kilof', 'Kruszy skałę poniżej 16 m.'],
+    trowel: ['Łopatka ogrodowa', 'Ostra łopatka, łatwo wchodzi w glinę.'], shovel: ['Łopata', 'Prawdziwy szpadel. Potrzeba silnych rąk.'], pick: ["Kilof", "Kruszy skałę: wapień, granit, bazalt i rudę. Sam wchodzi w użycie, gdy celujesz w kamień."],
     arms1: ['Silne ręce I', 'Zamachy o 15 % szybsze.'], arms2: ['Silne ręce II', 'Jeszcze szybciej.'], arms3: ['Silne ręce III', 'Kopiesz jak maszyna.'],
     probe: ['Sonda', 'Stalowa sonda: pokazuje grunt pod celownikiem, 4 m w głąb.'], detector: ['Wykrywacz metali', 'Naciśnij E: jeden skan dookoła — ruda w promieniu 8 m i do 4 m głębokości zostaje oznaczona z głębokością.'],
     detector2: ['Mocny wykrywacz', 'Skanuje 15 m dookoła i do 8 m w głąb.'], radar: ['Georadar', 'Mapa rudy pod działką.'],
@@ -27,7 +27,7 @@
     shaft: ['Wieża szybowa', 'Twoja własna kopalnia: 200 L rudy na sekundę z 400 m.'], superdeep: ['Supergłęboki odwiert', 'Głębiej, niż ktokolwiek kopał.'],
     auto1: ['Wiertnica na korbę', 'Trójnóg ze świdrem przy chatce: wierci sam, pieniądze są twoje.'], auto2: ['Wiertnica z silnikiem', 'Silnik na wiertnicy — dwa razy szybciej i druga maszyna.'], auto3: ['Trzecia wiertnica', 'Jeszcze jedna wiertnica z silnikiem.']
   },
-  mat: ['czarnoziem', 'glina', 'granit', 'kwarcyt magnetytowy', 'ruda hematytowa'], firstOre: 'Ruda! Ruda żelaza jest warta więcej niż ziemia',
+  mat: ['czarnoziem', 'glina', 'granit', 'kwarcyt magnetytowy', 'ruda hematytowa', "piasek i żwir", "wapień", "bazalt", "węgiel"], firstOre: 'Ruda! Ruda żelaza jest warta więcej niż ziemia',
   probeL: 'Sonda', detL: 'Wykrywacz', noOre: 'nie znaleziono rudy', machines: 'maszyny', getIn: 'wsiądź', getOut: 'wysiądź',
   driveHint: 'WASD — jazda, mysz — patrzenie, LPM — kopanie łyżką, R — wysiadanie', outReach: 'Łyżka nie sięgnie', interest: 'odsetki',
   found: 'znaleziono gniazd:', nearest: 'najbliższe', scanB: 'skan', ahead: 'z przodu', behind: 'z tyłu', leftS: 'z lewej', rightS: 'z prawej', depthL: 'głębokość',
@@ -41,5 +41,6 @@
   N: 'N', S: 'S', E: 'E', Wd: 'W', planet: 'Planeta Ziemia · promień 6371 km · obwód 40 030 km', sign: ['SKUP ZIEMI', '$0.10 za litr'],
   noDig: 'Tu nie można kopać', inWay: 'Przeszkadza kamień albo drzewo', map: 'Mapa świata', mapHint: 'Przeciągnij, by obrócić · kółko — zoom · M — zamknij', mapTouch: 'Przeciągnij, by obrócić · dwa palce — zoom',
   openPrefix: 'Otwarte', countriesN: 'krajów', locked: 'Reszta świata jest jeszcze zamknięta', here: 'Jesteś tutaj', resetAsk: 'Naciśnij jeszcze raz: doły, pieniądze i zakupy przepadną',
-  dig: 'Kop', jumpB: 'Skok', turn: 'Obróć telefon poziomo — tak wygodniej', saveFull: 'Zapis nie mieści się już w przeglądarce'
+  dig: 'Kop', jumpB: 'Skok', turn: 'Obróć telefon poziomo — tak wygodniej', saveFull: 'Zapis nie mieści się już w przeglądarce',
+ "needPick": "Za twarde: na skałę potrzebny jest kilof (badania F)"
 };

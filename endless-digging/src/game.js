@@ -26,14 +26,14 @@
   if (TOUCH) document.documentElement.classList.add('touch');
 
   // ---------- tools, research tree and economy: rules.js (shared with the server) ----------
-  const { TOOLS, NODES, RIG_L, BITE, PTS, MATS } = root.Rules;
+  const { TOOLS, NODES, RIG_L, BITE, PTS, MATS, NM } = root.Rules;
   const owned = new Set(NODES.filter(n => n.root).map(n => n.id));
   const has = id => owned.has(id);
   const lvl = root.Rules.levels(has, () => AD.incomeMul);
   const EARTH_VOL = 4 / 3 * Math.PI * Math.pow(W.R, 3);
 
   // ---------- player ----------
-  const pl = { pos: v3(0, 0, 0), vel: v3(0, 0, 0), fwd: v3(0, 0, -1), pitch: 0, grounded: false, tool: 'spoon', dig: -1, dug: 0, money: 0, sold: 0, earned: [0, 0, 0, 0, 0], open: ['UKR'] };
+  const pl = { pos: v3(0, 0, 0), vel: v3(0, 0, 0), fwd: v3(0, 0, -1), pitch: 0, grounded: false, tool: 'spoon', dig: -1, dug: 0, money: 0, sold: 0, earned: new Array(root.Rules.NM).fill(0), open: ['UKR'] };
   const fmtMoney = v => v < 0.1 ? v.toFixed(3) : v.toFixed(2);
   const RAD = 0.3, EYE = 1.62, G = 9.81, JUMP = 4.3, WALK = 4.2, RUN = 7.0;   // real gravity; a jump of about 0.9 m
   const SPHERES = [0.31, 0.9, 1.42];
@@ -157,28 +157,37 @@
     for (const q of PTS) { const x = c.x + q[0] * r, y = c.y + q[1] * r, z = c.z + q[2] * r; if (W.solid(x, y, z) > 0) { n++; if (per) per[W.materialAt(x, y, z)]++; } }
     return n / PTS.length;
   }
+  // which tool goes into the ground here: rock (limestone, granite, basalt, ore) takes the pickaxe
+  function toolFor(per) { return Rules.hardShare(per) > 0.4 ? 'pick' : lvl('tool'); }
   function doDig(hit) {
-    const tool = TOOLS[pl.tool];
     if (hit.obstacle) { notice(L.inWay); Sound.thud(); return false; }
     // the scoop goes where you aim: dig into a fresh spot for a full bite, into an old hole for less (until you dig past it)
-    const R = tool.r * (has('sharp') ? 1.08 : 1) * AD.digMul, c = hit.p.clone().addScaledVector(hit.d, R * 0.45);
+    const mul = (has('sharp') ? 1.08 : 1) * AD.digMul, per = new Array(NM).fill(0);
+    let toolId = lvl('tool'), tool = TOOLS[toolId], R = tool.r * mul, c = hit.p.clone().addScaledVector(hit.d, R * 0.45), f = bite(c, R, per);
+    if (toolFor(per) === 'pick') {
+      if (!has('pick')) { notice(L.needPick); Sound.thud(); return false; }
+      toolId = 'pick'; tool = TOOLS.pick; R = tool.r * mul; c = hit.p.clone().addScaledVector(hit.d, R * 0.45); f = bite(c, R, per);
+    }
+    if (pl.tool !== toolId) { pl.tool = toolId; S.setTool(toolId); }
     if (W.blocked(c.x, c.y, c.z, R + 0.05)) { notice(L.noDig); Sound.thud(); return false; }
-    const per = [0, 0, 0, 0, 0], f = bite(c, R, per), solidN = per.reduce((a, b) => a + b, 0);
+    if (root.Progress && !Progress.mayDig(c)) return false;   // licences, etc.
+    const solidN = per.reduce((a, b) => a + b, 0);
     const litres = f * 4 / 3 * Math.PI * Math.pow(R, 3) * 1000, k = solidN ? litres / solidN : 0;
     const depth = W.depthAt(hit.p.x, hit.p.y, hit.p.z);
-    let main = 0; for (let i = 1; i < 5; i++) if (per[i] > per[main]) main = i;
+    let main = 0; for (let i = 1; i < NM; i++) if (per[i] > per[main]) main = i;
     S.applyHole([c.x, c.y, c.z, R], W.addHole(c.x, c.y, c.z, R));
     S.burst(hit.p.x, hit.p.y, hit.p.z, S.matColor(main), tool.parts, hit.d.clone().negate(), tool.size);
     S.setSpoonFull(true);
-    Sound.dig(pl.tool, depth);
+    Sound.dig(toolId === 'pick' ? 'shovel' : toolId, depth);
     // paid on the spot
-    let got = 0; for (let i = 0; i < 5; i++) { got += per[i] * k * MATS[i].p * (MATS[i].ore ? lvl('ore') : 1); pl.earned[i] += per[i] * k; }
-    got *= lvl('scale'); pl.money += got; pl.dug += litres / 1000; pl.sold += litres;
-    const oreL = (per[3] + per[4]) * k;
-    if (oreL > 0.001) { floater('+$' + fmtMoney(got) + ' · ' + oreL.toFixed(2) + ' ' + L.l + ' ' + L.mat[per[4] > per[3] ? 4 : 3], 'ore'); if (!pl.foundOre) { pl.foundOre = true; notice(L.firstOre); } }
+    let got = 0; for (let i = 0; i < NM; i++) { got += per[i] * k * MATS[i].p * (MATS[i].ore ? lvl('ore') : 1); pl.earned[i] = (pl.earned[i] || 0) + per[i] * k; }
+    got *= lvl('scale') * (root.Progress ? Progress.incomeMul() : 1); pl.money += got; pl.dug += litres / 1000; pl.sold += litres;
+    const oreL = (per[3] + per[4] + per[8]) * k, oreId = per[8] > per[4] && per[8] > per[3] ? 8 : per[4] > per[3] ? 4 : 3;
+    if (oreL > 0.001) { floater('+$' + fmtMoney(got) + ' · ' + oreL.toFixed(2) + ' ' + L.l + ' ' + L.mat[oreId], 'ore'); if (!pl.foundOre) { pl.foundOre = true; notice(L.firstOre); } }
     else if (litres > 0.001) floater('+$' + fmtMoney(got) + ' · ' + litres.toFixed(2) + ' ' + L.l);
     S.setPile(Math.min(1, pl.sold / 400));
     if (ONLINE) netDig(c, R, 'hand');
+    if (root.Progress) Progress.onDig({ litres, per, k, depth, c, main, got, tool: toolId });
     dirty = true; return true;
   }
 
@@ -195,16 +204,16 @@
   // take a bite of ground with a sphere; pays for it; returns litres
   function takeBite(c, R, show) {
     if (ONLINE && !show) return 0;   // in co-op the server pays machines that work by themselves; only a driven one digs
-    const per = [0, 0, 0, 0, 0], f = bite(c, R, per), solidN = per.reduce((a, b) => a + b, 0);
+    const per = new Array(NM).fill(0), f = bite(c, R, per), solidN = per.reduce((a, b) => a + b, 0);
     if (f <= 0.001) return 0;
     const litres = f * 4 / 3 * Math.PI * R * R * R * 1000, k = litres / solidN;
-    let main = 0; for (let i = 1; i < 5; i++) if (per[i] > per[main]) main = i;
+    let main = 0; for (let i = 1; i < NM; i++) if (per[i] > per[main]) main = i;
     S.applyHole([c.x, c.y, c.z, R], W.addHole(c.x, c.y, c.z, R));
     if (ONLINE) netDig(c, R, drive ? drive.id : 'hand');
     S.burst(c.x, c.y, c.z, S.matColor(main), show ? 12 : 6, null, R * 4);
-    let got = 0; for (let i = 0; i < 5; i++) { got += per[i] * k * MATS[i].p * (MATS[i].ore ? lvl('ore') : 1); pl.earned[i] += per[i] * k; }
-    got *= lvl('scale'); pl.dug += litres / 1000; pl.sold += litres; dirty = true;
-    return { litres, got, main, oreL: (per[3] + per[4]) * k };
+    let got = 0; for (let i = 0; i < NM; i++) { got += per[i] * k * MATS[i].p * (MATS[i].ore ? lvl('ore') : 1); pl.earned[i] = (pl.earned[i] || 0) + per[i] * k; }
+    got *= lvl('scale') * (root.Progress ? Progress.incomeMul() : 1); if (root.Progress) Progress.onDig({ litres, per, k, depth: W.depthAt(c.x, c.y, c.z), c, main, got, tool: 'machine' }); pl.dug += litres / 1000; pl.sold += litres; dirty = true;
+    return { litres, got, main, oreL: (per[3] + per[4] + per[8]) * k };
   }
   function updateHeavy(dt) {
     for (const id of HEAVY_IDS) {
@@ -227,6 +236,28 @@
       const res = takeBite(c, H.r, false); if (res) { const k = has('truck') ? 2 : 1; pl.money += res.got * k; heavyPay += res.got * k; }
     }
     if ((heavyPayT += dt) > 8) { if (heavyPay > 0.01) floater('+$' + fmtMoney(heavyPay) + ' · ' + L.machines, 'ore'); heavyPay = 0; heavyPayT = 0; }
+  }
+  // the mine cage: from the headframe down to a gallery 120 m under it, and back up (R)
+  let inMine = false;
+  function mineSpot() { const M = S.heavy('shaft'); if (!M) return null; const u = M.pos.clone().normalize(); return { M, u, c: M.pos.clone().addScaledVector(u, -120) }; }
+  function nearCage() { if (!has('shaft') || drive) return false; const m = mineSpot(); if (!m) return false; return inMine ? pl.pos.distanceTo(m.c) < 9 : m.M.pos.distanceTo(pl.pos) < 26; }
+  function rideCage() {
+    if (ONLINE) { notice(L.cageSolo); return; }
+    const m = mineSpot(); if (!m) return;
+    if (!inMine) {
+      if (!pl.mine) {   // the gallery: a hall and four drifts into the rock
+        const side = new T.Vector3().crossVectors(m.u, Math.abs(m.u.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0)).normalize(), side2 = new T.Vector3().crossVectors(m.u, side);
+        const hs = [[m.c, 3.2]];
+        for (const d of [side, side.clone().negate(), side2, side2.clone().negate()]) for (let k = 1; k <= 5; k++) hs.push([m.c.clone().addScaledVector(d, k * 3.4).addScaledVector(m.u, -0.6), 2.1]);
+        for (const [p, r] of hs) S.applyHole([p.x, p.y, p.z, r], W.addHole(p.x, p.y, p.z, r));
+        pl.mine = true;
+      }
+      pl.pos.copy(m.c).addScaledVector(m.u, -2.6); inMine = true; notice(L.cageDown);
+    } else {
+      const side = new T.Vector3().crossVectors(m.u, Math.abs(m.u.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0)).normalize();
+      pl.pos.copy(S.groundBelow(m.M.pos.clone().addScaledVector(side, 20), 12)).addScaledVector(m.u, 0.05); inMine = false; notice(L.cageUp);
+    }
+    pl.vel.set(0, 0, 0); frame(); Sound.land(0.6); dirty = true;
   }
   function nearDrivable() {
     for (const id of ['exMini', 'exBig']) { const M = has(id) && S.heavy(id); if (M && M.pos.distanceTo(pl.pos) < 4 + 3 * M.scale) return id; }
@@ -335,7 +366,7 @@
   // ---------- shop (at the shack) ----------
   let shopOpen = false;
   function applyUpgrades() {
-    pl.tool = lvl('tool'); S.setTool(pl.tool);
+    pl.tool = lvl('tool'); S.setTool(pl.tool); S.setPumped(has('pump'));
     for (let i = 0; i < lvl('rigs'); i++) S.addMachine(i, lvl('rigLevel'));
     for (const id of HEAVY_IDS) if (has(id)) S.addHeavy(id, pl.machines && pl.machines[id]);
   }
@@ -411,6 +442,13 @@
       shopOpen = false; $('shop').hidden = true; playing = true; if (!TOUCH) lock();
     }
   }
+  // the book (progress.js): orders, museum, achievements, records, licences, new planet
+  let bookOpen = false;
+  function toggleBook(on) {
+    if (!root.Progress || on === bookOpen) return;
+    if (on) { if (!playing) return; bookOpen = true; playing = false; mouseDown = false; for (const k in keys) keys[k] = false; if (locked) { pausedByUs = true; document.exitPointerLock(); } Progress.show(true); }
+    else { bookOpen = false; Progress.show(false); playing = true; if (!TOUCH) lock(); }
+  }
   // automation: each rig bores under itself and the soil is paid for at once
   const rigs = [];
   function updateMachines(dt) {
@@ -445,11 +483,13 @@
     if (AD.open) { if (e.code === 'Escape' || e.code === 'Backquote') toggleAdmin(false); return; }
     if (e.code === 'Backquote' && !e.repeat && !loading) { toggleAdmin(true); e.preventDefault(); return; }
     if (shopOpen) { if (e.code === 'Escape' || e.code === 'KeyF') toggleShop(false); return; }
+    if (bookOpen) { if (e.code === 'Escape' || e.code === 'KeyJ') toggleBook(false); return; }
+    if (e.code === 'KeyJ' && playing && !e.repeat) { toggleBook(true); e.preventDefault(); return; }
     if (!playing) return;
     keys[e.code] = true;
     if (e.code === 'KeyF' && !e.repeat) toggleShop(true);
     if (e.code === 'KeyE' && !e.repeat) scan();
-    if (e.code === 'KeyR' && !e.repeat) toggleDrive();
+    if (e.code === 'KeyR' && !e.repeat) { if (nearCage()) rideCage(); else toggleDrive(); }
     if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   });
   addEventListener('keyup', e => { keys[e.code] = false; });
@@ -476,7 +516,7 @@
   let pausedByUs = false;
   document.addEventListener('pointerlockchange', () => {
     locked = document.pointerLockElement === canvas;
-    if (!locked && playing && !pausedByUs && !mapOpen && !shopOpen && !AD.open) pause(true);
+    if (!locked && playing && !pausedByUs && !mapOpen && !shopOpen && !bookOpen && !AD.open) pause(true);
     pausedByUs = false;
     $('clickHint').hidden = locked || !playing || TOUCH;
   });
@@ -540,8 +580,8 @@
     $('pct').textContent = pct === 0 ? '0 %' : pct.toExponential(2).replace('e', ' × 10^') + ' %';
     $('money').textContent = '$' + pl.money.toFixed(2);
     $('bShop').innerHTML = (TOUCH ? '' : '<b>F</b> ') + L.openShop;
-    const near = !drive && nearDrivable(); $('bDrive').hidden = !(near || drive);
-    if (!$('bDrive').hidden) $('bDrive').innerHTML = (TOUCH ? '' : '<b>R</b> ') + (drive ? L.getOut : L.getIn + ': ' + L.node[near][0]);
+    const cage = nearCage(), near = !drive && !cage && nearDrivable(); $('bDrive').hidden = !(near || drive || cage);
+    if (!$('bDrive').hidden) $('bDrive').innerHTML = (TOUCH ? '' : '<b>R</b> ') + (cage ? (inMine ? L.cageRideUp : L.cageRide) : drive ? L.getOut : L.getIn + ': ' + L.node[near][0]);
     $('bScan').hidden = !has('detector'); if (has('detector')) { $('bScan').innerHTML = (TOUCH ? '' : '<b>E</b> ') + L.scanB; $('bScan').classList.toggle('cool', scanCool > 0); }
     if (noticeT > 0 && (noticeT -= dt) <= 0) $('notice').hidden = true;
     geology(dt);
@@ -827,7 +867,7 @@
     if (ONLINE) { lsSet('endlessdigging.coop.pos', { site: [SITE_LAT, SITE_LON], pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch }); dirty = false; return; }
     const sp = holeBase(), hr = [];
     for (const h of W.holes) hr.push(Math.round((h[0] - sp.x) * 1000), Math.round((h[1] - sp.y) * 1000), Math.round((h[2] - sp.z) * 1000), Math.round(h[3] * 1000));
-    try { localStorage.setItem(SAVE, JSON.stringify({ hr, pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, open: pl.open, sold: pl.sold, earned: pl.earned, machines: machinePoses(), owned: [...owned], foundOre: !!pl.foundOre })); }
+    try { localStorage.setItem(SAVE, JSON.stringify({ hr, pos: pl.pos.toArray(), fwd: pl.fwd.toArray(), pitch: pl.pitch, dug: pl.dug, money: pl.money, open: pl.open, sold: pl.sold, earned: pl.earned, machines: machinePoses(), owned: [...owned], foundOre: !!pl.foundOre, time: pl.time, mine: !!pl.mine, gwSeen: !!pl.gwSeen })); }
     catch (e) { if (!saveWarned) { saveWarned = true; notice(L.saveFull); } }
     dirty = false;
   }
@@ -861,8 +901,8 @@
       const hb = holeBase(); if (saved.hr) for (let i = 0; i + 3 < saved.hr.length; i += 4) W.addHole(hb.x + saved.hr[i] / 1000, hb.y + saved.hr[i + 1] / 1000, hb.z + saved.hr[i + 2] / 1000, saved.hr[i + 3] / 1000);
       if (saved.open) pl.open = saved.open;
       pl.pos.fromArray(saved.pos); pl.fwd.fromArray(saved.fwd); pl.pitch = saved.pitch || 0; pl.dug = saved.dug || 0;
-      pl.machines = saved.machines || null;
-      pl.money = saved.money || 0; pl.sold = saved.sold || 0; pl.foundOre = !!saved.foundOre; pl.earned = saved.earned || [0, 0, 0, 0, 0];
+      pl.machines = saved.machines || null; pl.time = saved.time; pl.mine = saved.mine; pl.gwSeen = saved.gwSeen;
+      pl.money = saved.money || 0; pl.sold = saved.sold || 0; pl.foundOre = !!saved.foundOre; pl.earned = (saved.earned || []).concat(new Array(NM).fill(0)).slice(0, NM);
       // whatever was still in the old bucket is paid out now
       if (saved.mix) pl.money += saved.mix.reduce((a, l, i) => a + l * MATS[i].p, 0);
       const renamed = { help1: 'auto1', help2: 'auto2', help3: 'auto3', excavator: 'exMini' };   // helpers became rigs
@@ -886,6 +926,10 @@
     applyUpgrades();
     S.updateFar(pl.pos, true); S.updateDeco(pl.pos, true);
     MapV.init(S.renderer(), $('mapUI'), L); MapV.setOpen(pl.open);
+    if (pl.mine) { const m = mineSpot(); if (m && pl.pos.distanceTo(m.c) < 30) inMine = true; }
+    if (root.Progress) Progress.init({ L, pl, W, MATS, has, nameOf, notice, toast: (i, t, s2) => Progress.toast(i, t, s2), sound: n => Sound[n] && Sound[n](), online: () => ONLINE, admin: () => adminOK,
+      openCountry: id => { if (!pl.open.includes(id)) setOpen(pl.open.concat([id])); save(); }, travel: (la, lo) => teleport(la, lo), toggleBook,
+      newPlanet: () => { try { localStorage.removeItem(SAVE); } catch (e) {} skipSave = true; location.reload(); } });
     $('stats').hidden = !AD.stats; document.body.classList.toggle('noHud', !!AD.hideHud);
     addEventListener('resize', () => S.resize());
   }
@@ -895,7 +939,7 @@
   function fullscreen() { try { const d = document.documentElement, f = d.requestFullscreen || d.webkitRequestFullscreen; if (f && !document.fullscreenElement) { const r = f.call(d); if (r && r.catch) r.catch(() => {}); } } catch (e) {} }
   function setupTouch() {
     const tapBtn = (el, fn) => el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); fn(); });
-    tapBtn($('bShop'), () => toggleShop(true)); tapBtn($('bScan'), scan); tapBtn($('bDrive'), toggleDrive); tapBtn($('bMap'), () => { if (playing) toggleMap(); }); tapBtn($('mapClose'), () => { if (mapOpen) toggleMap(); });
+    tapBtn($('bShop'), () => toggleShop(true)); tapBtn($('bScan'), scan); tapBtn($('bDrive'), () => { if (nearCage()) rideCage(); else toggleDrive(); }); tapBtn($('bMap'), () => { if (playing) toggleMap(); }); tapBtn($('mapClose'), () => { if (mapOpen) toggleMap(); });
     if (!TOUCH) return;
     const base = $('stick'), knob = $('knob'), R = 56;
     canvas.addEventListener('pointerdown', e => {
@@ -974,7 +1018,7 @@
   function pause(on) { if (on) { playing = false; mouseDown = false; for (const k in keys) keys[k] = false; stick.id = lookT.id = null; stick.x = stick.y = 0; const sb = $('stick'); if (sb) sb.hidden = true; overlay('pause'); if (dirty) save(); } }
 
   // ---------- loop ----------
-  let terrT = 0, last = performance.now(), t = 0, loadDrawn = 0, chunksDone = false, loading = true, digT = 0, compiled = null, driveCamNow = null;
+  let clockT = 0, terrT = 0, last = performance.now(), t = 0, loadDrawn = 0, chunksDone = false, loading = true, digT = 0, compiled = null, driveCamNow = null;
   function loop(now) {
     if (root.__stopLoop) return;   // test tools take still frames themselves
     requestAnimationFrame(loop);
@@ -997,14 +1041,27 @@
       const tool = TOOLS[pl.tool];
       if (!drive && pl.dig < 0 && mouseDown && (locked || rmb || TOUCH)) { pl.dig = 0; pl.didHit = false; S.setSpoonFull(false); }
       if (pl.dig >= 0) {
-        const prev = pl.dig; pl.dig += dt / (tool.time * lvl('speed'));
+        const prev = pl.dig; pl.dig += dt / (TOOLS[pl.tool].time * lvl('speed') * (pl.wet ? 1.6 : 1));
         if (prev < 0.45 && pl.dig >= 0.45 && !pl.didHit) { pl.didHit = true; const h = rayHit(tool.reach + lvl('reach') + AD.reach); if (h) doDig(h); }
         if (pl.dig >= 1) { pl.dig = mouseDown ? 0 : -1; pl.didHit = false; if (mouseDown) S.setSpoonFull(false); }
       }
-      if (!drive && (digT += dt) > 0.08) { digT = 0; const ch = rayHit(tool.reach + lvl('reach') + AD.reach); $('cross').classList.toggle('hit', !!ch && !ch.obstacle); }
+      if (!drive && (digT += dt) > 0.08) {
+        digT = 0; const ch = rayHit(tool.reach + lvl('reach') + AD.reach); $('cross').classList.toggle('hit', !!ch && !ch.obstacle);
+        if (ch && !ch.obstacle && pl.dig < 0) {   // the right tool in hand for what you aim at
+          const q = ch.p.clone().addScaledVector(ch.d, 0.06), want = W.HARD[W.materialAt(q.x, q.y, q.z)] >= 3 && has('pick') ? 'pick' : lvl('tool');
+          if (want !== pl.tool) { pl.tool = want; S.setTool(want); }
+          // below the water table the ground is wet and heavy (a pump keeps the pit dry)
+          const alt = ch.p.length() - W.R, tab = W.waterTable(ch.p.x, ch.p.y, ch.p.z);
+          pl.wet = !has('pump') && alt < tab && alt > tab - 25;
+          if (pl.wet && !pl.gwSeen) { pl.gwSeen = true; notice(L.gwNotice); }
+        }
+      }
       S.updateChunks(pl.pos, 5); S.updateFar(pl.pos); S.updateDeco(pl.pos, false, 3);
       if ((saveT += dt) > 5 && dirty) { saveT = 0; save(); }
       updateMachines(dt); updateHeavy(dt); updateStats(dt); netTick(dt);
+      pl.time = ((pl.time === undefined ? 10 : pl.time) + dt * 24 / (20 * 60)) % 24;   // a game day lasts 20 minutes
+      if ((clockT += dt) > 0.5) { clockT = 0; S.setTime(pl.time); S.setUnder(W.depthAt(pl.pos.x, pl.pos.y, pl.pos.z) + 1.6); $('clock').textContent = String(Math.floor(pl.time)).padStart(2, '0') + ':' + String(Math.floor(pl.time % 1 * 60)).padStart(2, '0'); }
+      if (root.Progress) Progress.tick(dt, { walked: drive ? 0 : walk * RUN * dt, swim: (() => { const wl = S.waterLevel(pl.pos); return wl !== null && pl.pos.length() - W.R < wl - 0.9; })() });
       if ((terrT += dt) > 2) { terrT = 0; const ll = W.toLatLon(pl.pos.x, pl.pos.y, pl.pos.z); Terrain.watch(ll[0], ll[1]); } if (scanCool > 0) scanCool -= dt;
       if (has('bank') && !ONLINE && (pl.bankT = (pl.bankT || 0) + dt) >= 60) { pl.bankT = 0; const g2 = Math.min(10, pl.money * 0.01); pl.money += g2; floater('+$' + fmtMoney(g2) + ' · ' + L.interest); dirty = true; }
       hud(dt);
@@ -1063,7 +1120,7 @@
           return 'moved, money +' + (pl.money - m0).toFixed(2) + ', holes ' + W.holes.length;
         },
         driveDig() { mouseDown = true; locked = true; driveStep(0.05); mouseDown = false; for (let i = 0; i < 200 && drive.dig >= 0; i++) driveStep(0.05); locked = false; },   // test helper: one bucket stroke where the camera looks
-        frameInfo() { frame(); return { ru: right.dot(up), fu: pl.fwd.dot(up), d: S.debugDistant() }; },
+        nearCage, rideCage, frameInfo() { frame(); return { ru: right.dot(up), fu: pl.fwd.dot(up), d: S.debugDistant() }; },
         snapPose(pitch, info, n) { pl.pitch = pitch; for (let i = 0; i < (n || 1); i++) S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), Object.assign({ dig: -1, walk: 0, look }, info), 0.05, t += 0.05); return canvas.toDataURL('image/jpeg', 0.9); },   // test helper
         snapDrive(adv) { const c = driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); }, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach + lvl('reach') + AD.reach); return h ? doDig(h) : false; }, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },

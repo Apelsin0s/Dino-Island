@@ -10,7 +10,7 @@
     probe: 'tanah di bawah bidikan hingga 4 m', detector: 'bijih di sekitar hingga 12 m' },
   node: {
     spoon: ['Sendok', 'Semua dimulai di sini. Lubang kecil tiap ayunan.'], scoop: ['Sekop tangan', 'Sekop logam: dua kali lipat tanah tiap ayunan.'],
-    trowel: ['Sekop taman', 'Sekop runcing yang mudah masuk ke tanah liat.'], shovel: ['Sekop', 'Sekop sungguhan. Perlu lengan kuat.'], pick: ['Beliung', 'Memecah batu di bawah 16 m.'],
+    trowel: ['Sekop taman', 'Sekop runcing yang mudah masuk ke tanah liat.'], shovel: ['Sekop', 'Sekop sungguhan. Perlu lengan kuat.'], pick: ["Beliung", "Memecah batuan: batu kapur, granit, basal, dan bijih. Dipakai otomatis saat membidik batu."],
     arms1: ['Lengan kuat I', 'Ayunan 15% lebih cepat.'], arms2: ['Lengan kuat II', 'Lebih cepat lagi.'], arms3: ['Lengan kuat III', 'Kamu menggali seperti mesin.'],
     probe: ['Probe', 'Probe baja: menampilkan tanah di bawah bidikan sedalam 4 m.'], detector: ['Detektor logam', 'Tekan E: satu pindaian di sekitar — bijih dalam 8 m dan hingga 4 m ditandai beserta kedalamannya.'],
     detector2: ['Detektor kuat', 'Memindai 15 m di sekitar dan hingga 8 m.'], radar: ['Georadar', 'Peta bijih di bawah lahan.'],
@@ -27,7 +27,7 @@
     shaft: ['Menara tambang', 'Tambangmu sendiri: 200 L bijih per detik dari 400 m.'], superdeep: ['Sumur super dalam', 'Lebih dalam dari siapa pun pernah menggali.'],
     auto1: ['Bor engkol', 'Tripod dengan auger dekat gubuk: mengebor sendiri, uangnya untukmu.'], auto2: ['Bor bermotor', 'Motor di bor — dua kali lebih cepat, plus satu lagi.'], auto3: ['Bor ketiga', 'Satu lagi bor bermotor.']
   },
-  mat: ['tanah atas', 'tanah liat', 'granit', 'kuarsit magnetit', 'bijih hematit'], firstOre: 'Bijih! Bijih besi lebih mahal dari tanah',
+  mat: ['tanah atas', 'tanah liat', 'granit', 'kuarsit magnetit', 'bijih hematit', "pasir dan kerikil", "batu kapur", "basal", "batu bara"], firstOre: 'Bijih! Bijih besi lebih mahal dari tanah',
   probeL: 'Probe', detL: 'Detektor', noOre: 'tidak ada bijih', machines: 'alat berat', getIn: 'naik', getOut: 'turun',
   driveHint: 'WASD mengemudi, mouse melihat, klik kiri menggali dengan bucket, R turun', outReach: 'Bucket tidak sampai', interest: 'bunga',
   found: 'kantong ditemukan:', nearest: 'terdekat', scanB: 'pindai', ahead: 'di depan', behind: 'di belakang', leftS: 'di kiri', rightS: 'di kanan', depthL: 'kedalaman',
@@ -41,5 +41,6 @@
   N: 'LU', S: 'LS', E: 'BT', Wd: 'BB', planet: 'Planet Bumi · jari-jari 6.371 km · keliling 40.030 km', sign: ['TERIMA TANAH', '$0,10 per liter'],
   noDig: 'Tidak bisa menggali di sini', inWay: 'Ada batu atau pohon menghalangi', map: 'Peta dunia', mapHint: 'Seret untuk memutar · roda untuk zoom · M untuk menutup', mapTouch: 'Seret untuk memutar · dua jari untuk zoom',
   openPrefix: 'Terbuka', countriesN: 'negara', locked: 'Bagian dunia lainnya masih tertutup', here: 'Kamu di sini', resetAsk: 'Tekan lagi: lubang, uang, dan pembelian akan hilang',
-  dig: 'Gali', jumpB: 'Lompat', turn: 'Putar ponsel ke posisi mendatar, lebih nyaman', saveFull: 'Simpanan tidak lagi muat di browser'
+  dig: 'Gali', jumpB: 'Lompat', turn: 'Putar ponsel ke posisi mendatar, lebih nyaman', saveFull: 'Simpanan tidak lagi muat di browser',
+ "needPick": "Terlalu keras: batuan butuh beliung (riset F)"
 };

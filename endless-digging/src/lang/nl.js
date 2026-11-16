@@ -10,7 +10,7 @@
     probe: 'de grond onder het vizier tot 4 m', detector: 'erts rondom tot 12 m' },
   node: {
     spoon: ['Lepel', 'Hier begint alles. Een gaatje per slag.'], scoop: ['Handschep', 'Een metalen schep: twee keer zoveel grond per slag.'],
-    trowel: ['Plantschepje', 'Een puntig schepje dat makkelijk in klei gaat.'], shovel: ['Spade', 'Een echte spade. Je hebt sterke armen nodig.'], pick: ['Houweel', 'Breekt gesteente onder 16 m.'],
+    trowel: ['Plantschepje', 'Een puntig schepje dat makkelijk in klei gaat.'], shovel: ['Spade', 'Een echte spade. Je hebt sterke armen nodig.'], pick: ["Houweel", "Breekt gesteente: kalksteen, graniet, basalt en erts. Komt vanzelf tevoorschijn als je op steen richt."],
     arms1: ['Sterke armen I', 'Slagen 15 % sneller.'], arms2: ['Sterke armen II', 'Nog sneller.'], arms3: ['Sterke armen III', 'Je graaft als een machine.'],
     probe: ['Sonde', 'Een stalen sonde: toont de grond onder het vizier, 4 m diep.'], detector: ['Metaaldetector', 'Druk op E: één scan rondom — erts binnen 8 m en tot 4 m diep krijgt een markering met de diepte.'],
     detector2: ['Sterke detector', 'Scant 15 m rondom en tot 8 m diep.'], radar: ['Grondradar', 'Een ertskaart onder het perceel.'],
@@ -27,7 +27,7 @@
     shaft: ['Schachttoren', 'Je eigen mijn: 200 L erts per seconde van 400 m diep.'], superdeep: ['Superdiepe boring', 'Dieper dan iemand ooit groef.'],
     auto1: ['Slingerboor', 'Een driepoot met vijzel bij de hut: boort vanzelf, het geld is voor jou.'], auto2: ['Motorboor', 'Een motor op de boor — twee keer zo snel, plus een tweede.'], auto3: ['Derde boor', 'Nog een motorboor.']
   },
-  mat: ['teelaarde', 'klei', 'graniet', 'magnetietkwartsiet', 'hematieterts'], firstOre: 'Erts! IJzererts is meer waard dan grond',
+  mat: ['teelaarde', 'klei', 'graniet', 'magnetietkwartsiet', 'hematieterts', "zand en grind", "kalksteen", "basalt", "steenkool"], firstOre: 'Erts! IJzererts is meer waard dan grond',
   probeL: 'Sonde', detL: 'Detector', noOre: 'geen erts gevonden', machines: 'machines', getIn: 'instappen', getOut: 'uitstappen',
   driveHint: 'WASD rijden, muis kijken, linkermuisknop graven met de bak, R uitstappen', outReach: 'De bak kan er niet bij', interest: 'rente',
   found: 'nesten gevonden:', nearest: 'dichtstbij', scanB: 'scan', ahead: 'voor je', behind: 'achter je', leftS: 'links', rightS: 'rechts', depthL: 'diepte',
@@ -41,5 +41,6 @@
   N: 'N', S: 'Z', E: 'O', Wd: 'W', planet: 'Planeet Aarde · straal 6371 km · omtrek 40.030 km', sign: ['GROND GEZOCHT', '$0,10 per liter'],
   noDig: 'Hier kun je niet graven', inWay: 'Een steen of boom zit in de weg', map: 'Wereldkaart', mapHint: 'Slepen om te draaien · scrollwiel om te zoomen · M om te sluiten', mapTouch: 'Slepen om te draaien · twee vingers om te zoomen',
   openPrefix: 'Open', countriesN: 'landen', locked: 'De rest van de wereld is nog dicht', here: 'Je bent hier', resetAsk: 'Druk nog eens: kuilen, geld en aankopen gaan verloren',
-  dig: 'Graven', jumpB: 'Springen', turn: 'Draai je telefoon dwars, dat is makkelijker', saveFull: 'De opslag past niet meer in de browser'
+  dig: 'Graven', jumpB: 'Springen', turn: 'Draai je telefoon dwars, dat is makkelijker', saveFull: 'De opslag past niet meer in de browser',
+ "needPick": "Te hard: voor gesteente heb je een houweel nodig (onderzoek F)"
 };

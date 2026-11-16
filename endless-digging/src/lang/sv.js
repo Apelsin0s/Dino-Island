@@ -10,7 +10,7 @@
     probe: 'marken under siktet ned till 4 m', detector: 'malm runt omkring ned till 12 m' },
   node: {
     spoon: ['Sked', 'Här börjar allt. Ett litet hål per tag.'], scoop: ['Handskyffel', 'En metallskyffel: dubbelt så mycket jord per tag.'],
-    trowel: ['Planteringsspade', 'En spetsig spade som lätt går in i lera.'], shovel: ['Spade', 'En riktig spade. Kräver starka armar.'], pick: ['Hacka', 'Krossar berg under 16 m.'],
+    trowel: ['Planteringsspade', 'En spetsig spade som lätt går in i lera.'], shovel: ['Spade', 'En riktig spade. Kräver starka armar.'], pick: ["Hacka", "Bryter berg: kalksten, granit, basalt och malm. Tas fram av sig själv när du siktar på sten."],
     arms1: ['Starka armar I', 'Tagen 15 % snabbare.'], arms2: ['Starka armar II', 'Ännu snabbare.'], arms3: ['Starka armar III', 'Du gräver som en maskin.'],
     probe: ['Sond', 'En stålsond: visar marken under siktet, 4 m ned.'], detector: ['Metalldetektor', 'Tryck E: en skanning runt omkring — malm inom 8 m och ned till 4 m markeras med sitt djup.'],
     detector2: ['Kraftig detektor', 'Skannar 15 m runt omkring och ned till 8 m.'], radar: ['Markradar', 'En malmkarta under tomten.'],
@@ -27,7 +27,7 @@
     shaft: ['Gruvlave', 'Din egen gruva: 200 L malm per sekund från 400 m.'], superdeep: ['Superdjup borrning', 'Djupare än någon har grävt.'],
     auto1: ['Vevborr', 'Ett stativ med skruv vid stugan: borrar själv, pengarna är dina.'], auto2: ['Motorborr', 'En motor på borren — dubbelt så snabbt, och en till.'], auto3: ['Tredje borren', 'Ännu en motorborr.']
   },
-  mat: ['matjord', 'lera', 'granit', 'magnetitkvartsit', 'hematitmalm'], firstOre: 'Malm! Järnmalm är värd mer än jord',
+  mat: ['matjord', 'lera', 'granit', 'magnetitkvartsit', 'hematitmalm', "sand och grus", "kalksten", "basalt", "kol"], firstOre: 'Malm! Järnmalm är värd mer än jord',
   probeL: 'Sond', detL: 'Detektor', noOre: 'ingen malm hittad', machines: 'maskiner', getIn: 'kliv in', getOut: 'kliv ut',
   driveHint: 'WASD kör, musen tittar, vänsterklick gräver med skopan, R kliver ut', outReach: 'Skopan når inte', interest: 'ränta',
   found: 'fickor hittade:', nearest: 'närmast', scanB: 'skanna', ahead: 'framför', behind: 'bakom', leftS: 'till vänster', rightS: 'till höger', depthL: 'djup',
@@ -41,5 +41,6 @@
   N: 'N', S: 'S', E: 'Ö', Wd: 'V', planet: 'Planeten jorden · radie 6 371 km · omkrets 40 030 km', sign: ['JORD KÖPES', '$0,10 per liter'],
   noDig: 'Här går det inte att gräva', inWay: 'En sten eller ett träd är i vägen', map: 'Världskarta', mapHint: 'Dra för att vrida · hjulet för zoom · M för att stänga', mapTouch: 'Dra för att vrida · två fingrar för zoom',
   openPrefix: 'Öppet', countriesN: 'länder', locked: 'Resten av världen är stängd än så länge', here: 'Du är här', resetAsk: 'Tryck igen: gropar, pengar och köp försvinner',
-  dig: 'Gräv', jumpB: 'Hoppa', turn: 'Vänd telefonen på bredden, det är smidigare', saveFull: 'Sparfilen får inte längre plats i webbläsaren'
+  dig: 'Gräv', jumpB: 'Hoppa', turn: 'Vänd telefonen på bredden, det är smidigare', saveFull: 'Sparfilen får inte längre plats i webbläsaren',
+ "needPick": "För hårt: berg kräver en hacka (forskning F)"
 };

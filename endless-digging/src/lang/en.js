@@ -126,10 +126,7 @@
    "Shovel",
    "A real spade. Needs strong arms."
   ],
-  "pick": [
-   "Pickaxe",
-   "Breaks rock below 16 m."
-  ],
+  "pick": ["Pickaxe", "Breaks rock: limestone, granite, basalt and ore. Taken out by itself when you aim at stone."],
   "arms1": [
    "Strong arms I",
    "Strokes 15 % faster."
@@ -265,15 +262,14 @@
   "auto3": [
    "Third rig",
    "One more motor drill."
-  ]
+  ], "pump": ["Water pump", "Keeps your pits dry below the water table: no flooding, no wet slow digging."]
  },
  "mat": [
   "topsoil",
   "clay",
   "granite",
   "magnetite quartzite",
-  "hematite ore"
- ],
+  "hematite ore", "sand and gravel", "limestone", "basalt", "coal"],
  "firstOre": "Ore! Iron ore is worth more than soil",
  "probeL": "Probe",
  "detL": "Detector",
@@ -352,5 +348,7 @@
  "turn": "Turn your phone sideways for a better view",
  "openPrefix": "Open",
  "countriesN": "countries",
- "net": {"solo": "Solo", "coop": "Co-op", "name": "Name", "online": "Online: one shared Earth for everyone. Enter opens the chat.", "offline": "The server cannot be reached — playing solo.", "chatPh": "Say something… (Enter to send)", "chatBtn": "Chat", "lost": "Connection lost, reconnecting…", "back": "Back online", "refused": {"tool": "The server did not accept this tool", "fast": "Too fast for the server", "far": "Too far for the server"}, "kick": {"banned": "You are banned from co-op.", "version": "Please update the game to play co-op.", "signin": "Could not sign in to co-op.", "full": "The server is full, please try again later.", "elsewhere": "You signed in from another place.", "kicked": "You were removed from the server.", "offline": "The server cannot be reached — playing solo."}, "sys": {"slow": "Not so fast.", "repeat": "You just said that.", "muted": "Your chat is off for {0} min.", "autoMuted": "Your chat is off for {0} min because of bad words.", "hidden": "The filter hid your message.", "unknownCmd": "Unknown command.", "noPlayer": "No such player nearby.", "reported": "Thank you, the report was sent.", "done": "Done.", "announce": "Announcement: {0}", "who": "{0}"}}
+ "net": {"solo": "Solo", "coop": "Co-op", "name": "Name", "online": "Online: one shared Earth for everyone. Enter opens the chat.", "offline": "The server cannot be reached — playing solo.", "chatPh": "Say something… (Enter to send)", "chatBtn": "Chat", "lost": "Connection lost, reconnecting…", "back": "Back online", "refused": {"tool": "The server did not accept this tool", "fast": "Too fast for the server", "far": "Too far for the server"}, "kick": {"banned": "You are banned from co-op.", "version": "Please update the game to play co-op.", "signin": "Could not sign in to co-op.", "full": "The server is full, please try again later.", "elsewhere": "You signed in from another place.", "kicked": "You were removed from the server.", "offline": "The server cannot be reached — playing solo."}, "sys": {"slow": "Not so fast.", "repeat": "You just said that.", "muted": "Your chat is off for {0} min.", "autoMuted": "Your chat is off for {0} min because of bad words.", "hidden": "The filter hid your message.", "unknownCmd": "Unknown command.", "noPlayer": "No such player nearby.", "reported": "Thank you, the report was sent.", "done": "Done.", "announce": "Announcement: {0}", "who": "{0}"}},
+ "needPick": "Too hard: rock needs a pickaxe (research F)", "pg": {"book": "Book", "tabs": {"orders": "Orders", "museum": "Museum", "ach": "Achievements", "records": "Records", "licences": "Licences", "planet": "New planet"}, "ordersSub": "Buyers in town want these. Finish one and collect the pay.", "oMat": "Dig {0} L of {1}", "oDepth": "Reach a depth of {0} m", "oFind": "Find {0} things in the ground", "oStrokes": "Make {0} strokes", "claim": "Collect", "orderDone": "Order done", "coopNote": "In co-op the server keeps the money: orders and finds count for records and achievements.", "museumSub": "Your museum: {0} of {1} finds. Every new piece adds {2} % to all income. Duplicates go to the dealer.", "depthRange": "at {0}-{1} m", "newFind": "A find", "findAgain": "Another one", "toMuseum": "To the museum", "achSub": "{0} of {1} achievements", "achGot": "Achievement", "rec": {"litres": "Dug in all", "depth": "Deepest", "earned": "Earned", "strokes": "Strokes", "finds": "Finds", "orders": "Orders done", "walked": "Walked", "time": "Time played", "planets": "Planets", "licences": "Countries open"}, "licSub": "Buy a licence to dig in another country, then travel there. Each new licence costs more.", "travel": "Travel", "needLicence": "No licence to dig in {0} (book J, Licences)", "planetText": "Start again on a new planet: from a spoon, without money and research, but the museum and achievements stay and all income grows by half for good. Planets so far: {0}. Bonus now: +{1} %.", "planetNeed": "Opens after $1 000 000 earned or a depth of 100 m.", "planetGo": "Go to a new planet", "planetSure": "Press again: everything on this planet is left behind", "planetCoop": "Only in solo play.", "finds": {"horseshoe": "Old horseshoe", "coin": "Old coin", "shard": "Pottery shard", "pipe": "Cossack pipe", "arrow": "Scythian arrowhead", "figurine": "Trypillia figurine", "amphora": "Greek amphora", "romancoin": "Roman denarius", "handaxe": "Stone hand axe", "tusk": "Mammoth tusk", "amber": "Amber", "nugget": "Gold nugget", "ammonite": "Ammonite", "fish": "Fossil fish", "trilobite": "Trilobite", "dino": "Dinosaur bone", "fern": "Fern imprint", "quartz": "Quartz crystal", "garnet": "Garnet", "geode": "Amethyst geode", "obsidian": "Obsidian", "magnetite": "Magnetite crystal", "meteorite": "Meteorite", "diamond": "Diamond"}, "ach": {"firstDig": ["First stroke", "Dig anything"], "litre": ["A litre", "Dig 1 litre"], "bucket": ["A bathful", "Dig 100 litres"], "cube": ["A cubic metre", "Dig 1 m³"], "cube10": ["A small pond", "Dig 10 m³"], "cube100": ["A swimming pool", "Dig 100 m³"], "deep2": ["Knee deep", "Reach 2 m"], "deep5": ["Out of sight", "Reach 5 m"], "deep10": ["Ten metres down", "Reach 10 m"], "deep20": ["Into the rock", "Reach 20 m"], "deep50": ["Mine shaft", "Reach 50 m"], "deep100": ["Hundred metres", "Reach 100 m"], "ore": ["Iron!", "Dig ore"], "coal": ["Black gold", "Dig coal"], "rock": ["Stonebreaker", "Dig rock"], "shovel": ["A real spade", "Get the spade"], "pick": ["Pickaxe", "Get the pickaxe"], "machine": ["Driver", "Get an excavator"], "shaft": ["Mine owner", "Build a mine"], "find1": ["Lucky", "Make a find"], "find10": ["Collector", "10 different finds"], "findAll": ["Curator", "Every find"], "money100": ["First hundred", "Earn $100"], "money10k": ["Business", "Earn $10 000"], "money1m": ["Millionaire", "Earn $1 000 000"], "order1": ["Supplier", "Finish an order"], "order10": ["Reliable", "Finish 10 orders"], "order50": ["Contractor", "Finish 50 orders"], "licence": ["Abroad", "Buy a licence"], "swim": ["Swimmer", "Swim"], "walk10": ["Wanderer", "Walk 10 km"], "planet": ["New world", "Go to a new planet"]}},
+ "gwNotice": "Groundwater! A pit below the water table fills with water and digs slower. A pump keeps it dry (research F).", "cageRide": "ride the cage down", "cageRideUp": "ride the cage up", "cageDown": "The mine, 120 m down. R near the cage takes you back up.", "cageUp": "Back on the surface", "cageSolo": "The mine cage works in solo play for now"
 };

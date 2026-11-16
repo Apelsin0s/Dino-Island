@@ -10,7 +10,7 @@
     probe: 'el suelo bajo la mira hasta 4 m', detector: 'mineral alrededor hasta 12 m' },
   node: {
     spoon: ['Cuchara', 'Aquí empieza todo. Un hoyito por golpe.'], scoop: ['Pala de mano', 'Una pala metálica: el doble de tierra por golpe.'],
-    trowel: ['Paleta de jardín', 'Una paleta afilada que entra fácil en la arcilla.'], shovel: ['Pala', 'Una pala de verdad. Hacen falta brazos fuertes.'], pick: ['Pico', 'Rompe la roca por debajo de 16 m.'],
+    trowel: ['Paleta de jardín', 'Una paleta afilada que entra fácil en la arcilla.'], shovel: ['Pala', 'Una pala de verdad. Hacen falta brazos fuertes.'], pick: ["Pico", "Rompe la roca: caliza, granito, basalto y mineral. Se usa solo cuando apuntas a la piedra."],
     arms1: ['Brazos fuertes I', 'Golpes un 15 % más rápidos.'], arms2: ['Brazos fuertes II', 'Aún más rápidos.'], arms3: ['Brazos fuertes III', 'Cavas como una máquina.'],
     probe: ['Sonda', 'Una sonda de acero: muestra el suelo bajo la mira, 4 m hacia abajo.'], detector: ['Detector de metales', 'Pulsa E: un escaneo alrededor — el mineral a 8 m y hasta 4 m de profundidad se marca con su profundidad.'],
     detector2: ['Detector potente', 'Escanea 15 m alrededor y hasta 8 m de profundidad.'], radar: ['Georradar', 'Un mapa del mineral bajo el terreno.'],
@@ -27,7 +27,7 @@
     shaft: ['Castillete de mina', 'Tu propia mina: 200 L de mineral por segundo desde 400 m.'], superdeep: ['Pozo superprofundo', 'Más hondo de lo que nadie ha cavado.'],
     auto1: ['Perforadora de manivela', 'Un trípode con barrena junto a la caseta: perfora solo y el dinero es tuyo.'], auto2: ['Perforadora a motor', 'Un motor en la perforadora: el doble de rápido y una segunda máquina.'], auto3: ['Tercera perforadora', 'Otra perforadora a motor.']
   },
-  mat: ['tierra vegetal', 'arcilla', 'granito', 'cuarcita de magnetita', 'mineral de hematites'], firstOre: '¡Mineral! El mineral de hierro vale más que la tierra',
+  mat: ['tierra vegetal', 'arcilla', 'granito', 'cuarcita de magnetita', 'mineral de hematites', "arena y grava", "caliza", "basalto", "carbón"], firstOre: '¡Mineral! El mineral de hierro vale más que la tierra',
   probeL: 'Sonda', detL: 'Detector', noOre: 'no se encontró mineral', machines: 'maquinaria', getIn: 'subir', getOut: 'bajar',
   driveHint: 'WASD para conducir, ratón para mirar, clic izquierdo para cavar con el cazo, R para bajar', outReach: 'El cazo no llega', interest: 'intereses',
   found: 'bolsas encontradas:', nearest: 'la más cercana', scanB: 'escaneo', ahead: 'delante', behind: 'detrás', leftS: 'a la izquierda', rightS: 'a la derecha', depthL: 'profundidad',
@@ -41,5 +41,6 @@
   N: 'N', S: 'S', E: 'E', Wd: 'O', planet: 'Planeta Tierra · radio 6371 km · circunferencia 40 030 km', sign: ['SE COMPRA TIERRA', '0,10 $ el litro'],
   noDig: 'Aquí no se puede cavar', inWay: 'Una roca o un árbol estorba', map: 'Mapa del mundo', mapHint: 'Arrastra para girar · rueda para hacer zoom · M para cerrar', mapTouch: 'Arrastra para girar · dos dedos para hacer zoom',
   openPrefix: 'Abierto', countriesN: 'países', locked: 'El resto del mundo aún está cerrado', here: 'Estás aquí', resetAsk: 'Pulsa otra vez: se perderán hoyos, dinero y compras',
-  dig: 'Cavar', jumpB: 'Saltar', turn: 'Gira el móvil en horizontal, es más cómodo', saveFull: 'La partida ya no cabe en el navegador'
+  dig: 'Cavar', jumpB: 'Saltar', turn: 'Gira el móvil en horizontal, es más cómodo', saveFull: 'La partida ya no cabe en el navegador',
+ "needPick": "Demasiado duro: la roca necesita un pico (investigación F)"
 };

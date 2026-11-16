@@ -10,7 +10,7 @@
     probe: 'den Boden unter dem Fadenkreuz bis 4 m', detector: 'Erz ringsum bis 12 m' },
   node: {
     spoon: ['Löffel', 'Hier fängt alles an. Ein kleines Loch pro Schlag.'], scoop: ['Handschaufel', 'Eine Metallschaufel: doppelt so viel Erde pro Schlag.'],
-    trowel: ['Pflanzkelle', 'Eine spitze Kelle, die leicht in Lehm geht.'], shovel: ['Spaten', 'Ein echter Spaten. Braucht starke Arme.'], pick: ['Spitzhacke', 'Bricht Gestein unter 16 m.'],
+    trowel: ['Pflanzkelle', 'Eine spitze Kelle, die leicht in Lehm geht.'], shovel: ['Spaten', 'Ein echter Spaten. Braucht starke Arme.'], pick: ["Spitzhacke", "Bricht Gestein: Kalkstein, Granit, Basalt und Erz. Kommt von selbst zum Einsatz, wenn du auf Stein zielst."],
     arms1: ['Starke Arme I', 'Schläge 15 % schneller.'], arms2: ['Starke Arme II', 'Noch schneller.'], arms3: ['Starke Arme III', 'Du gräbst wie eine Maschine.'],
     probe: ['Sonde', 'Eine Stahlsonde: zeigt den Boden unter dem Fadenkreuz, 4 m tief.'], detector: ['Metalldetektor', 'Drück E: ein Scan ringsum — Erz in 8 m Umkreis und bis 4 m Tiefe wird mit seiner Tiefe markiert.'],
     detector2: ['Starker Detektor', 'Scannt 15 m ringsum und bis 8 m tief.'], radar: ['Bodenradar', 'Eine Erzkarte unter dem Grundstück.'],
@@ -27,7 +27,7 @@
     shaft: ['Förderturm', 'Deine eigene Mine: 200 L Erz pro Sekunde aus 400 m Tiefe.'], superdeep: ['Superbohrung', 'Tiefer, als je jemand gegraben hat.'],
     auto1: ['Kurbelbohrer', 'Ein Dreibein mit Schnecke an der Hütte: bohrt von selbst, das Geld gehört dir.'], auto2: ['Motorbohrer', 'Ein Motor am Bohrer — doppelt so schnell, dazu eine zweite Anlage.'], auto3: ['Dritte Anlage', 'Noch ein Motorbohrer.']
   },
-  mat: ['Mutterboden', 'Lehm', 'Granit', 'Magnetitquarzit', 'Hämatiterz'], firstOre: 'Erz! Eisenerz ist mehr wert als Erde',
+  mat: ['Mutterboden', 'Lehm', 'Granit', 'Magnetitquarzit', 'Hämatiterz', "Sand und Kies", "Kalkstein", "Basalt", "Kohle"], firstOre: 'Erz! Eisenerz ist mehr wert als Erde',
   probeL: 'Sonde', detL: 'Detektor', noOre: 'kein Erz gefunden', machines: 'Maschinen', getIn: 'einsteigen', getOut: 'aussteigen',
   driveHint: 'WASD fahren, Maus schauen, LMT mit der Schaufel graben, R aussteigen', outReach: 'Die Schaufel reicht nicht so weit', interest: 'Zinsen',
   found: 'Nester gefunden:', nearest: 'nächstes', scanB: 'Scan', ahead: 'vorn', behind: 'hinten', leftS: 'links', rightS: 'rechts', depthL: 'Tiefe',
@@ -41,5 +41,6 @@
   N: 'N', S: 'S', E: 'O', Wd: 'W', planet: 'Planet Erde · Radius 6.371 km · Umfang 40.030 km', sign: ['ERDE GESUCHT', '$0.10 pro Liter'],
   noDig: 'Hier kann man nicht graben', inWay: 'Ein Stein oder Baum ist im Weg', map: 'Weltkarte', mapHint: 'Ziehen zum Drehen · Mausrad zum Zoomen · M zum Schließen', mapTouch: 'Ziehen zum Drehen · zwei Finger zum Zoomen',
   openPrefix: 'Offen', countriesN: 'Länder', locked: 'Der Rest der Welt ist noch gesperrt', here: 'Du bist hier', resetAsk: 'Nochmal drücken: Gruben, Geld und Käufe gehen verloren',
-  dig: 'Graben', jumpB: 'Springen', turn: 'Dreh das Handy quer — so ist es bequemer', saveFull: 'Der Spielstand passt nicht mehr in den Browser'
+  dig: 'Graben', jumpB: 'Springen', turn: 'Dreh das Handy quer — so ist es bequemer', saveFull: 'Der Spielstand passt nicht mehr in den Browser',
+ "needPick": "Zu hart: für Gestein brauchst du eine Spitzhacke (Forschung F)"
 };

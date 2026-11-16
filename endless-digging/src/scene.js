@@ -10,7 +10,7 @@
   const col = h => new T.Color(h);
 
   const Scene = {};
-  let renderer, composer, gtao, bloom, scene, camera, handScene, handCam, handSun, sun, sky, envTex = null, farScene, farCam, farSun;
+  let lamp = null, renderer, composer, gtao, bloom, scene, camera, handScene, handCam, handSun, sun, sky, envTex = null, farScene, farCam, farSun;
   const O = v3(0, 0, 0);                         // floating origin (planet metres)
   const up = v3(0, 1, 0), sunDir = v3(0, 1, 0);
   const timeU = { value: 0 };
@@ -48,13 +48,17 @@
   }
   Scene.groundColor = groundColor;
   // colours of the materials (0 topsoil, 1 clay, 2 granite, 3 magnetite quartzite, 4 hematite ore), with their natural texture
-  const MC = [col(V.soil[0]), col('#b9733f'), col('#b8a49a'), col('#3a404b'), col('#8a2e22')], MC2 = [col(V.soil[1]), col('#c98a52'), col('#d6c4bb'), col('#8c96a5'), col('#b5523a')];
+  const MC = [col(V.soil[0]), col('#b9733f'), col('#b8a49a'), col('#3a404b'), col('#8a2e22'), col('#c9a66b'), col('#d8d0b8'), col('#2e3034'), col('#17181b')],
+    MC2 = [col(V.soil[1]), col('#c98a52'), col('#d6c4bb'), col('#8c96a5'), col('#b5523a'), col('#e6cf9a'), col('#ece6d2'), col('#4a4d54'), col('#33363b')];
   function matColor(id, x, y, z, out) {
     out = out || new T.Color();
     const l = Math.hypot(x, y, z), r = (x * x + y * y + z * z) ** 0.5;
     let k = 0.5 + 0.5 * W.noise(x / 0.9, y / 0.9, z / 0.9, 7);
     if (id === 3 || id === 4) k = 0.5 + 0.5 * Math.sin(l * 42 + W.noise(x / 0.6, y / 0.6, z / 0.6, 11) * 5);   // thin ore and quartz layers
     if (id === 2) k = W.hash01(Math.floor(x / 0.03), Math.floor(y / 0.03), Math.floor(z / 0.03)) > 0.8 ? 0.9 : 0.25;   // speckled granite
+    if (id === 5) k = W.hash01(Math.floor(x / 0.02), Math.floor(y / 0.02), Math.floor(z / 0.02));                       // gravel grains
+    if (id === 6) k = 0.5 + 0.5 * Math.sin(l * 9 + W.noise(x / 2, y / 2, z / 2, 13) * 2);                               // limestone beds
+    if (id === 8) k = 0.5 + 0.5 * Math.sin(l * 60);                                                                       // shiny coal layers
     return out.copy(MC[id]).lerp(MC2[id], k);
   }
   Scene.matColor = (id) => MC[id].clone().lerp(MC2[id], 0.4);
@@ -86,7 +90,7 @@
   }
   // after a long trip (teleport): sky, sun and ground patterns follow the player; the start site stays where it is
   Scene.shadeAt = function (p, fwd) {
-    shadeFrame(p, fwd);
+    shadeFrame(p, fwd); if (sky) applyDay();
     if (sun) sun.position.copy(sunDir).multiplyScalar(100);
     if (handSun) handSun.position.copy(sunDir); if (farSun) farSun.position.copy(sunDir);
     if (renderer) buildEnv();
@@ -201,10 +205,10 @@
   // ---------- sky ----------
   function skyMaterial(disc) {
     return new T.ShaderMaterial({
-      uniforms: { uLF, uZen: U(col(V.sky.zen)), uHor: U(col(V.sky.hor)), uGround: U(col(V.sky.ground)), uSun: U(v3(V.sun[0], V.sun[1], V.sun[2]).normalize()), uSunCol: U(col(V.sunColor)), uDisc: U(disc ? 1 : 0), uDesat: U(disc ? 0 : V.skyDesat), uMoonOn: U(disc ? 1 : 0), uMoon: U(v3(V.moon[0], V.moon[1], V.moon[2]).normalize()) },
+      uniforms: { uLF, uZen: U(col(V.sky.zen)), uHor: U(col(V.sky.hor)), uGround: U(col(V.sky.ground)), uSun: U(v3(V.sun[0], V.sun[1], V.sun[2]).normalize()), uSunCol: U(col(V.sunColor)), uDisc: U(disc ? 1 : 0), uDesat: U(disc ? 0 : V.skyDesat), uMoonOn: U(disc ? 1 : 0), uMoon: U(v3(V.moon[0], V.moon[1], V.moon[2]).normalize()), uNight: U(0) },
       side: T.BackSide, depthWrite: false, fog: false,
       vertexShader: 'uniform mat3 uLF; varying vec3 vDir; void main(){ vDir = uLF * position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position, 1.0); gl_Position.z = gl_Position.w; }',
-      fragmentShader: `uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uGround; uniform vec3 uSun; uniform vec3 uSunCol; uniform float uDisc; uniform float uDesat; uniform float uMoonOn; uniform vec3 uMoon; varying vec3 vDir;
+      fragmentShader: `uniform vec3 uZen; uniform vec3 uHor; uniform vec3 uGround; uniform vec3 uSun; uniform vec3 uSunCol; uniform float uDisc; uniform float uDesat; uniform float uMoonOn; uniform vec3 uMoon; uniform float uNight; varying vec3 vDir;
         float h2(vec2 p){ p = fract(p*vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y)*p.x); }
         float n2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0 - 2.0*f); return mix(mix(h2(i), h2(i + vec2(1.0, 0.0)), f.x), mix(h2(i + vec2(0.0, 1.0)), h2(i + vec2(1.0, 1.0)), f.x), f.y); }
         float fb(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a*n2(p); p = p*2.03 + vec2(17.1, 9.3); a *= 0.5; } return s; }
@@ -222,6 +226,10 @@
             float lit = smoothstep(-0.06, 0.06, dot(v, s2) + 0.5*sqrt(max(0.0, 1.0 - r2)));
             vec3 mc = mix(vec3(0.96, 0.97, 1.0), vec3(0.80, 0.85, 0.95), smoothstep(0.42, 0.62, fb(v.xy*2.3 + v.z*1.7 + 4.0)));
             c = mix(c, mc, disc2*lit*0.62*step(0.0, m));
+          }
+          if (uNight > 0.01 && h > 0.0) {   // stars
+            vec2 sp = vec2(atan(d.z, d.x)*140.0, asin(clamp(d.y, -1.0, 1.0))*140.0); float st = h2(floor(sp));
+            c += vec3(0.85, 0.9, 1.0)*step(0.9965, st)*uNight*smoothstep(0.0, 0.15, h)*(0.5 + 0.5*h2(floor(sp) + 3.1));
           }
           c = mix(c, vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))), uDesat);
           gl_FragColor = vec4(c, 1.0); }`
@@ -263,6 +271,8 @@
     sky = new T.Mesh(new T.SphereGeometry(20000, 48, 24), skyMaterial(true));
     sky.frustumCulled = false; sky.renderOrder = -10; farScene.add(sky);
     farSun = new T.DirectionalLight(col(V.sunColor), V.sunI); farSun.position.copy(sunDir); farScene.add(farSun);
+    // a lamp on the helmet: lights the way at night and under ground (always there, off by intensity: no shader rebuilds)
+    lamp = new T.SpotLight(col('#fff1d8'), 0, 45, 0.62, 0.55, 1.4); lamp.position.set(0.15, 0.1, 0); camera.add(lamp); camera.add(lamp.target); lamp.target.position.set(0, -0.6, -6);
 
     // first-person hand lives in its own scene (never clips into walls), lit by the same sun and sky
     handScene = new T.Scene();
@@ -567,11 +577,31 @@
     const l = p.length(), lat = Math.asin(p.y / l) * 57.29578, lon = Math.atan2(-p.z, p.x) * 57.29578;
     W.waterAt(lat, lon, WQ);
     if (WQ.lf > 0.6) return WQ.ll;
+    if (!GW.pumped) { const tab = W.waterTable(p.x, p.y, p.z), alt = l - W.R; if (alt < tab && alt > tab - 25) return tab; }   // a pit below the water table fills up
     if (WQ.rd < WQ.rw * 0.5) return WQ.rl;
     if (root.Biome && Biome.water(lat, lon) > 0.12) return seaLevelAt(lat, lon);
     return null;
   };
   Scene.inSea = p => Scene.waterLevel(p) !== null;
+  // groundwater: a water sheet at the water table around you; the ground hides it except where it is dug open
+  const GW = { pumped: false, mesh: null, at: null };
+  Scene.setPumped = on => { GW.pumped = on; if (GW.mesh) GW.mesh.visible = !on; };
+  GW.update = function (p) {
+    if (this.pumped) return;
+    if (this.at && this.at.distanceTo(p) < 15) return;
+    this.at = p.clone();
+    const b = ringBasis(p), N = 26, half = 45, o = O.clone(), pos = [], col = [], idx = [];
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const q = b.u.clone().multiplyScalar(p.length()).addScaledVector(b.e1, -half + i * half * 2 / (N - 1)).addScaledVector(b.e2, -half + j * half * 2 / (N - 1));
+      const tab = W.waterTable(q.x, q.y, q.z); q.setLength(W.R + tab);
+      pos.push(q.x - o.x, q.y - o.y, q.z - o.z); col.push(0.18, 0.3, 0.26, 0.92);
+    }
+    for (let j = 0; j < N - 1; j++) for (let i = 0; i < N - 1; i++) { const a = j * N + i; idx.push(a, a + N, a + 1, a + 1, a + N, a + N + 1); }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3)); g.setAttribute('color', new T.BufferAttribute(new Float32Array(col), 4)); g.setIndex(idx);
+    const nr = new Float32Array(pos.length); for (let k = 0; k < pos.length; k += 3) { const x = pos[k] + o.x, y = pos[k + 1] + o.y, z = pos[k + 2] + o.z, l = Math.hypot(x, y, z); nr[k] = x / l; nr[k + 1] = y / l; nr[k + 2] = z / l; } g.setAttribute('normal', new T.BufferAttribute(nr, 3));
+    if (this.mesh) { this.mesh.geometry.dispose(); this.mesh.geometry = g; } else { this.mesh = new T.Mesh(g, Sea.mat()); this.mesh.renderOrder = 2; scene.add(this.mesh); }
+    this.mesh.position.set(o.x - O.x, o.y - O.y, o.z - O.z); this.mesh.userData.o = o;
+  };
   // ---------- lakes and rivers near you: a lake sheet at its level, ribbons along the rivers ----------
   const Inland = { mesh: null, at: null };
   Inland.build = function (p) {
@@ -1090,7 +1120,7 @@
       this.tools = { spoon: { meshes: [spoon], soil: soil } };
       const wood = std({ color: col('#b07a45'), roughness: 0.6 }), steelD = MAT.steel.clone(); steelD.side = T.DoubleSide;
       const lump = new T.SphereGeometry(1, 20, 12); lump.scale(1, 0.45, 1.3);
-      for (const [k, geo, sp2] of [['scoop', A.scoop(), [0, 0.016, -0.165, 0.038]], ['trowel', A.trowel(), [0, 0.02, -0.17, 0.034]], ['shovel', A.shovel(), [-0.03, 0, -0.64, 0.085]]]) {
+      for (const [k, geo, sp2] of [['scoop', A.scoop(), [0, 0.016, -0.165, 0.038]], ['trowel', A.trowel(), [0, 0.02, -0.17, 0.034]], ['shovel', A.shovel(), [-0.03, 0, -0.64, 0.085]], ['pick', A.pick(), [0, 0, -0.5, 0.001]]]) {
         const ms = [new T.Mesh(geo.metal, steelD), new T.Mesh(geo.wood, wood)], so = new T.Mesh(lump, MAT.soilObj);
         so.position.set(sp2[0], sp2[1], sp2[2]); so.scale.multiplyScalar(sp2[3]);
         for (const m of ms.concat([so])) { m.frustumCulled = false; m.visible = false; this.hand.add(m); }
@@ -1115,7 +1145,7 @@
       for (const n in this.tools) { const tl = this.tools[n]; for (const m of tl.meshes) m.visible = n === k; tl.soil.visible = false; }
       this.tool = k; this.soil = this.tools[k].soil;
       // the spade points ahead and down, the hand tools keep the spoon's pose
-      if (k === 'shovel') this.pose(v3(-0.3, -0.45, -0.84), v3(0.28, -0.13, -0.42), v3(0.1, -1, 0.5)); else this.pose(v3(-0.25, 0.85, -0.46), v3(0.185, -0.160, -0.45));
+      if (k === 'shovel' || k === 'pick') this.pose(v3(-0.3, -0.45, -0.84), v3(0.28, -0.13, -0.42), v3(0.1, -1, 0.5)); else this.pose(v3(-0.25, 0.85, -0.46), v3(0.185, -0.160, -0.45));
       Shadow.setTool(this.hand.quaternion, k === 'spoon' ? null : this.tools[k].metalGeo);
     },
     setContainer(scale) { this.bucketScale = scale; this.bucket.scale.setScalar(0.95 * scale); },
@@ -1214,6 +1244,34 @@
     }
   };
 
+
+  // ---------- day and night, and darkness under ground ----------
+  // The sun goes round once per game day; its height gives the light, the sky colours, stars and the moon at night.
+  // Under ground (deep in a pit or a mine) the daylight fades and the helmet lamp comes on.
+  const DAY = { h: 10, under: 0, sunL: v3(0, 1, 0), day: 1 };
+  const SKYD = { zen: col(V.sky.zen), hor: col(V.sky.hor) }, SKYN = { zen: col('#050b1c'), hor: col('#1b2a4a') }, DUSK = col('#ff9b5a'), FOGN = col('#0e1a30'), FOGD = col(V.fog[0]);
+  function applyDay() {
+    if (!sun) return;
+    const h = DAY.h, el = Math.sin((h - 6) / 12 * Math.PI) * 0.95 - 0.05, az = (h / 24) * Math.PI * 2 + 0.6;
+    const sl = v3(Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az)).normalize(); DAY.sunL.copy(sl);
+    const dn = Math.max(0, Math.min(1, (sl.y + 0.08) / 0.28)), dusk = Math.max(0, 1 - Math.abs(sl.y) / 0.22) * (sl.y > -0.1 ? 1 : 0), u = DAY.under;
+    DAY.day = dn;
+    sunDir.copy(toWorld(sl.x, sl.y, sl.z)).normalize();
+    sun.position.copy(sunDir).multiplyScalar(100); if (handSun) handSun.position.copy(sunDir); if (farSun) farSun.position.copy(sunDir);
+    const li = dn * (1 - 0.94 * u);
+    sun.intensity = V.sunI * li; farSun.intensity = V.sunI * dn; handSun.intensity = V.sunI * Math.max(li, 0.15);
+    sun.color.copy(col(V.sunColor)).lerp(DUSK, dusk * 0.6); farSun.color.copy(sun.color);
+    const env = V.envI * (0.1 + 0.9 * dn);
+    scene.environmentIntensity = env * (1 - 0.88 * u); farScene.environmentIntensity = env; handScene.environmentIntensity = Math.max(env * (1 - 0.8 * u), 0.3);
+    const su = sky.material.uniforms; su.uSun.value.copy(sl); su.uNight.value = 1 - dn;
+    su.uZen.value.copy(SKYD.zen).lerp(SKYN.zen, 1 - dn); su.uHor.value.copy(SKYD.hor).lerp(SKYN.hor, 1 - dn).lerp(DUSK, dusk * 0.45);
+    fogAir.c.copy(FOGD).lerp(FOGN, 1 - dn).lerp(DUSK, dusk * 0.25);
+    lamp.intensity = (u > 0.15 || dn < 0.4) ? 16 * Math.max(u, 1 - dn) : 0;
+  }
+  Scene.setTime = h => { DAY.h = ((h % 24) + 24) % 24; applyDay(); };
+  Scene.setUnder = depth => { const u = Math.max(0, Math.min(1, (depth - 2.5) / 8)); if (Math.abs(u - DAY.under) > 0.01) { DAY.under = u; applyDay(); } };
+  Scene.dayLight = () => DAY.day;
+
   // ---------- per frame ----------
   // eye: camera position (planet metres), q: camera orientation, info: { dig, walk, look }
 
@@ -1278,7 +1336,7 @@
     handCam.quaternion.copy(q); handCam.updateMatrixWorld();
     farCam.position.copy(camera.position); farCam.quaternion.copy(camera.quaternion); farCam.updateMatrixWorld();
     sky.position.copy(camera.position);
-    Distant.update(eye); Sea.update(eye); Inland.update(eye);
+    Distant.update(eye); Sea.update(eye); Inland.update(eye); GW.update(eye);
     Particles.update(dt); Rigs.update(dt, t); Scan.update(dt); Heavy.update(dt); Peers.update(dt);
     Hand.update(info.dig, info.walk, t, dt, info.look);
     Shadow.update(eye, q, info, dt);
@@ -1290,7 +1348,7 @@
     for (const ch of chunks.values()) if (ch.mesh) ch.mesh.position.set(ch.cx * W.CH - O.x, ch.cy * W.CH - O.y, ch.cz * W.CH - O.z);
     for (const m of fines.values()) if (m) { const b = m.userData.base; m.position.set(b[0] - O.x, b[1] - O.y, b[2] - O.z); }
     if (Scene.props) Scene.props.position.set(anchor.x - O.x, anchor.y - O.y, anchor.z - O.z);
-    Scene.updateFar(p, true); Deco.update(p, true); Distant.at = null; Inland.at = null;
+    Scene.updateFar(p, true); Deco.update(p, true); Distant.at = null; Inland.at = null; GW.at = null;
     for (const m of [Distant.mesh, Sea.far]) if (m && m.userData.o) m.position.set(m.userData.o.x - O.x, m.userData.o.y - O.y, m.userData.o.z - O.z);
   };
   Scene.setOrigin = function (p) { O.set(Math.round(p.x), Math.round(p.y), Math.round(p.z)); uOff.value.copy(O).sub(shadeAnchor); };

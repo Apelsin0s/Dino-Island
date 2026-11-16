@@ -230,3 +230,40 @@ body.noHud #hud { display: none !important; }
 #bChat { position: fixed; left: 14px; top: 70px; z-index: 30; pointer-events: auto; }
 html[dir=rtl] #chat { left: auto; right: 14px; }
 body.driving #cross { display: none; }
+
+/* ---------- the book (J): orders, museum, achievements, records, licences, new planet ---------- */
+.bookBtn { top: calc(max(14px, env(safe-area-inset-top, 0px)) + 272px); }
+.touch .bookBtn { top: auto; bottom: calc(max(18px, env(safe-area-inset-bottom, 0px)) + 210px); }
+#book { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: rgba(12, 22, 32, .45); padding: 16px; }
+#book[hidden] { display: none; }
+.bookCard { background: var(--paper); border-radius: 22px; width: min(980px, 100%); max-height: min(720px, 100%); display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(10, 30, 50, .35); overflow: hidden; }
+.bookHead { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1.5px solid #e3e9ee; flex-wrap: wrap; }
+.bookHead h2 { margin: 0; font-size: 22px; font-weight: 900; }
+.btabs { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.btab { font: 800 14px var(--font); border: 0; border-radius: 12px; padding: 7px 12px; background: #eef3f7; color: var(--ink); cursor: pointer; }
+.btab.on { background: var(--accent2); color: #fff; }
+.bclose { border: 0; background: #eef3f7; border-radius: 12px; width: 36px; height: 36px; font-size: 16px; cursor: pointer; }
+.bookBody { padding: 16px 18px; overflow: auto; }
+.bsub { color: #5b6b79; font-weight: 700; margin: 0 0 12px; }
+.order { display: grid; grid-template-columns: 1fr 160px 70px auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: #f3f6f9; margin-bottom: 8px; font-weight: 800; }
+.order.done { background: #e4f6e4; }
+.obar { height: 10px; border-radius: 6px; background: #dbe3ea; overflow: hidden; } .obar b { display: block; height: 100%; background: var(--accent); }
+.opay { color: #1f8a3c; text-align: right; }
+.order button, .lrow button, .planet .big { font: 800 14px var(--font); border: 0; border-radius: 12px; padding: 8px 14px; background: var(--accent); color: #fff; cursor: pointer; }
+.lrow button[disabled], .planet .big[disabled] { background: #c9d2da; cursor: default; }
+.mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.mcard { background: #f3f6f9; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+.mcard b { font-size: 13px; } .mcard span { font-size: 12px; color: #5b6b79; font-weight: 700; } .mcard.off { opacity: .6; }
+.agrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+.acard { display: flex; gap: 10px; align-items: center; background: #f3f6f9; border-radius: 14px; padding: 8px 10px; }
+.acard b { display: block; font-size: 14px; } .acard span { font-size: 12px; color: #5b6b79; font-weight: 700; } .acard.off { opacity: .55; }
+table.rec { width: 100%; border-collapse: collapse; font-weight: 800; } table.rec td { padding: 8px 6px; border-bottom: 1px solid #e3e9ee; } table.rec td:last-child { text-align: right; font-family: ui-monospace, monospace; }
+.lic { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.lrow { display: flex; align-items: center; gap: 10px; background: #f3f6f9; border-radius: 14px; padding: 8px 10px; } .lrow b { flex: 1; } .lrow span { color: #5b6b79; font-weight: 700; font-size: 12px; }
+.lrow.own { background: #e4f6e4; }
+.planet { max-width: 560px; } .planet p { font-weight: 700; }
+#toasts { position: fixed; right: 16px; bottom: 90px; z-index: 50; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { display: flex; gap: 10px; align-items: center; background: rgba(25, 32, 40, .9); color: #fff; border-radius: 14px; padding: 8px 14px 8px 8px; min-width: 220px; transition: opacity .7s, transform .7s; }
+.toast b { display: block; font-size: 14px; } .toast span { font-size: 12px; opacity: .8; font-weight: 700; } .toast.out { opacity: 0; transform: translateX(30px); }
+html[dir=rtl] #toasts { right: auto; left: 16px; }
+@media (max-width: 640px) { .order { grid-template-columns: 1fr auto; } .obar { grid-column: 1 / -1; } }

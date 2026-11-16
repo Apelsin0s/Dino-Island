@@ -124,7 +124,7 @@ const handlers = {
     const now = Date.now(), cc = m.c; if (!c.pos || !Array.isArray(cc) || cc.length !== 3 || !cc.every(Number.isFinite)) return;
     const T = Rules.TOOLS, mode = m.mode || 'hand';
     let maxR, reach, gap;
-    if (mode === 'hand') { const tool = T[c.lvl('tool')]; maxR = tool.r * (c.has('sharp') ? 1.08 : 1); reach = tool.r + tool.reach + c.lvl('reach') + 1.5; gap = tool.time * c.lvl('speed') * 0.8 * 1000; }
+    if (mode === 'hand') { const tool = T[c.lvl('tool')]; maxR = Math.max(tool.r, c.has('pick') ? T.pick.r : 0) * (c.has('sharp') ? 1.08 : 1); reach = tool.r + tool.reach + c.lvl('reach') + 1.5; gap = Math.min(tool.time, T.pick.time) * c.lvl('speed') * 0.8 * 1000; }
     else if (mode === 'exMini' && c.has('exMini')) { maxR = 0.35; reach = 9; gap = 250; }
     else if (mode === 'exBig' && c.has('exBig')) { maxR = 0.7; reach = 20; gap = 250; }
     else return send(c, { t: 'dig', seq: m.seq, ok: false, why: 'tool' });
@@ -136,10 +136,11 @@ const handlers = {
     c.lastDig = now;
     if (HD.on) { const ll = toLL(cc[0], cc[1], cc[2]); await HD.around(ll[0], ll[1], 1); }   // the ground there is measured on the same relief as the game
     const s = Rules.scoop(W, cc, r, c.lvl);
+    if (mode === 'hand' && Rules.hardShare(s.per) > 0.4 && !c.has('pick')) return send(c, { t: 'dig', seq: m.seq, ok: false, why: 'hard' });   // rock needs a pickaxe
     if (s.litres < 1e-6) return send(c, { t: 'dig', seq: m.seq, ok: true, got: 0 });
     const h = [cc[0], cc[1], cc[2], r], key = addHole(h);
-    const a = c.acc; a.money += s.got; a.dug += s.litres / 1000; a.sold += s.litres; a.digs++; for (let i = 0; i < 5; i++) a.earned[i] += s.by[i]; dirtyAcc = true;
-    send(c, { t: 'dig', seq: m.seq, ok: true, got: s.got, litres: s.litres, main: s.main, oreL: s.by[3] + s.by[4], ore4: s.by[4] > s.by[3], money: a.money });
+    const a = c.acc; a.money += s.got; a.dug += s.litres / 1000; a.sold += s.litres; a.digs++; for (let i = 0; i < s.by.length; i++) a.earned[i] = (a.earned[i] || 0) + s.by[i]; dirtyAcc = true;
+    send(c, { t: 'dig', seq: m.seq, ok: true, got: s.got, litres: s.litres, main: s.main, oreL: s.by[3] + s.by[4] + (s.by[8] || 0), ore4: s.by[4] > s.by[3], money: a.money });
     const watchers = cellClients.get(key);
     if (watchers) { const msg = JSON.stringify({ t: 'hole', h, by: c.sid, main: s.main }); for (const o of watchers) if (o !== c && o.ws.readyState === 1) o.ws.send(msg); }
   },

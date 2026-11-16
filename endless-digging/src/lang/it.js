@@ -10,7 +10,7 @@
     probe: 'il terreno sotto il mirino fino a 4 m', detector: 'minerale intorno fino a 12 m' },
   node: {
     spoon: ['Cucchiaio', 'Tutto comincia da qui. Un buchetto a colpo.'], scoop: ['Paletta', 'Una paletta di metallo: il doppio di terra a colpo.'],
-    trowel: ['Trapiantatoio', 'Una lama appuntita che entra facile nell’argilla.'], shovel: ['Vanga', 'Una vera vanga. Servono braccia forti.'], pick: ['Piccone', 'Spacca la roccia sotto i 16 m.'],
+    trowel: ['Trapiantatoio', 'Una lama appuntita che entra facile nell’argilla.'], shovel: ['Vanga', 'Una vera vanga. Servono braccia forti.'], pick: ["Piccone", "Spacca la roccia: calcare, granito, basalto e minerale. Si usa da solo quando miri alla pietra."],
     arms1: ['Braccia forti I', 'Colpi più veloci del 15 %.'], arms2: ['Braccia forti II', 'Ancora più veloci.'], arms3: ['Braccia forti III', 'Scavi come una macchina.'],
     probe: ['Sonda', 'Una sonda d’acciaio: mostra il terreno sotto il mirino, 4 m in giù.'], detector: ['Metal detector', 'Premi E: una scansione intorno — il minerale entro 8 m e fino a 4 m di profondità viene segnato con la sua profondità.'],
     detector2: ['Metal detector potente', 'Scansiona 15 m intorno e fino a 8 m di profondità.'], radar: ['Georadar', 'Una mappa del minerale sotto il terreno.'],
@@ -27,7 +27,7 @@
     shaft: ['Castelletto di miniera', 'La tua miniera: 200 L di minerale al secondo da 400 m.'], superdeep: ['Pozzo superprofondo', 'Più giù di quanto chiunque abbia mai scavato.'],
     auto1: ['Trivella a manovella', 'Un treppiede con coclea vicino alla baracca: trivella da solo, i soldi sono tuoi.'], auto2: ['Trivella a motore', 'Un motore sulla trivella: il doppio più veloce, e una seconda trivella.'], auto3: ['Terza trivella', 'Un’altra trivella a motore.']
   },
-  mat: ['terriccio', 'argilla', 'granito', 'quarzite a magnetite', 'minerale di ematite'], firstOre: 'Minerale! Il minerale di ferro vale più della terra',
+  mat: ['terriccio', 'argilla', 'granito', 'quarzite a magnetite', 'minerale di ematite', "sabbia e ghiaia", "calcare", "basalto", "carbone"], firstOre: 'Minerale! Il minerale di ferro vale più della terra',
   probeL: 'Sonda', detL: 'Detector', noOre: 'nessun minerale trovato', machines: 'macchine', getIn: 'sali', getOut: 'scendi',
   driveHint: 'WASD per guidare, mouse per guardare, clic sinistro per scavare con la benna, R per scendere', outReach: 'La benna non ci arriva', interest: 'interessi',
   found: 'sacche trovate:', nearest: 'la più vicina', scanB: 'scansione', ahead: 'davanti', behind: 'dietro', leftS: 'a sinistra', rightS: 'a destra', depthL: 'profondità',
@@ -41,5 +41,6 @@
   N: 'N', S: 'S', E: 'E', Wd: 'O', planet: 'Pianeta Terra · raggio 6371 km · circonferenza 40.030 km', sign: ['COMPRIAMO TERRA', '0,10 $ al litro'],
   noDig: 'Qui non si può scavare', inWay: 'C’è di mezzo un sasso o un albero', map: 'Mappa del mondo', mapHint: 'Trascina per ruotare · rotellina per lo zoom · M per chiudere', mapTouch: 'Trascina per ruotare · due dita per lo zoom',
   openPrefix: 'Aperto', countriesN: 'paesi', locked: 'Il resto del mondo è ancora chiuso', here: 'Sei qui', resetAsk: 'Premi ancora: buche, soldi e acquisti andranno persi',
-  dig: 'Scava', jumpB: 'Salta', turn: 'Gira il telefono in orizzontale, è più comodo', saveFull: 'Il salvataggio non entra più nel browser'
+  dig: 'Scava', jumpB: 'Salta', turn: 'Gira il telefono in orizzontale, è più comodo', saveFull: 'Il salvataggio non entra più nel browser',
+ "needPick": "Troppo duro: per la roccia serve un piccone (ricerca F)"
 };

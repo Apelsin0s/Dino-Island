@@ -10,7 +10,7 @@
     probe: 'zeminu pod zaměřovačem do 4 m', detector: 'rudu kolem do 12 m' },
   node: {
     spoon: ['Lžíce', 'Tady všechno začíná. Malá jamka na úder.'], scoop: ['Lopatka', 'Kovová lopatka: dvakrát víc zeminy na úder.'],
-    trowel: ['Zahradní lopatka', 'Špičatá lopatka, snadno vnikne do jílu.'], shovel: ['Rýč', 'Pořádný rýč. Chce to silné paže.'], pick: ['Krumpáč', 'Rozbíjí skálu pod 16 m.'],
+    trowel: ['Zahradní lopatka', 'Špičatá lopatka, snadno vnikne do jílu.'], shovel: ['Rýč', 'Pořádný rýč. Chce to silné paže.'], pick: ["Krumpáč", "Láme skálu: vápenec, žulu, čedič a rudu. Sám se použije, když míříš na kámen."],
     arms1: ['Silné paže I', 'Údery o 15 % rychlejší.'], arms2: ['Silné paže II', 'Ještě rychlejší.'], arms3: ['Silné paže III', 'Kopeš jako stroj.'],
     probe: ['Sonda', 'Ocelová sonda: ukazuje zeminu pod zaměřovačem, 4 m do hloubky.'], detector: ['Detektor kovů', 'Stiskni E: jeden sken kolem — ruda do 8 m a do hloubky 4 m se označí i s hloubkou.'],
     detector2: ['Silný detektor', 'Skenuje 15 m kolem a do hloubky 8 m.'], radar: ['Georadar', 'Mapa rudy pod pozemkem.'],
@@ -27,7 +27,7 @@
     shaft: ['Těžní věž', 'Vlastní důl: 200 L rudy za sekundu ze 400 m.'], superdeep: ['Superhluboký vrt', 'Hlouběji, než kdo kdy kopal.'],
     auto1: ['Vrták na kliku', 'Trojnožka se šnekem u boudy: vrtá sama, peníze jsou tvoje.'], auto2: ['Motorový vrták', 'Motor na vrtáku — dvakrát rychleji a druhý stroj.'], auto3: ['Třetí vrták', 'Ještě jeden motorový vrták.']
   },
-  mat: ['ornice', 'jíl', 'žula', 'magnetitový kvarcit', 'hematitová ruda'], firstOre: 'Ruda! Železná ruda má větší cenu než zemina',
+  mat: ['ornice', 'jíl', 'žula', 'magnetitový kvarcit', 'hematitová ruda', "písek a štěrk", "vápenec", "čedič", "uhlí"], firstOre: 'Ruda! Železná ruda má větší cenu než zemina',
   probeL: 'Sonda', detL: 'Detektor', noOre: 'žádná ruda', machines: 'stroje', getIn: 'nastoupit', getOut: 'vystoupit',
   driveHint: 'WASD jízda, myš rozhled, levé tlačítko kopání lžící, R výstup', outReach: 'Lžíce tam nedosáhne', interest: 'úroky',
   found: 'nalezeno hnízd:', nearest: 'nejbližší', scanB: 'sken', ahead: 'vpředu', behind: 'vzadu', leftS: 'vlevo', rightS: 'vpravo', depthL: 'hloubka',
@@ -41,5 +41,6 @@
   N: 's. š.', S: 'j. š.', E: 'v. d.', Wd: 'z. d.', planet: 'Planeta Země · poloměr 6 371 km · obvod 40 030 km', sign: ['VÝKUP ZEMINY', '$0,10 za litr'],
   noDig: 'Tady se kopat nedá', inWay: 'Překáží kámen nebo strom', map: 'Mapa světa', mapHint: 'Táhni pro otočení · kolečko pro přiblížení · M pro zavření', mapTouch: 'Táhni pro otočení · dvěma prsty přiblížení',
   openPrefix: 'Otevřeno', countriesN: 'zemí', locked: 'Zbytek světa je zatím zavřený', here: 'Jsi tady', resetAsk: 'Stiskni znovu: jámy, peníze i nákupy zmizí',
-  dig: 'Kopat', jumpB: 'Skok', turn: 'Otoč telefon na šířku, je to pohodlnější', saveFull: 'Uložená hra se už do prohlížeče nevejde'
+  dig: 'Kopat', jumpB: 'Skok', turn: 'Otoč telefon na šířku, je to pohodlnější', saveFull: 'Uložená hra se už do prohlížeče nevejde',
+ "needPick": "Příliš tvrdé: na skálu je potřeba krumpáč (výzkum F)"
 };

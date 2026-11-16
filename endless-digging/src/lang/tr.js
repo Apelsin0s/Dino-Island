@@ -10,7 +10,7 @@
     probe: 'nişangahın altındaki zemini 4 m’ye kadar', detector: 'çevredeki cevheri 12 m’ye kadar' },
   node: {
     spoon: ['Kaşık', 'Her şey burada başlar. Vuruş başına küçük bir çukur.'], scoop: ['El küreği', 'Metal bir kürek: vuruş başına iki kat toprak.'],
-    trowel: ['Bahçe malası', 'Kile kolayca giren sivri bir mala.'], shovel: ['Kürek', 'Gerçek bir kürek. Güçlü kollar ister.'], pick: ['Kazma', '16 m’nin altındaki kayayı kırar.'],
+    trowel: ['Bahçe malası', 'Kile kolayca giren sivri bir mala.'], shovel: ['Kürek', 'Gerçek bir kürek. Güçlü kollar ister.'], pick: ["Kazma", "Kayayı kırar: kireçtaşı, granit, bazalt ve cevher. Taşa nişan alınca kendiliğinden çıkar."],
     arms1: ['Güçlü kollar I', 'Vuruşlar %15 daha hızlı.'], arms2: ['Güçlü kollar II', 'Daha da hızlı.'], arms3: ['Güçlü kollar III', 'Makine gibi kazarsın.'],
     probe: ['Sonda', 'Çelik bir sonda: nişangahın altındaki zemini 4 m derine kadar gösterir.'], detector: ['Metal dedektörü', 'E’ye bas: etrafta tek bir tarama — 8 m içinde ve 4 m derinliğe kadar cevher, derinliğiyle işaretlenir.'],
     detector2: ['Güçlü dedektör', 'Etrafta 15 m ve 8 m derinliğe kadar tarar.'], radar: ['Yer radarı', 'Arsanın altındaki cevherin haritası.'],
@@ -27,7 +27,7 @@
     shaft: ['Maden kuyusu kulesi', 'Kendi madenin: 400 m’den saniyede 200 L cevher.'], superdeep: ['Süper derin kuyu', 'Kimsenin kazmadığı kadar derin.'],
     auto1: ['Kollu matkap', 'Kulübenin yanında helezonlu bir sehpa: kendi kendine deler, para senin.'], auto2: ['Motorlu matkap', 'Matkaba motor — iki kat hızlı, üstüne bir tane daha.'], auto3: ['Üçüncü matkap', 'Bir motorlu matkap daha.']
   },
-  mat: ['üst toprak', 'kil', 'granit', 'manyetit kuvarsit', 'hematit cevheri'], firstOre: 'Cevher! Demir cevheri topraktan daha değerli',
+  mat: ['üst toprak', 'kil', 'granit', 'manyetit kuvarsit', 'hematit cevheri', "kum ve çakıl", "kireçtaşı", "bazalt", "kömür"], firstOre: 'Cevher! Demir cevheri topraktan daha değerli',
   probeL: 'Sonda', detL: 'Dedektör', noOre: 'cevher bulunamadı', machines: 'makineler', getIn: 'bin', getOut: 'in',
   driveHint: 'WASD sür, fare bak, sol tık kepçeyle kaz, R in', outReach: 'Kepçe yetişmiyor', interest: 'faiz',
   found: 'bulunan cep:', nearest: 'en yakını', scanB: 'tara', ahead: 'önde', behind: 'arkada', leftS: 'solda', rightS: 'sağda', depthL: 'derinlik',
@@ -41,5 +41,6 @@
   N: 'K', S: 'G', E: 'D', Wd: 'B', planet: 'Dünya gezegeni · yarıçap 6.371 km · çevre 40.030 km', sign: ['TOPRAK ALINIR', 'Litresi 0,10 $'],
   noDig: 'Burada kazılamaz', inWay: 'Bir taş ya da ağaç engelliyor', map: 'Dünya haritası', mapHint: 'Döndürmek için sürükle · yakınlaştırmak için tekerlek · kapatmak için M', mapTouch: 'Döndürmek için sürükle · iki parmakla yakınlaştır',
   openPrefix: 'Açık', countriesN: 'ülke', locked: 'Dünyanın geri kalanı şimdilik kapalı', here: 'Buradasın', resetAsk: 'Bir kez daha bas: çukurlar, para ve alımlar kaybolacak',
-  dig: 'Kaz', jumpB: 'Zıpla', turn: 'Telefonu yan çevir, daha rahat', saveFull: 'Kayıt artık tarayıcıya sığmıyor'
+  dig: 'Kaz', jumpB: 'Zıpla', turn: 'Telefonu yan çevir, daha rahat', saveFull: 'Kayıt artık tarayıcıya sığmıyor',
+ "needPick": "Çok sert: kaya için kazma gerekir (araştırma F)"
 };

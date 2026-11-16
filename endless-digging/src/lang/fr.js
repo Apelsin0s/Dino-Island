@@ -10,7 +10,7 @@
     probe: 'le sol sous le viseur jusqu’à 4 m', detector: 'le minerai autour jusqu’à 12 m' },
   node: {
     spoon: ['Cuillère', 'Tout commence ici. Un petit trou par coup.'], scoop: ['Pelle à main', 'Une pelle en métal : deux fois plus de terre par coup.'],
-    trowel: ['Transplantoir', 'Une lame pointue qui entre facilement dans l’argile.'], shovel: ['Bêche', 'Une vraie bêche. Il faut des bras solides.'], pick: ['Pioche', 'Casse la roche sous 16 m.'],
+    trowel: ['Transplantoir', 'Une lame pointue qui entre facilement dans l’argile.'], shovel: ['Bêche', 'Une vraie bêche. Il faut des bras solides.'], pick: ["Pioche", "Brise la roche : calcaire, granite, basalte et minerai. Sort toute seule quand tu vises la pierre."],
     arms1: ['Bras solides I', 'Coups 15 % plus rapides.'], arms2: ['Bras solides II', 'Encore plus rapides.'], arms3: ['Bras solides III', 'Tu creuses comme une machine.'],
     probe: ['Sonde', 'Une sonde en acier : montre le sol sous le viseur, sur 4 m.'], detector: ['Détecteur de métaux', 'Appuie sur E : un scan autour — le minerai à 8 m et jusqu’à 4 m de profondeur est marqué avec sa profondeur.'],
     detector2: ['Détecteur puissant', 'Scanne 15 m autour et jusqu’à 8 m de profondeur.'], radar: ['Géoradar', 'Une carte du minerai sous le terrain.'],
@@ -27,7 +27,7 @@
     shaft: ['Chevalement de mine', 'Ta propre mine : 200 L de minerai par seconde depuis 400 m.'], superdeep: ['Forage superprofond', 'Plus profond que quiconque n’a jamais creusé.'],
     auto1: ['Foreuse à manivelle', 'Un trépied à tarière près de la cabane : il fore tout seul, l’argent est pour toi.'], auto2: ['Foreuse à moteur', 'Un moteur sur la foreuse — deux fois plus vite, et une deuxième foreuse.'], auto3: ['Troisième foreuse', 'Encore une foreuse à moteur.']
   },
-  mat: ['terre végétale', 'argile', 'granite', 'quartzite à magnétite', 'minerai d’hématite'], firstOre: 'Du minerai ! Le minerai de fer vaut plus que la terre',
+  mat: ['terre végétale', 'argile', 'granite', 'quartzite à magnétite', 'minerai d’hématite', "sable et gravier", "calcaire", "basalte", "charbon"], firstOre: 'Du minerai ! Le minerai de fer vaut plus que la terre',
   probeL: 'Sonde', detL: 'Détecteur', noOre: 'aucun minerai trouvé', machines: 'engins', getIn: 'monter', getOut: 'descendre',
   driveHint: 'WASD pour conduire, souris pour regarder, clic gauche pour creuser au godet, R pour descendre', outReach: 'Le godet n’atteint pas', interest: 'intérêts',
   found: 'poches trouvées :', nearest: 'la plus proche', scanB: 'scan', ahead: 'devant', behind: 'derrière', leftS: 'à gauche', rightS: 'à droite', depthL: 'profondeur',
@@ -41,5 +41,6 @@
   N: 'N', S: 'S', E: 'E', Wd: 'O', planet: 'Planète Terre · rayon 6 371 km · circonférence 40 030 km', sign: ['ON ACHÈTE LA TERRE', '0,10 $ le litre'],
   noDig: 'Impossible de creuser ici', inWay: 'Un rocher ou un arbre gêne', map: 'Carte du monde', mapHint: 'Glisse pour tourner · molette pour zoomer · M pour fermer', mapTouch: 'Glisse pour tourner · deux doigts pour zoomer',
   openPrefix: 'Ouvert', countriesN: 'pays', locked: 'Le reste du monde est encore fermé', here: 'Tu es ici', resetAsk: 'Appuie encore : trous, argent et achats seront perdus',
-  dig: 'Creuser', jumpB: 'Sauter', turn: 'Tourne ton téléphone à l’horizontale', saveFull: 'La sauvegarde ne tient plus dans le navigateur'
+  dig: 'Creuser', jumpB: 'Sauter', turn: 'Tourne ton téléphone à l’horizontale', saveFull: 'La sauvegarde ne tient plus dans le navigateur',
+ "needPick": "Trop dur : la roche demande une pioche (recherche F)"
 };
