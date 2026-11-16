@@ -29,6 +29,19 @@ function load() {
     try { const raw = zlib.inflateSync(Buffer.from(fs.readFileSync(path.join(SRC, p.file), 'utf8'), 'base64')); return W.decodePatch(new Int16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.length)), p.w, p.h); }
     catch (e) { return null; }
   });
+  // lakes and rivers: read with the relief blocks, on first use
+  vm.runInContext(fs.readFileSync(path.join(SRC, 'dem', 'water.js'), 'utf8'), ctx, { filename: 'dem/water.js' });
+  if (ctx.WaterInfo) {
+    W.setWaterInfo(ctx.WaterInfo);
+    W.setWaterLoader(k => {
+      try {
+        const o = JSON.parse(zlib.inflateSync(Buffer.from(fs.readFileSync(path.join(SRC, 'dem', 'water', k + '.txt'), 'utf8'), 'base64')).toString());
+        let lakes = null;
+        if (o.lakes) { const raw = zlib.inflateSync(Buffer.from(o.lakes, 'base64')); lakes = new Uint16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.length)); }
+        return { lakes, rivers: o.rivers ? new Float32Array(o.rivers) : null };
+      } catch (e) { return null; }
+    });
+  }
   return { W, Rules: ctx.Rules };
 }
 module.exports = { load };

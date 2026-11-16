@@ -109,8 +109,8 @@
     if (stick.id !== null) { mx = stick.x; mz = -stick.y; amt = Math.min(1, Math.hypot(mx, mz) * 1.25); run = amt >= 1 && Math.hypot(mx, mz) > 0.92; }
     const sp = (run ? RUN : WALK) * lvl('move') * AD.speed;
     const wish = v3(0, 0, 0).addScaledVector(pl.fwd, mz).addScaledVector(right, mx);
-    // in the sea (below sea level where the map has water): you swim at the surface, slower; Space dives up
-    const swim = pl.pos.length() - W.R < -0.9 && S.inSea(pl.pos);
+    // in water (sea, lake, river): you swim at the surface, slower; Space pushes you up
+    const wl = S.waterLevel(pl.pos), swim = wl !== null && pl.pos.length() - W.R < wl - 0.9;
     if (wish.lengthSq() > 0.0001) wish.normalize().multiplyScalar(sp * amt * (swim ? 0.45 : 1));
     // fixed small physics steps: the same feel at any frame rate
     let speed = 0, landV = 0;
@@ -119,7 +119,7 @@
       const h = dt / n; frame();
       const vu = pl.vel.dot(up), vt = pl.vel.clone().addScaledVector(up, -vu);
       vt.lerp(wish, Math.min(1, (pl.grounded ? 14 : swim ? 3 : 2.5) * h));
-      let nvu = swim ? vu + ((-1.35 - (pl.pos.length() - W.R)) * 6 - vu * 2.5 + (k.Space ? 3 : 0)) * h : vu - G * h;
+      let nvu = swim ? vu + ((wl - 1.35 - (pl.pos.length() - W.R)) * 6 - vu * 2.5 + (k.Space ? 3 : 0)) * h : vu - G * h;
       if (!swim && pl.grounded && k.Space && !pl.jumpHeld) { nvu = JUMP; pl.grounded = false; pl.jumpHeld = true; Sound.jump(); }
       pl.vel.copy(vt).addScaledVector(up, nvu);
       pl.pos.addScaledVector(pl.vel, h); frame();
@@ -692,9 +692,9 @@
     const d = W.fromLatLon(lat, lon), h = W.heightDir(d[0], d[1], d[2]);
     const p = v3(d[0], d[1], d[2]).multiplyScalar(W.R + h + 0.2);
     pl.pos.copy(S.groundBelow(p, 3)).addScaledVector(p.clone().normalize(), 0.05);
-    if (h < -1.35 && S.inSea(p)) pl.pos.copy(p).setLength(W.R - 1.35);   // at sea: you float at the surface
+    { const wl = S.waterLevel(p); if (wl !== null && h < wl - 1.35) pl.pos.copy(p).setLength(W.R + wl - 1.35); }   // on water: you float at the surface
     pl.vel.set(0, 0, 0); frame();
-    S.rebase(pl.pos); S.shadeAt(pl.pos, pl.fwd); S.rebuildDistant(pl.pos); dirty = true;
+    S.rebase(pl.pos); S.shadeAt(pl.pos, pl.fwd); S.rebuildDistant(pl.pos); S.rebuildWater(pl.pos); dirty = true;
   }
   function adminAct(a) {
     const [k, v, w] = a.split(':');

@@ -81,6 +81,92 @@
     lastRough = Math.max(a, b, c2, e) - Math.min(a, b, c2, e);
     return cr(row(y - 1), row(y), row(y + 1), row(y + 2), ty);
   }
+
+  // ---------- lakes and rivers (dem/water/*.txt, tools/build-water.py) ----------
+  // Per 15° block: a 1/120° lake raster (lake id * 16 + cells inside the shore) and river segments
+  // [lat0, lon0, lat1, lon1, level0, level1, width]. The ground is cut down to the lake bed / river bed here,
+  // so the game, the mesher threads and the server all see the same banks.
+  let WTR = null, waterLoader = null, lastW = null;
+  const wblocks = new Map();
+  function setWaterInfo(info) { WTR = info; WTR.has = new Set(info.blocks); }
+  function setWaterLoader(f) { waterLoader = f; }
+  function setWaterBlock(k, o) {   // o: { lakes: Uint16Array | null, rivers: Float32Array | null }
+    const B = WTR.block, [c, r] = k.split('_').map(Number), lon0 = -180 + c * B, lat1 = 90 - r * B, grid = new Map(), G = 0.05;
+    const R = o.rivers;
+    if (R) for (let i = 0; i < R.length; i += 7) {   // index each segment in the 0.05° cells it can touch (with its half width)
+      const pad = (R[i + 6] * 0.5 + 60) / 111200 + 0.002, a0 = Math.min(R[i], R[i + 2]) - pad, a1 = Math.max(R[i], R[i + 2]) + pad, cs = Math.max(0.2, Math.cos(R[i] * Math.PI / 180));
+      const b0 = Math.min(R[i + 1], R[i + 3]) - pad / cs, b1 = Math.max(R[i + 1], R[i + 3]) + pad / cs;
+      for (let y = Math.floor(a0 / G); y <= Math.floor(a1 / G); y++) for (let x = Math.floor(b0 / G); x <= Math.floor(b1 / G); x++) { const key = y * 100000 + x; let l = grid.get(key); if (!l) grid.set(key, l = []); l.push(i); }
+    }
+    wblocks.set(k, { lakes: o.lakes, rivers: R, grid, lon0, lat1 }); lastW = null;
+  }
+  // water at a place: out.lf (cells inside a lake, bilinear, 0 = dry), out.ll lake level, out.ld lake max depth;
+  // out.rd distance to the nearest river centre (m), out.rw its width, out.rl its level (rd = Infinity when none near)
+  function waterAt(lat, lon, out) {
+    out.lf = 0; out.rd = Infinity;
+    if (!WTR) return out;
+    if (lon >= 180) lon -= 360; else if (lon < -180) lon += 360;
+    const B = WTR.block;
+    let L = lastW;
+    if (!L || lon < L.lon0 || lon >= L.lon0 + B || lat > L.lat1 || lat <= L.lat1 - B) {
+      const c = Math.min(23, Math.max(0, Math.floor((lon + 180) / B))), r = Math.min(11, Math.max(0, Math.floor((90 - lat) / B))), k = c + '_' + r;
+      if (!WTR.has.has(k)) { lastW = { lon0: -180 + c * B, lat1: 90 - r * B, none: true }; return out; }
+      L = wblocks.get(k);
+      if (!L && waterLoader) { const o = waterLoader(k); if (o) { setWaterBlock(k, o); L = wblocks.get(k); } }
+      if (!L) return out;
+      lastW = L;
+    }
+    if (L.none) return out;
+    if (L.lakes) {
+      const S = WTR.size, fx = (lon - L.lon0) * WTR.res - 0.5, fy = (L.lat1 - lat) * WTR.res - 0.5;
+      const x = Math.max(0, Math.min(S - 2, Math.floor(fx))), y = Math.max(0, Math.min(S - 2, Math.floor(fy))), tx = Math.max(0, Math.min(1, fx - x)), ty = Math.max(0, Math.min(1, fy - y)), d = L.lakes;
+      const a = d[y * S + x], b = d[y * S + x + 1], c = d[(y + 1) * S + x], e = d[(y + 1) * S + x + 1];
+      if (a | b | c | e) {
+        const f = ((a & 15) * (1 - tx) + (b & 15) * tx) * (1 - ty) + ((c & 15) * (1 - tx) + (e & 15) * tx) * ty;
+        const id = Math.max(a, b, c, e) >> 4, li = WTR.lakes[id - 1];
+        if (li) { out.lf = f; out.ll = li[0]; out.ld = li[1]; }
+      }
+    }
+    if (L.rivers) {
+      const G = 0.05, list = L.grid.get(Math.floor(lat / G) * 100000 + Math.floor(lon / G));
+      if (list) {
+        const R = L.rivers, cs = Math.cos(lat * Math.PI / 180) * 111200; let best = Infinity;
+        for (const i of list) {
+          const ax = (R[i + 1] - lon) * cs, ay = (R[i] - lat) * 111200, bx = (R[i + 3] - lon) * cs, by = (R[i + 2] - lat) * 111200;
+          const vx = bx - ax, vy = by - ay, l2 = vx * vx + vy * vy;
+          let t = l2 > 0 ? -(ax * vx + ay * vy) / l2 : 0; t = t < 0 ? 0 : t > 1 ? 1 : t;
+          const dx = ax + vx * t, dy = ay + vy * t, dd = Math.sqrt(dx * dx + dy * dy) - R[i + 6] * 0.5;   // distance past the river's edge
+          if (dd < best) { best = dd; out.rd = dd + R[i + 6] * 0.5; out.rw = R[i + 6]; out.rl = R[i + 4] + (R[i + 5] - R[i + 4]) * t; }
+        }
+      }
+    }
+    return out;
+  }
+  // river segments around a place (from loaded blocks): flat [lat0, lon0, lat1, lon1, level0, level1, width, ...]
+  function riversNear(lat, lon, rad) {
+    const out = [], G = 0.05, seen = new Set(), cs = Math.max(0.2, Math.cos(lat * Math.PI / 180));
+    for (const [k, L] of wblocks) {
+      if (!L.rivers) continue;
+      for (let y = Math.floor((lat - rad) / G); y <= Math.floor((lat + rad) / G); y++) for (let x = Math.floor((lon - rad / cs) / G); x <= Math.floor((lon + rad / cs) / G); x++) {
+        const l = L.grid.get(y * 100000 + x); if (!l) continue;
+        for (const i of l) { const key = k + ':' + i; if (seen.has(key)) continue; seen.add(key); for (let q = 0; q < 7; q++) out.push(L.rivers[i + q]); }
+      }
+    }
+    return out;
+  }
+  const WT = {};
+  // cut the ground to the water: lake beds and shelving shores, river channels with low banks
+  function carveWater(h, lat, lon) {
+    waterAt(lat, lon, WT);
+    if (WT.lf > 0) h = Math.min(h, Math.max(WT.ll - WT.ld, WT.ll + (0.6 - WT.lf) * 12));
+    if (WT.rd < Infinity) {
+      const half = WT.rw * 0.5, x = WT.rd / half, depth = 1.2 + WT.rw / 60;
+      if (x < 1) h = Math.min(h, WT.rl - 0.35 - depth * (1 - x * x));
+      else if (WT.rd < half + 40 + WT.rw * 0.3) h = Math.min(h, WT.rl + 0.3 + (WT.rd - half) * 0.15);
+    }
+    return h;
+  }
+
   // ---------- ~40 m patches: famous volcanoes, craters, mountains, canyons (dem/patches/*.txt) ----------
   let PATCHES = [], patchLoader = null;
   function setPatches(list) { PATCHES = list.map(p => Object.assign({ data: null, unit: 0.5, tried: false }, p)); }
@@ -119,7 +205,8 @@
       const hl = demAt(DEM.local, lat, lon);
       if (hl === hl) { const f = DEM.local.fade, k = f * f * (3 - 2 * f); h = h + (hl - h) * k; }
     }
-    return h + noise(qx / 35, qy / 35, qz / 35, 41) * 0.35 + noise(qx / 9, qy / 9, qz / 9, 53) * 0.1;
+    h += noise(qx / 35, qy / 35, qz / 35, 41) * 0.35 + noise(qx / 9, qy / 9, qz / 9, 53) * 0.1;
+    return WTR ? carveWater(h, lat, lon) : h;
   }
   function inventedHeight(qx, qy, qz) {
     const m = noise(qx / 6000, qy / 6000, qz / 6000, 11);
@@ -399,6 +486,6 @@
   function fromLatLon(lat, lon) { const a = lat * Math.PI / 180, b = lon * Math.PI / 180; return [Math.cos(a) * Math.cos(b), Math.sin(a), -Math.cos(a) * Math.sin(b)]; }
   function toLatLon(x, y, z) { const l = Math.hypot(x, y, z); return [Math.asin(y / l) * 180 / Math.PI, Math.atan2(-z, x) * 180 / Math.PI]; }
 
-  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, setWorldDem, setWorldBlock, setBlockLoader, decodeBlock, setPatches, setPatchData, setPatchLoader, decodePatch, patches: () => PATCHES, blockKey, blockOf, worldAt, hasBlock: k => blocks.has(k), heightAt, solid, depthAt, addHole, clearHoles, holes, key,
+  root.World = { R, VOX, N, CH, S, BIG, LC, LF, noise, hash01, ihash, height, heightDir, setDem, setWorldDem, setWorldBlock, setBlockLoader, decodeBlock, setPatches, setPatchData, setPatchLoader, decodePatch, patches: () => PATCHES, setWaterInfo, setWaterLoader, setWaterBlock, waterAt, riversNear, blockKey, blockOf, worldAt, hasBlock: k => blocks.has(k), heightAt, solid, depthAt, addHole, clearHoles, holes, key,
     chunkMayHaveSurface, sampleChunk, sampleFine, carve, meshChunk, buildMesh, fineSet, blockers, blocked, materialAt, kryvbas, obstacles, setObstacles, rayObstacle, obstacleAt, fromLatLon, toLatLon };
 })(typeof window !== 'undefined' ? window : globalThis);

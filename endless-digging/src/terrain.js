@@ -43,9 +43,24 @@
     pPend.set(p.id, pr); return pr;
   }
   const near = (lat, lon, m) => P.filter(p => lat > p.box[2] - m && lat < p.box[3] + m && lon > p.box[0] - m / Math.max(0.2, Math.cos(lat * Math.PI / 180)) && lon < p.box[1] + m / Math.max(0.2, Math.cos(lat * Math.PI / 180)));
-  T.ensure = (lat, lon, m) => Promise.all(around(lat, lon, m === undefined ? 0.3 : m).map(load).concat(near(lat, lon, 0.5).map(loadPatch)));
+  // lakes and rivers of a block (if it has any)
+  const WI = root.WaterInfo; if (WI) W.setWaterInfo(WI);
+  const wPend = new Map();
+  const inflate = async u => new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
+  const b64 = t => { const bin = atob(t), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+  function loadWater(k) {
+    if (!WI || !WI.blocks.includes(k) || T.loaded.has('w:' + k)) return Promise.resolve();
+    if (wPend.has(k)) return wPend.get(k);
+    const pr = fetch(WI.file.replace('{c}_{r}', k)).then(r => { if (!r.ok) throw new Error(k); return r.text(); }).then(async txt => {
+      const o = JSON.parse(new TextDecoder().decode(await inflate(b64(txt.trim()))));
+      const lakes = o.lakes ? new Uint16Array(await inflate(b64(o.lakes))) : null, rivers = o.rivers ? new Float32Array(o.rivers) : null;
+      W.setWaterBlock(k, { lakes, rivers }); T.loaded.add('w:' + k); wPend.delete(k); if (T.onBlock) T.onBlock(k);
+    }).catch(e => { wPend.delete(k); console.warn('water not loaded', k, e.message); });
+    wPend.set(k, pr); return pr;
+  }
+  T.ensure = (lat, lon, m) => { const ks = around(lat, lon, m === undefined ? 0.3 : m); return Promise.all(ks.map(load).concat(ks.map(loadWater), near(lat, lon, 0.5).map(loadPatch))); };
   T.watch = (lat, lon) => {   // fetch ahead while walking or driving
-    for (const k of around(lat, lon, 1.5)) if (!T.loaded.has(k) && !pending.has(k)) load(k);
+    for (const k of around(lat, lon, 1.5)) { if (!T.loaded.has(k) && !pending.has(k)) load(k); loadWater(k); }
     for (const p of near(lat, lon, 1.5)) loadPatch(p);
   };
   root.Terrain = T;

@@ -175,6 +175,35 @@
     const dark = C(o.dark || '#3c8440'), light = C(o.light || '#86c85a');
     return S.geometry(S.mesh(f, [-1, -0.1, -1], [1, 1.1, 1], o.cell || 0.03, { ao: 0.5, aoRadius: 0.1, color(x, y, z, nx, ny, nz, out) { mixC(dark, light, clamp01(y * 0.9 + ny * 0.3), out); } }));
   };
+  // a coconut palm: a long leaning trunk with rings, a crown of drooping fronds and a few coconuts
+  A.palm = function (seed, o) {
+    o = o || {}; const r = S.rng(seed), H = 5.6 + r() * 1.2, lean = 0.6 + r() * 0.5, cell = o.cell || 0.06;
+    const tp = t => [lean * t * t, H * t, 0];   // trunk curve
+    const trunkF = (x, y, z) => { let d = 1e9; for (let i = 0; i < 6; i++) { const a = tp(i / 6), b = tp((i + 1) / 6); d = S.smin(d, S.cone(x, y, z, a[0], a[1], a[2], b[0], b[1], b[2], 0.2 - i * 0.017, 0.2 - (i + 1) * 0.017), 0.05); } return d; };
+    const trunk = S.geometry(S.mesh(trunkF, [-0.4, -0.1, -0.4], [lean + 0.4, H + 0.3, 0.4], cell * 0.7, { ao: 0.3, aoRadius: 0.08,
+      color(x, y, z, nx, ny, nz, out) { const k = 0.5 + 0.5 * Math.sin(y * 11); mixC(C('#7c5a38'), C('#b08a5e'), k * 0.7, out); } }));
+    const top = tp(1), fronds = [];
+    for (let i = 0; i < 9; i++) { const a = i / 9 * PI * 2 + r() * 0.4, L = 2.4 + r() * 0.7, up = 0.5 + r() * 0.4; for (let k = 1; k <= 9; k++) { const t = k / 9; fronds.push([top[0] + cos(a) * L * t, top[1] + up * t - 2.0 * t * t, top[2] + sin(a) * L * t, (0.34 * (1 - t * 0.55) + 0.05) * (o.thick ? 1.25 : 1)]); } }
+    const crownF = (x, y, z) => {
+      let d = S.sphere(x, y, z, top[0], top[1], top[2], 0.32);
+      for (const f of fronds) { const dx = x - f[0], dz = z - f[2], dy = (y - f[1]) / (0.18 * (o.thick || 1)); const e = Math.sqrt(dx * dx + dy * dy + dz * dz) - f[3]; d = S.smin(d, e * 0.6, 0.12); }
+      return d;
+    };
+    const crown = S.geometry(S.mesh(crownF, [top[0] - 3.4, top[1] - 2.4, -3.4], [top[0] + 3.4, top[1] + 1.2, 3.4], cell, { ao: 0.4, aoRadius: 0.15,
+      color(x, y, z, nx, ny, nz, out) { const dd = Math.hypot(x - top[0], z - top[2]); if (dd < 0.36 && y < top[1] + 0.1) { mixC(C('#6b4a2a'), C('#8b6a3a'), 0.5, out); return; } mixC(C(o.dark || '#2c7f37'), C(o.light || '#7cc24a'), clamp01(0.3 + ny * 0.5 + dd * 0.08), out); } }));
+    return { trunk, crown, height: H + 1 };
+  };
+  // a saguaro-like cactus: a ribbed column with two arms
+  A.cactus = function (seed, o) {
+    o = o || {}; const r = S.rng(seed), H = 2.4 + r() * 1.4, cell = o.cell || 0.04;
+    const arms = []; for (let i = 0; i < 2; i++) { const a = i * PI + r() * 0.8, y0 = H * (0.38 + r() * 0.2), out = 0.45 + r() * 0.15; arms.push([cos(a) * out, sin(a) * out, y0, y0 + 0.6 + r() * 0.7]); }
+    const f = (x, y, z) => {
+      let d = S.cone(x, y, z, 0, -0.1, 0, 0, H, 0, 0.24, 0.2); d = Math.min(d, S.sphere(x, y, z, 0, H, 0, 0.2));
+      for (const [ax, az, y0, y1] of arms) { d = S.smin(d, S.cone(x, y, z, 0, y0, 0, ax, y0 + 0.08, az, 0.13, 0.13), 0.12); d = S.smin(d, S.cone(x, y, z, ax, y0, az, ax, y1, az, 0.14, 0.12), 0.1); d = Math.min(d, S.sphere(x, y, z, ax, y1, az, 0.12)); }
+      return d + 0.012 * Math.cos(Math.atan2(z, x) * 14);   // ribs
+    };
+    return S.geometry(S.mesh(f, [-1, -0.15, -1], [1, H + 0.3, 1], cell, { ao: 0.4, aoRadius: 0.1, color(x, y, z, nx, ny, nz, out) { mixC(C('#3f7a35'), C('#7fb05a'), clamp01(0.4 + ny * 0.4 + 0.2 * Math.cos(Math.atan2(z, x) * 14)), out); } }));
+  };
   A.rock = function (seed, o) {
     o = o || {}; const r = S.rng(seed), parts = []; for (let i = 0; i < 4; i++) parts.push([(r() - 0.5) * 0.5, 0.12 + r() * 0.22, (r() - 0.5) * 0.5, 0.3 + r() * 0.22, 0.22 + r() * 0.16, 0.28 + r() * 0.2]);
     const f = function (x, y, z) {

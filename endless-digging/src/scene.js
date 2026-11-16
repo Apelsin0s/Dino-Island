@@ -445,7 +445,10 @@
       const forest = Math.min(1, fb.forest * 1.4) * Math.min(1, r / 300) * (1 - Math.max(0, Math.min(1, (h - Biome.snowLine(lat) + 700) / 500)));
       tmpC.lerp(fb.boreal > 0.5 ? P.spruceC : P.forest, forest * 0.7 * (0.75 + 0.25 * W.noise(x / 300, y / 300, z / 300, 77)));
     } else tmpC.copy(lawnMid);
+    W.waterAt(lat, lon, fq);
+    if (fq.lf > 0.6 || fq.rd < fq.rw * 0.5) tmpC.setRGB(0.03, 0.12, 0.2);
   }
+  const fq = {};
   function farStart(p) {
     const u = p.clone().normalize();
     const e1 = new T.Vector3().crossVectors(Math.abs(u.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0), u).normalize(), e2 = new T.Vector3().crossVectors(u, e1);
@@ -510,7 +513,7 @@
         J.pos[n] = dx * rr - J.o.x; J.pos[n + 1] = dy * rr - J.o.y; J.pos[n + 2] = dz * rr - J.o.z;
         farColor(dx, dy, dz, h, r, dx * rr, dy * rr, dz * rr);
         J.cols[n] = tmpC.r; J.cols[n + 1] = tmpC.g; J.cols[n + 2] = tmpC.b;
-        J.water[i * DNA + a] = h < 1 && root.Biome ? Biome.water(Math.asin(dy) * 57.29578, Math.atan2(-dz, dx) * 57.29578) : 0;
+        { const la = Math.asin(dy) * 57.29578, lo = Math.atan2(-dz, dx) * 57.29578; J.water[i * DNA + a] = h < seaLevelAt(la, lo) + 1 && root.Biome ? Biome.water(la, lo) : 0; }
       }
     }
     if (J.i < DNR) return;
@@ -541,7 +544,8 @@
       for (let a = 0; a < na; a++) {
         const t = a / na * Math.PI * 2, ex = J.e1.x * Math.cos(t) + J.e2.x * Math.sin(t), ey = J.e1.y * Math.cos(t) + J.e2.y * Math.sin(t), ez = J.e1.z * Math.cos(t) + J.e2.z * Math.sin(t);
         const dx = J.u.x * ca + ex * sa, dy = J.u.y * ca + ey * sa, dz = J.u.z * ca + ez * sa, k = i * na + a, w = Math.max(0, Math.min(1, (water[k] - 0.08) * 6));
-        pos[k * 3] = dx * W.R - J.o.x; pos[k * 3 + 1] = dy * W.R - J.o.y; pos[k * 3 + 2] = dz * W.R - J.o.z;
+        const sl = W.R + seaLevelAt(Math.asin(dy) * 57.29578, Math.atan2(-dz, dx) * 57.29578);
+        pos[k * 3] = dx * sl - J.o.x; pos[k * 3 + 1] = dy * sl - J.o.y; pos[k * 3 + 2] = dz * sl - J.o.z;
         cols[k * 4] = 0.07; cols[k * 4 + 1] = 0.3; cols[k * 4 + 2] = 0.5; cols[k * 4 + 3] = w * 0.9;
       }
     }
@@ -553,10 +557,75 @@
   // under water: everything turns blue and murky
   const fogAir = { c: col(V.fog[0]), d: V.fog[1] }, fogSea = { c: col('#1d5d7a'), d: 0.045 };
   Sea.update = function (eye) {
-    const l = eye.length(), under = l < W.R - 0.05 && root.Biome && Biome.water(Math.asin(eye.y / l) * 57.29578, Math.atan2(-eye.z, eye.x) * 57.29578) > 0.12;
+    const lv = Scene.waterLevel(eye), under = lv !== null && eye.length() < W.R + lv - 0.05;
     const f = under ? fogSea : fogAir; scene.fog.color.copy(f.c); scene.fog.density = f.d;
   };
-  Scene.inSea = p => { const l = p.length(); return root.Biome && Biome.water(Math.asin(p.y / l) * 57.29578, Math.atan2(-p.z, p.x) * 57.29578) > 0.12; };
+  const seaLevelAt = (lat, lon) => (lat > 36.5 && lat < 47.4 && lon > 46.4 && lon < 55.2) ? -28 : 0;   // the Caspian
+  const WQ = {};
+  // the water surface over a point (sea, lake or river), or null
+  Scene.waterLevel = p => {
+    const l = p.length(), lat = Math.asin(p.y / l) * 57.29578, lon = Math.atan2(-p.z, p.x) * 57.29578;
+    W.waterAt(lat, lon, WQ);
+    if (WQ.lf > 0.6) return WQ.ll;
+    if (WQ.rd < WQ.rw * 0.5) return WQ.rl;
+    if (root.Biome && Biome.water(lat, lon) > 0.12) return seaLevelAt(lat, lon);
+    return null;
+  };
+  Scene.inSea = p => Scene.waterLevel(p) !== null;
+  // ---------- lakes and rivers near you: a lake sheet at its level, ribbons along the rivers ----------
+  const Inland = { mesh: null, at: null };
+  Inland.build = function (p) {
+    this.at = p.clone();
+    const b = ringBasis(p), N = 110, half = 2800, step = half * 2 / (N - 1), o = O.clone(), q = {};
+    const pos = [], col = [], idx = [];
+    // lakes: a grid at the lake's level, see-through outside the shore
+    const lev = new Float32Array(N * N).fill(NaN), al = new Float32Array(N * N), dirs = new Float32Array(N * N * 3);
+    let wet = 0;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const x = -half + i * step, z = -half + j * step, k = j * N + i;
+      const d = b.u.clone().multiplyScalar(W.R).addScaledVector(b.e1, x).addScaledVector(b.e2, z).normalize();
+      dirs[k * 3] = d.x; dirs[k * 3 + 1] = d.y; dirs[k * 3 + 2] = d.z;
+      W.waterAt(Math.asin(d.y) * 57.29578, Math.atan2(-d.z, d.x) * 57.29578, q);
+      if (q.lf > 0) { lev[k] = q.ll; al[k] = Math.max(0, Math.min(1, (q.lf - 0.45) / 0.3)); if (al[k] > 0) wet++; }
+    }
+    if (wet) {
+      for (let pass = 0; pass < 2; pass++) for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {   // dry edge points take the neighbour's level
+        const k = j * N + i; if (lev[k] === lev[k]) continue;
+        for (const [a, c] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + a, jj = j + c; if (ii >= 0 && jj >= 0 && ii < N && jj < N && lev[jj * N + ii] === lev[jj * N + ii]) { lev[k] = lev[jj * N + ii]; break; } }
+      }
+      const base = 0;
+      for (let k = 0; k < N * N; k++) { const L = lev[k] === lev[k] ? lev[k] : 0, rr = W.R + L; pos.push(dirs[k * 3] * rr - o.x, dirs[k * 3 + 1] * rr - o.y, dirs[k * 3 + 2] * rr - o.z); col.push(0.08, 0.3, 0.42, al[k] * 0.9); }
+      for (let j = 0; j < N - 1; j++) for (let i = 0; i < N - 1; i++) {
+        const a = j * N + i, b2 = a + 1, c = a + N, d = c + 1;
+        if (al[a] + al[b2] + al[c] + al[d] === 0) continue;
+        if (!(lev[a] === lev[a] && lev[b2] === lev[b2] && lev[c] === lev[c] && lev[d] === lev[d])) continue;
+        idx.push(base + a, base + c, base + b2, base + b2, base + c, base + d);
+      }
+    }
+    // rivers: a ribbon over each nearby stretch, at its level
+    const ll = W.toLatLon(p.x, p.y, p.z), segs = W.riversNear(ll[0], ll[1], 0.045);
+    for (let s2 = 0; s2 < segs.length; s2 += 7) {
+      const la0 = segs[s2], lo0 = segs[s2 + 1], la1 = segs[s2 + 2], lo1 = segs[s2 + 3], l0 = segs[s2 + 4], l1 = segs[s2 + 5], w = segs[s2 + 6] * 0.53;
+      const A = W.fromLatLon(la0, lo0), Bv = W.fromLatLon(la1, lo1);
+      const a3 = v3(A[0], A[1], A[2]), b3 = v3(Bv[0], Bv[1], Bv[2]), dir = b3.clone().sub(a3), len = dir.length() * W.R; if (len < 1) continue;
+      const side = new T.Vector3().crossVectors(dir, a3).normalize();
+      const n0 = pos.length / 3, ext = dir.clone().normalize().multiplyScalar(w * 0.6 / W.R);   // overlap a little at the joints
+      for (const [pt, lv, sgn] of [[a3.clone().sub(ext), l0, -1], [a3.clone().sub(ext), l0, 1], [b3.clone().add(ext), l1, -1], [b3.clone().add(ext), l1, 1]]) {
+        const q3 = pt.clone().multiplyScalar(W.R + lv).addScaledVector(side, sgn * w);
+        pos.push(q3.x - o.x, q3.y - o.y, q3.z - o.z); col.push(0.1, 0.33, 0.4, 0.88);
+      }
+      idx.push(n0, n0 + 2, n0 + 1, n0 + 1, n0 + 2, n0 + 3);
+    }
+    if (this.mesh) { this.mesh.geometry.dispose(); }
+    if (!idx.length) { if (this.mesh) this.mesh.visible = false; return; }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3)); g.setAttribute('color', new T.BufferAttribute(new Float32Array(col), 4)); g.setIndex(idx); g.computeVertexNormals();
+    // make every normal point up (ribbons and grid were built in different windings)
+    const nr = g.getAttribute('normal'); for (let k = 0; k < nr.count; k++) { const x = pos[k * 3] + o.x, y = pos[k * 3 + 1] + o.y, z = pos[k * 3 + 2] + o.z, l = Math.hypot(x, y, z); nr.setXYZ(k, x / l, y / l, z / l); }
+    if (!this.mesh) { this.mesh = new T.Mesh(g, Sea.mat()); this.mesh.renderOrder = 2; this.mesh.material.side = T.DoubleSide; scene.add(this.mesh); } else this.mesh.geometry = g;
+    this.mesh.visible = true; this.mesh.position.set(o.x - O.x, o.y - O.y, o.z - O.z); this.mesh.userData.o = o;
+  };
+  Inland.update = function (p) { if (!this.at || this.at.distanceTo(p) > 150) this.build(p); };
+  Scene.rebuildWater = p => Inland.build(p);
 
   // ---------- places where nothing grows (props, the start spot) ----------
   const blocked = [];   // [x, y, z, r] in planet metres
@@ -578,11 +647,14 @@
       const sp = A.spruce(5, { dark: V.spruce[0], light: V.spruce[1], cell: 0.11 * d });
       const spFar = A.spruceFar({ dark: V.spruce[0], light: V.spruce[1], seg: 9 });
       const bo = c => ({ dark: V.leaf[0], light: V.leaf[1], cell: c });
+      const palm = A.palm(7, { cell: 0.07 * d }), palmF = A.palm(7, { cell: 0.2, thick: 2.2 }), cac = A.cactus(3, { cell: 0.045 * d }), cacF = A.cactus(3, { cell: 0.14 });
       const bush = A.bush(4, bo(0.05 * d)), bushF = A.bush(4, bo(0.14)), rock1 = A.rock(1, { cell: 0.045 * d }), rock2 = A.rock(2, { cell: 0.045 * d }), rockF = A.rock(1, { cell: 0.13 });
       this.kinds = {
         treeA: mk([tA.trunk, tA.crown], [MAT.bark, MAT.crown], 400, true), treeB: mk([tB.trunk, tB.crown], [MAT.bark, MAT.crown], 400, true),
         treeAfar: mk([fA.trunk, fA.crown], [MAT.bark, MAT.crown], 2000, false), treeBfar: mk([fB.trunk, fB.crown], [MAT.bark, MAT.crown], 2000, false),
         spruce: mk([sp.geo], [MAT.spruce], 400, true), spruceFar: mk([spFar], [MAT.spruceFar], 2500, false),
+        palm: mk([palm.trunk, palm.crown], [MAT.bark, MAT.crown], 300, true), palmFar: mk([palmF.trunk, palmF.crown], [MAT.bark, MAT.crown], 1500, false),
+        cactus: mk([cac], [MAT.crown], 300, true), cactusFar: mk([cacF], [MAT.crown], 1200, false),
         bush: mk([bush], [MAT.crown], 400, true), bushfar: mk([bushF], [MAT.crown], 1500, false),
         rock1: mk([rock1], [MAT.rock], 300, true), rock2: mk([rock2], [MAT.rock], 300, true), rockfar: mk([rockF], [MAT.rock], 1000, false),
         tuft0: mk([A.tuft(400, V.tuft)], [MAT.tuft], 5000, M.smallShadow), tuft1: mk([A.tuft(401, V.tuft)], [MAT.tuft], 5000, M.smallShadow),
@@ -591,7 +663,7 @@
         flY: mk([A.flower('#ffd83a', { petals: 6, len: 0.011, wid: 0.008, h: 0.13, centre: '#f0a020' })], [MAT.flower], 400, M.smallShadow),
         flV: mk([A.flower('#b79cff', { petals: 5, len: 0.012, wid: 0.007, h: 0.11, centre: '#fff2a8' })], [MAT.flower], 400, M.smallShadow)
       };
-      this.big = ['treeA', 'treeB', 'treeAfar', 'treeBfar', 'spruce', 'spruceFar', 'bush', 'bushfar', 'rock1', 'rock2', 'rockfar'];
+      this.big = ['treeA', 'treeB', 'treeAfar', 'treeBfar', 'spruce', 'spruceFar', 'palm', 'palmFar', 'cactus', 'cactusFar', 'bush', 'bushfar', 'rock1', 'rock2', 'rockfar'];
       this.small = ['tuft0', 'tuft1', 'peb0', 'peb1', 'peb2', 'flW', 'flY', 'flV'];
       console.log('[scene] sculpts built in ' + Math.round(performance.now() - t0) + ' ms');
     },
@@ -642,14 +714,18 @@
         const lat = Math.asin(y / l) * 57.29578, lon = Math.atan2(-z, x) * 57.29578, bi = root.Biome ? Biome.at(lat, lon, this._bio || (this._bio = {})) : { forest: 0.3, boreal: 0, desert: 0, ice: 0 };
         const treeLine = root.Biome ? Biome.snowLine(lat) - 900 : 1700;
         if (h > treeLine + 400 || h < 0.5 || bi.ice > 0.5) return;
+        { const wl = Scene.waterLevel(v3(x, y, z)); if (wl !== null && h < wl + 0.6) return; }   // nothing grows under water
         const forest = (W.noise(x / 260, y / 260, z / 260, 77) + 0.05) * 0.6 + (bi.forest - 0.3) * 0.9 - bi.desert * 0.6 - Math.max(0, (h - treeLine) / 400) * 0.6;
         const rr = W.R + h - 0.08; x = x / l * rr; y = y / l * rr; z = z / l * rr;
         if (spawn && Math.hypot(x - spawn.x, y - spawn.y, z - spawn.z) < 12) return;
         if (isBlocked(x, y, z, 1.5) || !this.alive(x, y, z)) return;
         const yaw = r * 40, s = 0.85 + W.hash01(X + 1, Y + 1, Z + 1) * 0.5, near = (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y) + (z - p.z) * (z - p.z) < near2;
         let kind = null, sc = s;
-        if (r < (0.06 + Math.max(0, forest) * 0.55) * (1 - bi.desert * 0.92)) {
+        const warm = 28 - 0.012 * Math.max(0, Math.abs(lat) - 12) ** 2 - 6.5 * h / 1000;   // a rough yearly warmth (°C)
+        if (bi.desert > 0.45 && warm > 17 && r > 0.965 - bi.desert * 0.02) { kind = near ? 'cactus' : 'cactusFar'; sc = 0.8 + s * 0.4; }
+        else if (r < (0.06 + Math.max(0, forest) * 0.55) * (1 - bi.desert * 0.92)) {
           if ((forest > 0.25 && r < 0.5 * forest) || bi.boreal > 0.3 + r * 2 || h > treeLine - 500) kind = near ? 'spruce' : 'spruceFar';
+          else if (warm > 22 && W.hash01(Z, X, Y) < (warm - 22) / 5 + (h < 25 ? 0.3 : 0)) kind = near ? 'palm' : 'palmFar';   // tropics and warm coasts
           else kind = (W.hash01(X, Z, Y) < 0.5 ? 'treeA' : 'treeB') + (near ? '' : 'far');
           if (kind === 'spruceFar') sc *= 0.75;
         } else if (r > 0.935 + bi.desert * 0.05) { kind = near ? 'bush' : 'bushfar'; sc = 0.9 + s * 0.4; }
@@ -671,6 +747,8 @@
         if (h > (this._sl || 1900) - 300 || h < 0.3 || r > 0.42 * (1 - (this._dry || 0))) return;
         const rr = W.R + h; x = x / l * rr; y = y / l * rr; z = z / l * rr;
         if (isBlocked(x, y, z, 0.1) || !this.alive(x, y, z)) return;
+        if ((X & 3) === 0 && (Z & 3) === 0) { const wl = Scene.waterLevel(v3(x, y, z)); this._wet = wl !== null ? wl : -1e9; }
+        if (h < (this._wet === undefined ? -1e9 : this._wet) + 0.3) return;
         // keep things off steep slopes
         const ux = x / rr, uy = y / rr, uz = z / rr, e = 0.4;
         const gx = W.solid(x + e, y, z) - W.solid(x - e, y, z), gy = W.solid(x, y + e, z) - W.solid(x, y - e, z), gz = W.solid(x, y, z + e) - W.solid(x, y, z - e);
@@ -702,7 +780,7 @@
   };
   const Y_AX = v3(0, 1, 0), X_AX = v3(1, 0, 0);
   // solid size of each scenery kind at scale 1: [radius, height] of a vertical cylinder from its base
-  const OBST = { treeA: [0.3, 3.2], treeB: [0.3, 3.2], treeAfar: [0.3, 3.2], treeBfar: [0.3, 3.2], spruce: [0.28, 1.6], spruceFar: [0.2, 1.2],
+  const OBST = { palm: [0.22, 5], palmFar: [0.22, 5], cactus: [0.25, 2.4], cactusFar: [0.25, 2.4], treeA: [0.3, 3.2], treeB: [0.3, 3.2], treeAfar: [0.3, 3.2], treeBfar: [0.3, 3.2], spruce: [0.28, 1.6], spruceFar: [0.2, 1.2],
     bush: [0.6, 0.75], bushfar: [0.6, 0.75], rock1: [0.62, 0.55], rock2: [0.62, 0.55], rockfar: [0.62, 0.55] };
   Scene.updateDeco = (p, force, budget) => Deco.update(p, force, budget);
   Scene._deco = Deco;
@@ -1200,7 +1278,7 @@
     handCam.quaternion.copy(q); handCam.updateMatrixWorld();
     farCam.position.copy(camera.position); farCam.quaternion.copy(camera.quaternion); farCam.updateMatrixWorld();
     sky.position.copy(camera.position);
-    Distant.update(eye); Sea.update(eye);
+    Distant.update(eye); Sea.update(eye); Inland.update(eye);
     Particles.update(dt); Rigs.update(dt, t); Scan.update(dt); Heavy.update(dt); Peers.update(dt);
     Hand.update(info.dig, info.walk, t, dt, info.look);
     Shadow.update(eye, q, info, dt);
@@ -1212,7 +1290,7 @@
     for (const ch of chunks.values()) if (ch.mesh) ch.mesh.position.set(ch.cx * W.CH - O.x, ch.cy * W.CH - O.y, ch.cz * W.CH - O.z);
     for (const m of fines.values()) if (m) { const b = m.userData.base; m.position.set(b[0] - O.x, b[1] - O.y, b[2] - O.z); }
     if (Scene.props) Scene.props.position.set(anchor.x - O.x, anchor.y - O.y, anchor.z - O.z);
-    Scene.updateFar(p, true); Deco.update(p, true); Distant.at = null;
+    Scene.updateFar(p, true); Deco.update(p, true); Distant.at = null; Inland.at = null;
     for (const m of [Distant.mesh, Sea.far]) if (m && m.userData.o) m.position.set(m.userData.o.x - O.x, m.userData.o.y - O.y, m.userData.o.z - O.z);
   };
   Scene.setOrigin = function (p) { O.set(Math.round(p.x), Math.round(p.y), Math.round(p.z)); uOff.value.copy(O).sub(shadeAnchor); };

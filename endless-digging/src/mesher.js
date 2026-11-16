@@ -23,6 +23,8 @@
   W.setWorldBlock = function (k, d) { blocks.set(k, d); if (!M.sync) post({ t: 'block', k, d }); return setBlock(k, d); };
   const pdata = new Map(), setPD = W.setPatchData;
   W.setPatchData = function (id, d) { pdata.set(id, d); if (!M.sync) post({ t: 'patch', id, d }); return setPD(id, d); };
+  const wdata = new Map(), setWB = W.setWaterBlock;
+  W.setWaterBlock = function (k, o) { wdata.set(k, o); if (!M.sync) post({ t: 'water', k, o }); return setWB(k, o); };
   let demData = null;
   W.setDem = function (d) { demData = d; if (!M.sync) post({ t: 'dem', dem: d }); return setDem(d); };
 
@@ -61,6 +63,8 @@
       for (const [k, d] of blocks) post({ t: 'block', k, d });
       if (root.DemPatches) post({ t: 'patches', list: root.DemPatches });
       for (const [id, d] of pdata) post({ t: 'patch', id, d });
+      if (root.WaterInfo) post({ t: 'winfo', info: root.WaterInfo });
+      for (const [k, o] of wdata) post({ t: 'water', k, o });
       const h = []; for (const q of W.holes) h.push(q[0], q[1], q[2], q[3]);
       if (h.length) post({ t: 'holes', h });
       return true;
