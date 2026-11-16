@@ -295,3 +295,19 @@ i.sw { display: inline-block; width: 46px; height: 46px; border-radius: 12px; bo
 .packs { display: flex; flex-wrap: wrap; gap: 8px; } .packs button { font: 900 16px var(--font); border: 0; border-radius: 14px; padding: 10px 16px; background: #fff3c4; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
 .packs button small { font-weight: 800; color: #6b5a24; } .packs button[disabled] { opacity: .5; cursor: default; }
 @media (max-width: 720px) { .prof { grid-template-columns: 1fr; } }
+/* social: corporations, market, voice */
+#chatLog .cl.corp { background: rgba(30, 90, 60, .72); }
+#chatLog .cl.corp b { color: #a8f0c0; }
+.sform { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+.sform input, .lrow input { padding: 7px 10px; border-radius: 8px; border: 1px solid #0003; font: inherit; min-width: 0; }
+.sform button, .lrow button { padding: 7px 12px; border-radius: 8px; border: 0; background: #f2a321; color: #2a1a00; font-weight: 700; cursor: pointer; }
+.sform button:disabled, .lrow button:disabled { opacity: .45; cursor: default; }
+.sform button.on { background: #3fae5a; color: #fff; }
+button.warn { padding: 7px 12px; border-radius: 8px; border: 0; background: #c2410c; color: #fff; font-weight: 700; cursor: pointer; }
+.corpHead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.corpHead h3 { margin: 4px 0; }
+#voiceBar { position: fixed; right: 12px; top: 64px; align-items: flex-end; display: flex; flex-direction: column; gap: 4px; pointer-events: none; font: 600 13px system-ui, sans-serif; z-index: 5; }
+#mic { display: none; background: #c2410c; color: #fff; padding: 3px 9px; border-radius: 9px; }
+#mic.on { display: inline-block; }
+#talking { background: rgba(25, 32, 40, .62); color: #fff; padding: 3px 9px; border-radius: 9px; }
+#bTalk { position: fixed; left: 14px; top: 120px; z-index: 30; pointer-events: auto; }

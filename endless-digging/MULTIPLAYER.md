@@ -63,9 +63,26 @@ Beyond that the planet is split between processes by region (each owns a set of 
 the border), accounts move to Postgres and chat across regions goes through Redis. The cell design and the
 "server measures every dig" rule are what make this split possible later without changing the game.
 
+## Social (co-op)
+
+- Finds: in co-op the server rolls them (`Rules.rollFind`, same table as solo) and keeps the counts (`find {id, count}`),
+  so the market cannot be faked from the browser.
+- Corporations (book J → Corporation): founding costs $10,000 (name 3–32, tag 2–4 letters/digits, both unique and
+  filtered), up to 100 members, head + officers (invite, remove), shared treasury (anyone puts in, only the head takes
+  out), `/c text` in chat goes to the whole corporation at any distance, the tag shows over names. Stored in
+  `corps.json`. Messages: `corpCreate, corpInvite, corpJoin, corpLeave, corpKick, corpRank, corpDeposit, corpWithdraw,
+  corpInfo, corpTop`.
+- Market (book J → Market): only duplicates can be sold (the first of each stays in the museum), up to 20 offers per
+  player, the market keeps 5 %; offline sellers are paid too. `market.json`, every sale in `market.log`.
+- Other players' bases: their shack with their name stands on their plot (within 5 km, while they are online).
+- Voice chat: off by default; WebRTC peer-to-peer with push-to-talk (B, or the 🎙 button on touch screens); the server
+  only relays connection offers (`rtc`) and only between players who both switched voice on and are mutual friends or
+  in the same corporation. Every voice can be muted or reported. For players behind strict NATs add a TURN server
+  in the game config (`ED_CONFIG.ice = [{ urls: 'turn:…', username, credential }]`).
+- Tests: `node server/test/social.js` (corporations, market, voice rules), `node server/test/smoke.js`.
+
 ## Not done yet (next steps)
 
-Other players' shacks and machines on screen; corporations (up to 100, treasury), player market; profiles (avatar,
-level, stats, achievements, friends, showcase, mirror, 1st/3rd person); skins (50 + 50 + 50) and the gold currency
-through Steam microtransactions (server-side `ISteamMicroTxn`); voice chat (off by default for children, friends and
-corporation only); seasons and corporate raids with courts (postponed by the owner).
+Seasons and corporate raids with courts (postponed by the owner); other players' machines on screen (now the
+figure just hides while driving); a TURN server for voice; moving accounts to a
+database when there are many players.

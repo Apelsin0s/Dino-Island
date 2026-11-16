@@ -1391,11 +1391,40 @@
     for (const e of list) {
       seen.add(e[0]); let P = Peers.m.get(e[0]);
       const lookId = e[11] && e[11].costume;
-      if (!P || P.name !== e[1] || P.lookId !== lookId) { if (P) dropPeer(P); P = makePeer(e[0], e[1], lookId); Peers.m.set(e[0], P); P.pos.set(e[2], e[3], e[4]); }
+      const shown = e[12] ? '[' + e[12] + '] ' + e[1] : e[1];   // the corporation tag in front of the name
+      if (!P || P.shown !== shown || P.lookId !== lookId) { if (P) dropPeer(P); P = makePeer(e[0], shown, lookId); P.shown = shown; P.name = e[1]; Peers.m.set(e[0], P); P.pos.set(e[2], e[3], e[4]); }
+      if (Array.isArray(e[13])) Bases.want(e[0], shown, e[13]);
       P.target.set(e[2], e[3], e[4]); P.f.set(e[5], e[6], e[7]); P.g.visible = !e[10];   // in a machine: the figure is inside it
     }
     for (const [sid, P] of Peers.m) if (!seen.has(sid)) { dropPeer(P); Peers.m.delete(sid); }
+    Bases.keep(seen);
   };
+  // other players' bases: a shack with their name at their plot (only while they are online, only within a few km)
+  const Bases = { m: new Map(), mats: null };
+  Bases.want = function (sid, name, plot) {
+    const key = plot[0].toFixed(5) + ',' + plot[1].toFixed(5), b = Bases.m.get(sid);
+    if (b && b.key === key && b.name === name) return;
+    if (b) { scene.remove(b.g); Bases.m.delete(sid); }
+    const d = W.fromLatLon(plot[0], plot[1]), up = v3(d[0], d[1], d[2]);
+    if (up.clone().multiplyScalar(W.R).distanceTo(anchor) < 5 || up.clone().multiplyScalar(W.R).distanceTo(anchor) > 5000) return;   // our own plot, or too far to matter
+    if (!Bases.mats) Bases.mats = [std({ vertexColors: true, roughness: 0.82 }), std({ vertexColors: true, roughness: 0.45, metalness: 0.55 }), std({ vertexColors: true, roughness: 0.1 })];
+    const sh = Bases.geo || (Bases.geo = A.shack()), g = new T.Group(), inner = new T.Group();
+    inner.add(new T.Mesh(sh.wood, Bases.mats[0]), new T.Mesh(sh.metal, Bases.mats[1]), new T.Mesh(sh.glass, Bases.mats[2]));
+    inner.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    const label = new T.Sprite(new T.SpriteMaterial({ map: nameTex(name, '#f2a321'), depthTest: true, transparent: true })); label.scale.set(3.2, 0.6, 1); label.position.set(0, 4.2, 0);
+    inner.add(label); g.add(inner);
+    // stand it on the ground at the plot, a little to the side like ours
+    const ax = new T.Vector3(0, 1, 0).cross(up); if (ax.lengthSq() < 1e-8) ax.set(1, 0, 0); ax.normalize(); const az = new T.Vector3().crossVectors(ax, up).normalize();
+    const w = up.clone().multiplyScalar(W.R).addScaledVector(ax, -4.2).addScaledVector(az, -7.5), l = w.length(), h = W.heightDir(w.x / l, w.y / l, w.z / l);
+    const pos = w.multiplyScalar((W.R + h - 0.05) / l);
+    g.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(ax, up, az)); g.userData.world = pos;
+    g.position.set(pos.x - O.x, pos.y - O.y, pos.z - O.z); scene.add(g);
+    W.blockers.push([pos.x, pos.y, pos.z, 1.8, 1.8]);
+    Bases.m.set(sid, { g, key, name, pos });
+  };
+  Bases.keep = function (seen) { for (const [sid, b] of Bases.m) if (!seen.has(sid)) { scene.remove(b.g); const i = W.blockers.findIndex(x => x[0] === b.pos.x && x[1] === b.pos.y); if (i >= 0) W.blockers.splice(i, 1); Bases.m.delete(sid); } };
+  Bases.rebase = function () { for (const b of Bases.m.values()) b.g.position.set(b.pos.x - O.x, b.pos.y - O.y, b.pos.z - O.z); };
+  Scene.bases = () => Bases.m.size;
   Scene.removePeer = sid => { const P = Peers.m.get(sid); if (P) { dropPeer(P); Peers.m.delete(sid); } };
   Scene.peerCount = () => Peers.m.size;
   Scene.peers = () => [...Peers.m.entries()].map(([sid, P]) => ({ sid, name: P.name }));
@@ -1431,6 +1460,7 @@
     for (const ch of chunks.values()) if (ch.mesh) ch.mesh.position.set(ch.cx * W.CH - O.x, ch.cy * W.CH - O.y, ch.cz * W.CH - O.z);
     for (const m of fines.values()) if (m) { const b = m.userData.base; m.position.set(b[0] - O.x, b[1] - O.y, b[2] - O.z); }
     if (Scene.props) Scene.props.position.set(anchor.x - O.x, anchor.y - O.y, anchor.z - O.z);
+    Bases.rebase();
     Scene.updateFar(p, true); Deco.update(p, true); Distant.at = null; Inland.at = null; GW.at = null;
     for (const m of [Distant.mesh, Sea.far]) if (m && m.userData.o) m.position.set(m.userData.o.x - O.x, m.userData.o.y - O.y, m.userData.o.z - O.z);
   };

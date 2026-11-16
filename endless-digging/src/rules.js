@@ -99,5 +99,42 @@
     return { litres, by, got: got * lvl('scale'), main, per, k };
   }
   const canBuy = (id, has, money) => { const n = NODES.find(x => x.id === id); return !!n && !n.soon && !n.root && !has(id) && (n.req || []).every(has) && money >= n.p ? n : null; };
-  root.Rules = { TOOLS, NODES, RIG_L, BITE, PTS, MATS, NM, HARD, hardShare, levels, bite, scoop, canBuy };
+  // ---------- finds: what can turn up in the ground (shape and colour are for the museum icons) ----------
+  const FINDS = [
+    { id: 'horseshoe', shape: 'shoe', c: '#8a8f96', d: [0.2, 1.6], per: 1 / 260, v: 6 },
+    { id: 'coin', shape: 'coin', c: '#c9a24a', d: [0.2, 3], per: 1 / 300, v: 12 },
+    { id: 'shard', shape: 'pot', c: '#c0703a', d: [0.3, 4], per: 1 / 220, v: 4 },
+    { id: 'pipe', shape: 'pipe', c: '#6b4a2a', d: [0.3, 2.2], per: 1 / 600, v: 40, where: [44, 53, 22, 41] },
+    { id: 'arrow', shape: 'arrow', c: '#8f6a3a', d: [0.5, 3], per: 1 / 700, v: 25, where: [44, 53, 22, 41] },
+    { id: 'figurine', shape: 'figure', c: '#d08a5a', d: [0.5, 3], per: 1 / 2500, v: 260, where: [47.5, 50.5, 28.5, 32.5] },
+    { id: 'amphora', shape: 'amphora', c: '#b85f30', d: [1, 5], per: 1 / 1800, v: 90, where: [40, 47.6, 22, 42] },
+    { id: 'romancoin', shape: 'coin', c: '#d8b860', d: [0.4, 3], per: 1 / 1600, v: 80, where: [36, 54, -10, 30] },
+    { id: 'handaxe', shape: 'axe', c: '#7d7f86', d: [2, 12], mats: [1, 5], per: 1 / 2600, v: 200 },
+    { id: 'tusk', shape: 'tusk', c: '#efe4c8', d: [3, 16], mats: [1, 5], per: 1 / 3000, v: 320 },
+    { id: 'amber', shape: 'drop', c: '#f0a020', d: [1, 12], mats: [5, 1], per: 1 / 1400, v: 150, where: [50, 57, 18, 30] },
+    { id: 'nugget', shape: 'nugget', c: '#ffc928', d: [1, 20], mats: [5], per: 1 / 4000, v: 420 },
+    { id: 'ammonite', shape: 'shell', c: '#c9b58f', d: [4, 80], mats: [6], per: 1 / 500, v: 45 },
+    { id: 'fish', shape: 'fish', c: '#9a8a70', d: [6, 80], mats: [6], per: 1 / 1800, v: 110 },
+    { id: 'trilobite', shape: 'bug', c: '#6f6a62', d: [10, 120], mats: [6], per: 1 / 2600, v: 160 },
+    { id: 'dino', shape: 'bone', c: '#e8dcc0', d: [5, 60], mats: [6, 1], per: 1 / 9000, v: 900 },
+    { id: 'fern', shape: 'leaf', c: '#3b4a34', d: [8, 200], mats: [8], per: 1 / 300, v: 70 },
+    { id: 'quartz', shape: 'crystal', c: '#e6eef6', d: [10, 999], mats: [2], per: 1 / 600, v: 50 },
+    { id: 'garnet', shape: 'gem', c: '#a3203a', d: [12, 999], mats: [2], per: 1 / 2500, v: 140 },
+    { id: 'geode', shape: 'geode', c: '#8a63c9', d: [10, 999], mats: [7], per: 1 / 1200, v: 95 },
+    { id: 'obsidian', shape: 'gem', c: '#141416', d: [1, 999], mats: [7], per: 1 / 900, v: 60 },
+    { id: 'magnetite', shape: 'crystal', c: '#2a2e36', d: [2, 999], mats: [3, 4], per: 1 / 700, v: 35 },
+    { id: 'meteorite', shape: 'rock', c: '#4a3a34', d: [0.5, 12], per: 1 / 25000, v: 1500 },
+    { id: 'diamond', shape: 'gem', c: '#cfefff', d: [30, 999], mats: [2, 7], per: 1 / 30000, v: 3000 }
+  ];
+  // one roll for a bite of `litres` at a depth, in a main material, at a place; rnd: () => 0..1
+  function rollFind(depth, main, lat, lon, litres, rnd) {
+    for (const f of FINDS) {
+      if (depth < f.d[0] || depth > f.d[1]) continue;
+      if (f.mats && !f.mats.includes(main)) continue;
+      if (f.where && (lat < f.where[0] || lat > f.where[1] || lon < f.where[2] || lon > f.where[3])) continue;
+      if (rnd() < 1 - Math.pow(1 - f.per, litres)) return f;
+    }
+    return null;
+  }
+  root.Rules = { FINDS, rollFind, TOOLS, NODES, RIG_L, BITE, PTS, MATS, NM, HARD, hardShare, levels, bite, scoop, canBuy };
 })(typeof window !== 'undefined' ? window : globalThis);

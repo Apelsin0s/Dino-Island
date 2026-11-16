@@ -811,7 +811,8 @@
     S.applyHole([x, y, z, r], W.addHole(x, y, z, r));
     if (burst && pl.pos.distanceToSquared(v3(x, y, z)) < 900) S.burst(x, y, z, S.matColor(main || 0), 4, null, Math.min(1, r * 6));
   }
-  function netStart() {
+  function netStart(welcome) {
+    if (root.Social) Social.online(Net, welcome || {});
     const seen = new Set(), hk = (x, y, z, r) => Math.round(x * 100) + ',' + Math.round(y * 100) + ',' + Math.round(z * 100) + ',' + Math.round(r * 1000);
     // holes of the cells around us arrive when we come near them; ours are already here
     for (const h of W.holes) seen.add(hk(h[0], h[1], h[2], h[3]));
@@ -842,8 +843,8 @@
   function chatLine(m) {
     const log = $('chatLog'); if (!log) return;
     const el = document.createElement('div'); el.className = 'cl' + (m.sys ? ' sys' : '');
-    if (m.sys) { const f = L.net.sys[m.sys]; el.textContent = typeof f === 'string' ? f.replace('{0}', (m.args || [])[0] === undefined ? '' : m.args[0]) : String((m.args || [])[0] || m.sys); }
-    else { const b = document.createElement('b'); b.textContent = m.name + ': '; el.appendChild(b); el.appendChild(document.createTextNode(m.text)); }
+    if (m.sys) { const f = L.net.sys[m.sys] || (L.soc && L.soc.sys && L.soc.sys[m.sys]); el.textContent = typeof f === 'string' ? f.replace(/\{(\d)\}/g, (_, i) => (m.args || [])[i] === undefined ? '' : m.args[i]) : String((m.args || [])[0] || m.sys); }
+    else { if (m.corp) el.classList.add('corp'); const b = document.createElement('b'); b.textContent = (m.corp ? '[' + m.corp + '] ' : m.tag ? '[' + m.tag + '] ' : '') + m.name + ': '; el.appendChild(b); el.appendChild(document.createTextNode(m.text)); }
     log.appendChild(el); while (log.children.length > 40) log.firstChild.remove();
     log.scrollTop = log.scrollHeight; log.classList.add('fresh'); clearTimeout(chatLine.t); chatLine.t = setTimeout(() => log.classList.remove('fresh'), 9000);
   }
@@ -856,6 +857,8 @@
     const box = document.createElement('div'); box.id = 'chat';
     box.innerHTML = `<div id="chatLog"></div><input id="chatIn" maxlength="200" autocomplete="off" spellcheck="false" hidden placeholder="${L.net.chatPh}">`;
     document.body.appendChild(box);
+    const vb = document.createElement('div'); vb.id = 'voiceBar'; vb.innerHTML = '<span id="mic">🎙 B</span><span id="talking" hidden></span>'; document.body.appendChild(vb);
+    if (TOUCH) { const t = document.createElement('button'); t.id = 'bTalk'; t.className = 'tbtn'; t.textContent = '🎙'; t.addEventListener('pointerdown', e => { e.preventDefault(); if (root.Social) Social.ptt(true); }); for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) t.addEventListener(ev, () => { if (root.Social) Social.ptt(false); }); document.body.appendChild(t); }
     const inp = $('chatIn');
     inp.addEventListener('keydown', e => {
       e.stopPropagation();
@@ -940,6 +943,10 @@
     if (root.Cosmetics && root.Progress) Cosmetics.init({ L, S, online: () => ONLINE, send: m => Net.send(m), sound: n => Sound[n] && Sound[n](), progress: () => Progress.state,
       level: () => Progress.level().level, levelInfo: () => Progress.level(), name: () => pl.name || (root.Net && Net.guestName()) || 'Digger', steamName: () => !!pl.steamName,
       setName: n => { if (root.Net) Net.setGuestName(n); pl.name = n; }, peers: () => S.peers(), corpName: () => pl.corp && pl.corp.name, steam: () => !!(root.ED_CONFIG && ED_CONFIG.steam) });
+    if (root.Social && root.Progress) Social.init({ L, online: () => ONLINE, send: m => Net.send(m), money: () => pl.money, peers: () => S.peers(), name: () => pl.name || (root.Net && Net.guestName()) || '', sid: () => root.Net ? Net.sid : 0,
+      notice, playing: () => playing && !chatOpen, setCorp: k => { pl.corp = k; },
+      talking: names => { const e = $('talking'); if (e) { e.textContent = names.length ? '🔊 ' + names.join(', ') : ''; e.hidden = !names.length; } },
+      micOn: on => { const e = $('mic'); if (e) e.classList.toggle('on', on); } });
     $('stats').hidden = !AD.stats; document.body.classList.toggle('noHud', !!AD.hideHud);
     addEventListener('resize', () => S.resize());
   }
@@ -1124,12 +1131,12 @@
         S.resetChunks(); S.updateFar(pl.pos, true); S.updateDeco(pl.pos, true);
         if (W.solid(pl.pos.x, pl.pos.y, pl.pos.z) > 0) { pl.pos.setLength(W.R + W.heightAt(pl.pos.x, pl.pos.y, pl.pos.z) + 0.1); pl.vel.set(0, 0, 0); }
       };
-      performance.mark('ed:threads'); setup(welcome); setupTouch(); if (ONLINE) { buildChat(); netStart(); } else if (welcome && welcome.failed) netFailed = welcome.failed; performance.mark('ed:setup');
+      performance.mark('ed:threads'); setup(welcome); setupTouch(); if (ONLINE) { buildChat(); netStart(welcome); } else if (welcome && welcome.failed) netFailed = welcome.failed; performance.mark('ed:setup');
       // while loading, hand the threads new work as soon as one finishes (not only once per frame)
       if (root.Mesher) Mesher.onResult = () => { if (loading) S.updateChunks(pl.pos, 4); else Mesher.onResult = null; };
       requestAnimationFrame(loop);
       addEventListener('beforeunload', () => { if (dirty) save(); });
-      root.__game = { pl, W, S, owned, scan, toggleAdmin, adminAct, teleport, toggleDrive, get drive() { return drive; },
+      root.__game = { pl, W, S, owned, toggleBook, scan, toggleAdmin, adminAct, teleport, toggleDrive, get drive() { return drive; },
         driveTest() {   // test helper: drive forward 2 s, turn the camera to the ground ahead, dig three strokes
           for (let i = 0; i < 40; i++) { keys.KeyW = true; driveStep(0.05); } keys.KeyW = false;
           drive.camPitch = -0.6; const m0 = pl.money; let n = 0; mouseDown = true; locked = true;

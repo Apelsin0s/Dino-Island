@@ -34,6 +34,11 @@ const appendLine = (n, v) => fs.appendFile(F(n), JSON.stringify(v) + '\n', () =>
 const accounts = readJSON('accounts.json', {});    // id -> { name, money, owned, dug, sold, earned, plot, created, seen, digs }
 const bans = readJSON('bans.json', {});             // id -> { reason, at, by }
 const mutes = readJSON('mutes.json', {});           // id -> until (ms)
+const corps = readJSON('corps.json', {});           // corp id -> { name, tag, owner, members: [accId], officers: [accId], treasury, invites: [accId], created }
+const market = readJSON('market.json', []);         // [{ id, seller, sellerName, find, price, at }]
+let dirtySocial = false;
+setInterval(() => { if (dirtySocial) { dirtySocial = false; writeJSON('corps.json', corps); writeJSON('market.json', market); } }, 5000).unref();
+const CORP_MAX = 100, CORP_PRICE = 10000, MARKET_FEE = 0.05;
 let dirtyAcc = false;
 setInterval(() => { if (dirtyAcc) { dirtyAcc = false; writeJSON('accounts.json', accounts); } }, 5000).unref();
 
@@ -91,6 +96,16 @@ function seeCells(c) {   // which cells this player should hear about: send hole
 }
 function leaveCells(c) { for (const k of c.cells) { const s = cellClients.get(k); if (s) { s.delete(c); if (!s.size) cellClients.delete(k); } } c.cells.clear(); }
 
+const corpOf = c => c.acc && c.acc.corp ? corps[c.acc.corp] : null;
+const canManage = (k, id) => k.owner === id || k.officers.includes(id);
+const corpTag = a => a && a.corp && corps[a.corp] ? corps[a.corp].tag : null;
+function corpTell(k, msg) { const j = JSON.stringify(msg); for (const id of k.members) { const o = byAccount.get(id); if (o && o.ws.readyState === 1) o.ws.send(j); } }
+function corpRefresh(k) { for (const id of k.members) { const o = byAccount.get(id); if (o) corpInfo(o); } }
+function corpInfo(c) {
+  const k = corpOf(c); if (!k) return send(c, { t: 'corp', corp: null });
+  send(c, { t: 'corp', corp: { id: c.acc.corp, name: k.name, tag: k.tag, owner: k.owner === c.accId, officer: canManage(k, c.accId), treasury: Math.round(k.treasury), max: CORP_MAX,
+    members: k.members.map(id => ({ id, name: accounts[id] ? accounts[id].name : '?', online: byAccount.has(id), sid: byAccount.has(id) ? byAccount.get(id).sid : 0, rank: id === k.owner ? 'owner' : k.officers.includes(id) ? 'officer' : 'member' })) } });
+}
 function sysChat(c, key, args) { send(c, { t: 'chat', sys: key, args: args || [] }); }
 function findTarget(q) {   // by session number, account id or exact name
   for (const c of clients.values()) if (String(c.sid) === q || c.accId === q || (c.acc && c.acc.name.toLowerCase() === String(q).toLowerCase())) return c;
@@ -116,7 +131,7 @@ const handlers = {
     const old = byAccount.get(id); if (old) { send(old, { t: 'kicked', reason: 'elsewhere' }); old.ws.close(); }
     c.accId = id; c.acc = account(id, name); c.admin = admin; byAccount.set(id, c);
     c.has = k => c.acc.owned.includes(k); c.lvl = Rules.levels(c.has);
-    send(c, { t: 'welcome', sid: c.sid, name: c.acc.name, steam: id[0] === 's', admin, plot: c.acc.plot, state: stateOf(c.acc), look: lookOf(c.acc), players: clients.size });
+    send(c, { t: 'welcome', sid: c.sid, name: c.acc.name, steam: id[0] === 's', admin, plot: c.acc.plot, state: stateOf(c.acc), look: lookOf(c.acc), finds: c.acc.finds || {}, players: clients.size }); setTimeout(() => { const k = corpOf(c); if (k) corpRefresh(k); else corpInfo(c); }, 50);
     log('join', c.sid, id, c.acc.name, admin ? '(owner)' : '');
   },
   pos(c, m) {
@@ -146,6 +161,8 @@ const handlers = {
     if (s.litres < 1e-6) return send(c, { t: 'dig', seq: m.seq, ok: true, got: 0 });
     const h = [cc[0], cc[1], cc[2], r], key = addHole(h);
     const a = c.acc; a.money += s.got; a.dug += s.litres / 1000; a.sold += s.litres; a.digs++; for (let i = 0; i < s.by.length; i++) a.earned[i] = (a.earned[i] || 0) + s.by[i]; dirtyAcc = true;
+    { const ll = toLL(cc[0], cc[1], cc[2]), depth = W.depthAt(cc[0], cc[1], cc[2]), f = Rules.rollFind(depth, s.main, ll[0], ll[1], s.litres, Math.random);
+      if (f) { a.finds = a.finds || {}; const first = !a.finds[f.id]; a.finds[f.id] = (a.finds[f.id] || 0) + 1; send(c, { t: 'find', id: f.id, first, count: a.finds[f.id] }); } }
     send(c, { t: 'dig', seq: m.seq, ok: true, got: s.got, litres: s.litres, main: s.main, oreL: s.by[3] + s.by[4] + (s.by[8] || 0), ore4: s.by[4] > s.by[3], money: a.money });
     const watchers = cellClients.get(key);
     if (watchers) { const msg = JSON.stringify({ t: 'hole', h, by: c.sid, main: s.main }); for (const o of watchers) if (o !== c && o.ws.readyState === 1) o.ws.send(msg); }
@@ -157,14 +174,17 @@ const handlers = {
   },
   chat(c, m) {
     const raw = String(m.text || ''); if (!raw.trim()) return;
-    if (raw[0] === '/' && c.admin) return admin(c, raw.slice(1).trim().split(/\s+/));
-    if (raw[0] === '/') return sysChat(c, 'unknownCmd');
+    const toCorp = /^\/c\s/i.test(raw), k = toCorp ? corpOf(c) : null;
+    if (raw[0] === '/' && c.admin && !toCorp) return admin(c, raw.slice(1).trim().split(/\s+/));
+    if (raw[0] === '/' && !toCorp) return sysChat(c, 'unknownCmd');
+    if (toCorp && !k) return sysChat(c, 'corpNone');
     const until = mutes[c.accId]; if (until && until > Date.now()) return sysChat(c, 'muted', [Math.ceil((until - Date.now()) / 60000)]);
     const lim = c.limiter(raw, Date.now()); if (lim) return sysChat(c, lim);
-    const { text, hidden } = mod.clean(raw); if (!text.replace(/\*/g, '').trim()) return sysChat(c, 'hidden');
+    const { text, hidden } = mod.clean(toCorp ? raw.slice(3) : raw); if (!text.replace(/\*/g, '').trim()) return sysChat(c, 'hidden');
     appendLine('chat.log', { at: Date.now(), id: c.accId, name: c.acc.name, raw, text });
     if (hidden) { c.strikes = (c.strikes || 0) + 1; if (c.strikes >= 3) { mutes[c.accId] = Date.now() + 10 * 60000; writeJSON('mutes.json', mutes); c.strikes = 0; sysChat(c, 'autoMuted', [10]); } }
-    const msg = JSON.stringify({ t: 'chat', from: c.sid, name: c.acc.name, text });
+    if (k) return corpTell(k, { t: 'chat', from: c.sid, name: c.acc.name, text, corp: k.tag });
+    const msg = JSON.stringify({ t: 'chat', from: c.sid, name: c.acc.name, text, tag: corpTag(c.acc) });
     // chat is heard by the players around (the same distance as you can see them) — no private messages
     for (const o of clients.values()) if (o.pos && c.pos && Math.hypot(o.pos[0] - c.pos[0], o.pos[1] - c.pos[1], o.pos[2] - c.pos[2]) < SEE_PLAYERS * 2 && o.ws.readyState === 1) o.ws.send(msg);
   },
@@ -174,6 +194,84 @@ const handlers = {
     sysChat(c, 'reported');
   },
   ping(c, m) { send(c, { t: 'pong', t0: m.t0 }); },
+  // ---------- corporations: up to 100 members, a shared treasury, their own chat ----------
+  corpCreate(c, m) {
+    const a = c.acc, name = mod.clean(String(m.name || '').slice(0, 32)).text.trim(), tag = mod.clean(String(m.tag || '').slice(0, 4)).text.replace(/[^\p{L}\p{N}]/gu, '').toUpperCase();
+    if (a.corp && corps[a.corp]) return sysChat(c, 'corpHave');
+    if (name.length < 3 || /\*/.test(name) || tag.length < 2 || /\*/.test(tag)) return sysChat(c, 'corpName');
+    if (Object.values(corps).some(k => k.name.toLowerCase() === name.toLowerCase() || k.tag === tag)) return sysChat(c, 'corpTaken');
+    if (a.money < CORP_PRICE) return sysChat(c, 'corpMoney');
+    a.money -= CORP_PRICE; const id = 'k' + Date.now().toString(36);
+    corps[id] = { name, tag, owner: c.accId, members: [c.accId], officers: [], treasury: 0, invites: [], created: Date.now() }; a.corp = id; dirtyAcc = dirtySocial = true;
+    send(c, { t: 'state', state: stateOf(a) }); corpInfo(c);
+  },
+  corpInvite(c, m) {
+    const k = corpOf(c), o = clients.get(m.sid | 0); if (!k || !o || !o.acc || !canManage(k, c.accId)) return;
+    if (k.members.length >= CORP_MAX) return sysChat(c, 'corpFull');
+    if (!k.invites.includes(o.accId)) k.invites.push(o.accId); dirtySocial = true;
+    send(o, { t: 'corpInvite', id: c.acc.corp, name: k.name, tag: k.tag, from: c.acc.name }); sysChat(c, 'done');
+  },
+  corpJoin(c, m) {
+    const id = String(m.id || ''), k = corps[id]; if (!k || c.acc.corp || !k.invites.includes(c.accId)) return;
+    if (k.members.length >= CORP_MAX) return sysChat(c, 'corpFull');
+    k.invites = k.invites.filter(x => x !== c.accId); k.members.push(c.accId); c.acc.corp = id; dirtyAcc = dirtySocial = true;
+    corpTell(k, { t: 'chat', sys: 'corpJoined', args: [c.acc.name] }); corpRefresh(k);
+  },
+  corpLeave(c) {
+    const k = corpOf(c); if (!k) return;
+    k.members = k.members.filter(x => x !== c.accId); k.officers = k.officers.filter(x => x !== c.accId); c.acc.corp = null;
+    if (k.owner === c.accId) { if (k.members.length) { k.owner = k.officers[0] || k.members[0]; } else { delete corps[Object.keys(corps).find(i => corps[i] === k)]; } }
+    dirtyAcc = dirtySocial = true; send(c, { t: 'corp', corp: null }); if (k.members.length) corpRefresh(k);
+  },
+  corpKick(c, m) {
+    const k = corpOf(c), who = String(m.who || ''); if (!k || !canManage(k, c.accId) || who === k.owner || !k.members.includes(who)) return;
+    k.members = k.members.filter(x => x !== who); k.officers = k.officers.filter(x => x !== who); if (accounts[who]) accounts[who].corp = null;
+    dirtyAcc = dirtySocial = true; const o = byAccount.get(who); if (o) send(o, { t: 'corp', corp: null }); corpRefresh(k);
+  },
+  corpRank(c, m) {   // the owner makes a member an officer (can invite and kick) or back
+    const k = corpOf(c), who = String(m.who || ''); if (!k || k.owner !== c.accId || !k.members.includes(who) || who === k.owner) return;
+    k.officers = k.officers.includes(who) ? k.officers.filter(x => x !== who) : k.officers.concat([who]); dirtySocial = true; corpRefresh(k);
+  },
+  corpDeposit(c, m) {
+    const k = corpOf(c), v = Math.floor(+m.amount || 0); if (!k || !(v > 0) || c.acc.money < v) return;
+    c.acc.money -= v; k.treasury += v; dirtyAcc = dirtySocial = true; send(c, { t: 'state', state: stateOf(c.acc) }); corpTell(k, { t: 'chat', sys: 'corpDeposit', args: [c.acc.name, v] }); corpRefresh(k);
+  },
+  corpWithdraw(c, m) {   // only the owner pays out of the treasury
+    const k = corpOf(c), v = Math.floor(+m.amount || 0); if (!k || k.owner !== c.accId || !(v > 0) || k.treasury < v) return;
+    k.treasury -= v; c.acc.money += v; dirtyAcc = dirtySocial = true; send(c, { t: 'state', state: stateOf(c.acc) }); corpRefresh(k);
+  },
+  corpInfo(c) { corpInfo(c); },
+  corpTop(c) { send(c, { t: 'corpTop', list: Object.values(corps).sort((a, b) => b.treasury - a.treasury).slice(0, 20).map(k => ({ name: k.name, tag: k.tag, members: k.members.length, treasury: Math.round(k.treasury) })) }); },
+  // ---------- the market: duplicate finds for money, between players ----------
+  marketList(c) { send(c, { t: 'market', list: market.slice(-200).map(o => ({ id: o.id, find: o.find, price: o.price, seller: o.sellerName, mine: o.seller === c.accId })), finds: c.acc.finds || {} }); },
+  marketSell(c, m) {
+    const f = String(m.find || ''), price = Math.round(+m.price || 0), a = c.acc; a.finds = a.finds || {};
+    if (!Rules.FINDS.some(x => x.id === f) || (a.finds[f] || 0) < 2 || !(price >= 1 && price <= 1e9)) return;   // the first one stays in your museum
+    if (market.filter(o => o.seller === c.accId).length >= 20) return sysChat(c, 'marketMax');
+    a.finds[f]--; market.push({ id: 'o' + Date.now().toString(36) + Math.floor(Math.random() * 1e4), seller: c.accId, sellerName: a.name, find: f, price, at: Date.now() }); dirtyAcc = dirtySocial = true; handlers.marketList(c);
+  },
+  marketBuy(c, m) {
+    const i = market.findIndex(o => o.id === m.id); if (i < 0) return; const o = market[i], a = c.acc;
+    if (o.seller === c.accId || a.money < o.price) return;
+    a.money -= o.price; a.finds = a.finds || {}; a.finds[o.find] = (a.finds[o.find] || 0) + 1;
+    const sel = accounts[o.seller]; if (sel) sel.money += o.price * (1 - MARKET_FEE);
+    market.splice(i, 1); dirtyAcc = dirtySocial = true; appendLine('market.log', { at: Date.now(), buyer: c.accId, seller: o.seller, find: o.find, price: o.price });
+    send(c, { t: 'state', state: stateOf(a) }); send(c, { t: 'find', id: o.find, first: a.finds[o.find] === 1, count: a.finds[o.find], bought: true }); handlers.marketList(c);
+    const sc = byAccount.get(o.seller); if (sc) { send(sc, { t: 'state', state: stateOf(sel) }); send(sc, { t: 'chat', sys: 'marketSold', args: [o.price] }); }
+  },
+  marketCancel(c, m) {
+    const i = market.findIndex(o => o.id === m.id && o.seller === c.accId); if (i < 0) return;
+    const o = market.splice(i, 1)[0]; c.acc.finds[o.find] = (c.acc.finds[o.find] || 0) + 1; dirtyAcc = dirtySocial = true; handlers.marketList(c);
+  },
+  // ---------- voice chat: the server only passes connection offers between two players who may talk ----------
+  // (friends of each other, or the same corporation, and both have voice switched on)
+  rtc(c, m) {
+    const o = clients.get(m.to | 0); if (!o || !o.acc || !c.voice || !o.voice) return;
+    const mates = (c.acc.corp && c.acc.corp === o.acc.corp) || ((c.acc.friends || []).includes(o.accId) && (o.acc.friends || []).includes(c.accId));
+    if (!mates) return;
+    send(o, { t: 'rtc', from: c.sid, name: c.acc.name, data: m.data });
+  },
+  voice(c, m) { c.voice = !!m.on; },
   // what you look like to others (costume, emblem, level); legendary costumes only if owned
   look(c, m) {
     const l = m.look || {}, cos = String(l.costume || '');
@@ -211,7 +309,7 @@ const handlers = {
     c.acc.friends = c.acc.friends || []; if (!c.acc.friends.includes(o.accId) && c.acc.friends.length < 200) { c.acc.friends.push(o.accId); dirtyAcc = true; }
     handlers.friends(c);
   },
-  friends(c) { send(c, { t: 'friends', list: (c.acc.friends || []).map(id => ({ name: accounts[id] ? accounts[id].name : '?', online: byAccount.has(id) })) }); }
+  friends(c) { send(c, { t: 'friends', list: (c.acc.friends || []).map(id => ({ name: accounts[id] ? accounts[id].name : '?', online: byAccount.has(id), sid: byAccount.has(id) ? byAccount.get(id).sid : 0 })) }); }
 };
 // owner commands (typed in chat): /ban <player> <reason>, /unban <id>, /mute <player> <minutes>, /unmute <player>, /kick <player>, /say <text>, /who
 function admin(c, a) {
@@ -236,7 +334,7 @@ setInterval(() => {
     const gx = Math.floor(c.pos[0] / G), gy = Math.floor(c.pos[1] / G), gz = Math.floor(c.pos[2] / G), list = [];
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let d = -1; d <= 1; d++) {
       const l = grid.get((gx + a) + ',' + (gy + b) + ',' + (gz + d)); if (!l) continue;
-      for (const o of l) if (o !== c && Math.hypot(o.pos[0] - c.pos[0], o.pos[1] - c.pos[1], o.pos[2] - c.pos[2]) < G) list.push([o.sid, o.acc.name, +o.pos[0].toFixed(2), +o.pos[1].toFixed(2), +o.pos[2].toFixed(2), +o.f[0].toFixed(3), +o.f[1].toFixed(3), +o.f[2].toFixed(3), +o.pitch.toFixed(3), o.tool, o.drive, o.look || null]);
+      for (const o of l) if (o !== c && Math.hypot(o.pos[0] - c.pos[0], o.pos[1] - c.pos[1], o.pos[2] - c.pos[2]) < G) list.push([o.sid, o.acc.name, +o.pos[0].toFixed(2), +o.pos[1].toFixed(2), +o.pos[2].toFixed(2), +o.f[0].toFixed(3), +o.f[1].toFixed(3), +o.f[2].toFixed(3), +o.pitch.toFixed(3), o.tool, o.drive, o.look || null, corpTag(o.acc), o.acc.plot]);
     }
     if (list.length || c.sawOthers) { send(c, { t: 'players', list }); c.sawOthers = list.length > 0; }
   }
@@ -295,7 +393,7 @@ wss.on('connection', ws => {
   });
   ws.on('close', () => {
     clearTimeout(timer); clients.delete(c.sid); leaveCells(c);
-    if (c.accId && byAccount.get(c.accId) === c) byAccount.delete(c.accId);
+    if (c.accId && byAccount.get(c.accId) === c) { byAccount.delete(c.accId); const k = corpOf(c); if (k) corpRefresh(k); }
     if (c.acc) { log('leave', c.sid, c.accId); for (const o of clients.values()) send(o, { t: 'left', sid: c.sid }); }
   });
   ws.on('error', () => {});
