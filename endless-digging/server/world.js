@@ -31,11 +31,13 @@ function load() {
   });
   // lakes and rivers: read with the relief blocks, on first use
   vm.runInContext(fs.readFileSync(path.join(SRC, 'dem', 'water.js'), 'utf8'), ctx, { filename: 'dem/water.js' });
+  const rowsCache = new Map();
   if (ctx.WaterInfo) {
     W.setWaterInfo(ctx.WaterInfo);
     W.setWaterLoader(k => {
       try {
-        const o = JSON.parse(zlib.inflateSync(Buffer.from(fs.readFileSync(path.join(SRC, 'dem', 'water', k + '.txt'), 'utf8'), 'base64')).toString());
+        const r = k.split('_')[1]; if (!rowsCache.has(r)) rowsCache.set(r, JSON.parse(fs.readFileSync(path.join(SRC, 'dem', 'water', 'r' + r + '.txt'), 'utf8')));
+        const o = JSON.parse(zlib.inflateSync(Buffer.from(rowsCache.get(r)[k], 'base64')).toString());
         let lakes = null;
         if (o.lakes) { const raw = zlib.inflateSync(Buffer.from(o.lakes, 'base64')); lakes = new Uint16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.length)); }
         return { lakes, rivers: o.rivers ? new Float32Array(o.rivers) : null };

@@ -48,10 +48,13 @@
   const wPend = new Map();
   const inflate = async u => new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
   const b64 = t => { const bin = atob(t), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+  // blocks of one row come in one file (dem/water/r<row>.txt: { "<c>_<r>": text })
+  const rows = new Map();
+  const rowText = k => { const r = k.split('_')[1]; if (!rows.has(r)) rows.set(r, fetch(WI.file.replace('{r}', r)).then(x => { if (!x.ok) throw new Error('water row ' + r); return x.json(); })); return rows.get(r).then(m => { if (!m[k]) throw new Error('no water ' + k); return m[k]; }); };
   function loadWater(k) {
     if (!WI || !WI.blocks.includes(k) || T.loaded.has('w:' + k)) return Promise.resolve();
     if (wPend.has(k)) return wPend.get(k);
-    const pr = fetch(WI.file.replace('{c}_{r}', k)).then(r => { if (!r.ok) throw new Error(k); return r.text(); }).then(async txt => {
+    const pr = rowText(k).then(async txt => {
       const o = JSON.parse(new TextDecoder().decode(await inflate(b64(txt.trim()))));
       const lakes = o.lakes ? new Uint16Array(await inflate(b64(o.lakes))) : null, rivers = o.rivers ? new Float32Array(o.rivers) : null;
       W.setWaterBlock(k, { lakes, rivers }); T.loaded.add('w:' + k); wPend.delete(k); if (T.onBlock) T.onBlock(k);
