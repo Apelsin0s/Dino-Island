@@ -489,6 +489,7 @@
     keys[e.code] = true;
     if (e.code === 'KeyF' && !e.repeat) toggleShop(true);
     if (e.code === 'KeyE' && !e.repeat) scan();
+    if (e.code === 'KeyV' && !e.repeat) { S.setThirdPerson(!S.thirdPerson()); }
     if (e.code === 'KeyR' && !e.repeat) { if (nearCage()) rideCage(); else toggleDrive(); }
     if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
   });
@@ -680,7 +681,8 @@
       case 'money': return `<div class="arow big">$${pl.money.toLocaleString(loc, { maximumFractionDigits: 2 })}</div>
         <div class="arow">${btn('m:1e6', '+ $1 000 000', 'main')}${btn('m:1e3', '+ $1 000')}${btn('m:1e9', '+ $1 000 000 000')}${btn('m:x2', '× 2')}${btn('m:0', A_.zero, 'warn')}</div>
         <div class="arow"><label>${A_.setTo} $<input id="aMoney" type="number" min="0" step="1" value="${Math.round(pl.money)}"></label>${btn('m:set', A_.apply)}</div>
-        <div class="arow">${chip('m:mul', AD.incomeMul > 1, A_.incomeX10)}</div>`;
+        <div class="arow">${chip('m:mul', AD.incomeMul > 1, A_.incomeX10)}</div>
+        <div class="arow">${btn('m:gold', '+ 1000 gold')}</div>`;
       case 'research': return `<div class="arow">${btn('r:all', A_.unlockAll, 'main')}${btn('r:none', A_.resetAll, 'warn')}</div>
         <div class="agrid">${NODES.filter(n => !n.root).map(n => `<label class="acheck${n.soon ? ' dim' : ''}"><input type="checkbox" data-node="${n.id}"${has(n.id) ? ' checked' : ''}${n.soon ? ' disabled' : ''}>${L.node[n.id][0]}${n.soon ? ' · ' + L.soon : ''}</label>`).join('')}</div>`;
       case 'countries': {
@@ -744,6 +746,7 @@
       else $('aMsg').textContent = A_.wrong;
       return;
     }
+    if (a === 'm:gold') { if (root.Cosmetics) Cosmetics.addGold(1000); return renderAdmin(); }
     if (k === 'm') {
       if (v === 'set') pl.money = Math.max(0, +$('aMoney').value || 0);
       else if (v === 'x2') pl.money *= 2; else if (v === '0') pl.money = 0; else if (v === 'mul') AD.incomeMul = AD.incomeMul > 1 ? 1 : 10;
@@ -820,6 +823,9 @@
     Net.on('money', m => { pl.money = m.money; });
     Net.on('state', m => { netState(m.state); applyUpgrades(); if (m.bought) { Sound.coin(); const nx = NODES.find(x => (x.req || []).includes(m.bought) && !has(x.id) && !x.soon); if (nx) selNode = nx.id; } if (shopOpen) renderShop(); });
     Net.on('chat', m => chatLine(m));
+    Net.on('look', m => { if (root.Cosmetics) Cosmetics.serverState(m); });
+    Net.on('friends', m => { if (root.Cosmetics) Cosmetics.setFriends(m.list); });
+    Net.on('txn', m => notice(m.ok ? L.cos.goldOk.replace('{0}', m.gold) : L.cos.goldFail));
     Net.on('kicked', m => { ONLINE = false; overlay('kicked', m); });
     Net.on('lost', () => { notice(L.net.lost); reconnect(); });
     sendPos();
@@ -828,6 +834,7 @@
     setTimeout(() => Net.connect().then(w => { netState(w.state); applyUpgrades(); notice(L.net.back); sendPos(); }, reason => { if (reason === 'banned' || reason === 'version') overlay('kicked', { reason }); else reconnect(); }), 4000);
   }
   function sendPos() {
+    if (root.Cosmetics && (!sendPos.lookT || performance.now() - sendPos.lookT > 5000)) { sendPos.lookT = performance.now(); Net.send({ t: 'look', look: Cosmetics.publicLook() }); }
     Net.send({ t: 'pos', p: [pl.pos.x, pl.pos.y, pl.pos.z].map(v => +v.toFixed(3)), f: [pl.fwd.x, pl.fwd.y, pl.fwd.z].map(v => +v.toFixed(3)), pitch: +pl.pitch.toFixed(3), tool: pl.tool, drive: drive ? drive.id : null });
   }
   function netTick(dt) { if (ONLINE && (posT += dt) > 0.1) { posT = 0; sendPos(); } }
@@ -913,7 +920,7 @@
       }
     } else { pl.pos.copy(sp); pl.fwd.copy(fwd0); pl.pitch = -0.12; }
     if (ONLINE) {   // money and research live on the server; where you stood is remembered here
-      netState(welcome.state);
+      netState(welcome.state); pl.name = welcome.name; pl.steamName = !!welcome.steam; if (root.Cosmetics) setTimeout(() => Cosmetics.serverState(welcome.look), 0);
       const cp = lsGet('endlessdigging.coop.pos', null);
       if (cp && cp.site && cp.site[0] === SITE_LAT && cp.site[1] === SITE_LON && cp.pos) { pl.pos.fromArray(cp.pos); pl.fwd.fromArray(cp.fwd); pl.pitch = cp.pitch || 0; }
     }
@@ -930,6 +937,9 @@
     if (root.Progress) Progress.init({ L, pl, W, MATS, has, nameOf, notice, toast: (i, t, s2) => Progress.toast(i, t, s2), sound: n => Sound[n] && Sound[n](), online: () => ONLINE, admin: () => adminOK,
       openCountry: id => { if (!pl.open.includes(id)) setOpen(pl.open.concat([id])); save(); }, travel: (la, lo) => teleport(la, lo), toggleBook,
       newPlanet: () => { try { localStorage.removeItem(SAVE); } catch (e) {} skipSave = true; location.reload(); } });
+    if (root.Cosmetics && root.Progress) Cosmetics.init({ L, S, online: () => ONLINE, send: m => Net.send(m), sound: n => Sound[n] && Sound[n](), progress: () => Progress.state,
+      level: () => Progress.level().level, levelInfo: () => Progress.level(), name: () => pl.name || (root.Net && Net.guestName()) || 'Digger', steamName: () => !!pl.steamName,
+      setName: n => { if (root.Net) Net.setGuestName(n); pl.name = n; }, peers: () => S.peers(), corpName: () => pl.corp && pl.corp.name, steam: () => !!(root.ED_CONFIG && ED_CONFIG.steam) });
     $('stats').hidden = !AD.stats; document.body.classList.toggle('noHud', !!AD.hideHud);
     addEventListener('resize', () => S.resize());
   }
@@ -998,7 +1008,7 @@
           <div class="row"><span>${L.quality}</span><button id="qHi" class="${q === 'high' ? 'on' : ''}">${L.hi}</button><button id="qMid" class="${q === 'mid' ? 'on' : ''}">${L.mid}</button><button id="qLo" class="${q === 'low' ? 'on' : ''}">${L.lo}</button></div>
           <div class="row"><span>${L.langLabel}</span><select id="langSel">${Object.keys(LANGS).map(k => `<option value="${k}"${k === LANG ? ' selected' : ''}>${LANGS[k].langName || k}</option>`).join('')}</select></div>
           ${kind === 'pause' ? `<div class="row"><button id="bAdmin" class="ghost">${L.adm.title}</button><button id="bReset" class="ghost">${L.reset}</button></div>` : ''}
-          <p class="keys">${TOUCH ? L.tkeys : L.keys}</p></div>`;
+          <p class="keys">${TOUCH ? L.tkeys : L.keys + (L.keysMore || "")}</p></div>`;
     if (kind === 'loading') return;
     const ms = $('mSolo'), mc = $('mCoop'), ni = $('nameIn');
     if (ms) ms.onclick = () => { if (ONLINE || Net.mode() === 'coop') { Net.setMode('solo'); if (dirty) save(); location.reload(); } };
@@ -1069,7 +1079,14 @@
     S.setFrame(up);
     look.x *= 0.88; look.y *= 0.88;
     if (drive) { const c = driveCamNow || driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, dt, t); }
-    else S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: pl.dig, walk: playing ? walk : 0, look, air: !pl.grounded && !AD.fly, pitch: pl.pitch }, dt, t);
+    else {
+      const eye = pl.pos.clone().addScaledVector(up, EYE), info = { dig: pl.dig, walk: playing ? walk : 0, look, air: !pl.grounded && !AD.fly, pitch: pl.pitch };
+      if (S.thirdPerson()) {   // the camera behind and a little above you; never inside the ground
+        const d = lookDir(); let cam = eye.clone();
+        for (let s2 = 0.2; s2 <= 3.2; s2 += 0.2) { const c2 = eye.clone().addScaledVector(d, -s2).addScaledVector(up, s2 * 0.15); if (W.solid(c2.x, c2.y, c2.z) > -0.25) break; cam = c2; }
+        info.bodyEye = eye; info.bodyFwd = pl.fwd; S.render(cam, camQuat(), info, dt, t);
+      } else S.render(eye, camQuat(), info, dt, t);
+    }
   }
 
   root.addEventListener('load', () => {
@@ -1121,6 +1138,7 @@
         },
         driveDig() { mouseDown = true; locked = true; driveStep(0.05); mouseDown = false; for (let i = 0; i < 200 && drive.dig >= 0; i++) driveStep(0.05); locked = false; },   // test helper: one bucket stroke where the camera looks
         nearCage, rideCage, frameInfo() { frame(); return { ru: right.dot(up), fu: pl.fwd.dot(up), d: S.debugDistant() }; },
+        snap3(pitch, n) { pl.pitch = pitch; frame(); const eye = pl.pos.clone().addScaledVector(up, EYE), d = lookDir(); let cam = eye.clone(); for (let s2 = 0.2; s2 <= 3.2; s2 += 0.2) { const c2 = eye.clone().addScaledVector(d, -s2).addScaledVector(up, s2 * 0.15); if (W.solid(c2.x, c2.y, c2.z) > -0.25) break; cam = c2; } for (let i = 0; i < (n || 1); i++) S.render(cam, camQuat(), { dig: -1, walk: 1, look, bodyEye: eye, bodyFwd: pl.fwd }, 0.05, t += 0.05); return canvas.toDataURL('image/jpeg', 0.9); },   // test helper: third person
         snapPose(pitch, info, n) { pl.pitch = pitch; for (let i = 0; i < (n || 1); i++) S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), Object.assign({ dig: -1, walk: 0, look }, info), 0.05, t += 0.05); return canvas.toDataURL('image/jpeg', 0.9); },   // test helper
         snapDrive(adv) { const c = driveCam(); S.render(c.eye, c.q, { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); }, applyUpgrades, toggleShop, renderShop, digNow(pitch, yaw) { pl.pitch = pitch; if (yaw) turn(yaw, 0); const h = rayHit(TOOLS[pl.tool].reach + lvl('reach') + AD.reach); return h ? doDig(h) : false; }, toggleMap, setTool,
         snap(pitch, adv) { if (pitch !== undefined) pl.pitch = pitch; S.render(pl.pos.clone().addScaledVector(up, EYE), camQuat(), { dig: -1, walk: 0, look }, adv || 0.016, t); return canvas.toDataURL('image/jpeg', 0.9); },

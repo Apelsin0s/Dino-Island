@@ -185,6 +185,9 @@
   // ---------- the book (J) ----------
   let el = null, tab = 'orders', open = false;
   const TABS = ['orders', 'museum', 'ach', 'records', 'licences', 'planet'];
+  // other modules add their own pages: P.addTab(id, { label(), render(), bind(el) })
+  const EXT = {};
+  P.addTab = (id, t, first) => { EXT[id] = t; if (first) TABS.unshift(id); else TABS.push(id); };
   function buildUI() {
     el = document.createElement('div'); el.id = 'book'; el.hidden = true; document.body.appendChild(el);
     const b = document.createElement('button'); b.id = 'bBook'; b.className = 'shopBtn bookBtn'; b.innerHTML = '<b>J</b>' + (L.book || 'Book');
@@ -196,11 +199,12 @@
     t.querySelector('b').textContent = title; t.querySelector('span').textContent = sub || '';
     document.getElementById('toasts').appendChild(t); setTimeout(() => t.classList.add('out'), 4200); setTimeout(() => t.remove(), 5000);
   };
-  P.show = function (on, which) { open = on; if (which) tab = which; el.hidden = !on; if (on) render(); };
+  P.show = function (on, which) { open = on; if (which) tab = which; el.hidden = !on; if (on) render(); else for (const k in EXT) if (EXT[k].close) EXT[k].close(); };
   P.isOpen = () => open;
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = v => v >= 1e6 ? (v / 1e6).toFixed(2) + "M" : v >= 1e4 ? Math.round(v).toLocaleString() : Number.isInteger(v) ? String(v) : v.toFixed(v < 10 ? 2 : 0);
   function body() {
+    if (EXT[tab]) return EXT[tab].render();
     const st = S.st;
     if (tab === 'orders') return `<p class="bsub">${L.ordersSub}</p>` + S.orders.map((o, i) => {
       const what = o.kind === 'mat' ? L.oMat.replace('{0}', fmt(o.need)).replace('{1}', G.L.mat[o.m]) : o.kind === 'depth' ? L.oDepth.replace('{0}', o.need) : o.kind === 'find' ? L.oFind.replace('{0}', o.need) : L.oStrokes.replace('{0}', o.need);
@@ -225,15 +229,17 @@
   }
   function render() {
     if (!el || !open) return;
-    el.innerHTML = `<div class="bookCard"><div class="bookHead"><h2>${L.book || 'Book'}</h2><div class="btabs">${TABS.map(t => `<button class="btab${t === tab ? ' on' : ''}" data-tab="${t}">${L.tabs[t]}</button>`).join('')}</div><div class="shopMoney">$${G.pl.money.toFixed(2)}</div><button class="bclose" aria-label="close">✕</button></div><div class="bookBody">${body()}</div></div>`;
+    el.innerHTML = `<div class="bookCard"><div class="bookHead"><h2>${L.book || 'Book'}</h2><div class="btabs">${TABS.map(t => `<button class="btab${t === tab ? ' on' : ''}" data-tab="${t}">${EXT[t] ? EXT[t].label() : L.tabs[t]}</button>`).join('')}</div><div class="shopMoney">$${G.pl.money.toFixed(2)}</div><button class="bclose" aria-label="close">✕</button></div><div class="bookBody">${body()}</div></div>`;
     el.querySelector('.bclose').onclick = () => G.toggleBook(false);
     for (const b of el.querySelectorAll('[data-tab]')) b.onclick = () => { tab = b.dataset.tab; render(); };
     for (const b of el.querySelectorAll('[data-claim]')) b.onclick = () => P.claim(+b.dataset.claim);
     for (const b of el.querySelectorAll('[data-lic]')) b.onclick = () => P.licence(b.dataset.lic);
     for (const b of el.querySelectorAll('[data-go]')) b.onclick = () => { const c = root.Countries.find(x => x.id === b.dataset.go); G.toggleBook(false); G.travel(c.c[1], c.c[0]); };
+    if (EXT[tab] && EXT[tab].bind) EXT[tab].bind(el);
     const pb = el.querySelector('[data-planet]'); if (pb) pb.onclick = () => { if (pb.dataset.armed) P.restart(); else { pb.dataset.armed = 1; pb.textContent = L.planetSure; } };
   }
-  P.render = render;
+  P.render = render; P.tab = () => tab;
+  P.level = () => { const st = S.st, xp = st.strokes + Object.keys(S.ach).length * 200 + Object.keys(S.finds).length * 60 + st.orders * 120 + Math.log10(1 + st.earned) * 300; return { level: 1 + Math.floor(Math.sqrt(xp / 120)), xp }; };
   P.FINDS = FINDS; P.ACH = ACH;
   root.Progress = P;
 })(window);

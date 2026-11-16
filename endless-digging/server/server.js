@@ -63,6 +63,12 @@ function account(id, name) {
   a.name = name || a.name; a.seen = Date.now(); return a;
 }
 const stateOf = a => ({ money: a.money, owned: a.owned, dug: a.dug, sold: a.sold, earned: a.earned });
+const lookOf = a => ({ gold: a.gold || 0, skins: a.skins || [], wear: a.wear || null });
+// cosmetics: ids look like c_<archetype>_<colourway>; legendary ones ("_gold") must be bought; gold packs (US cents)
+const PACKS = { 1: { id: 1, gold: 100, cents: 99 }, 2: { id: 2, gold: 550, cents: 499 }, 3: { id: 3, gold: 1200, cents: 999 }, 4: { id: 4, gold: 3000, cents: 1999 } };
+const SKIN_RE = /^(c|t|m)_[a-z]+_[a-zA-Z]+$/;
+const LEGENDARY = id => /^c_[a-z]+_gold$/.test(id) || /^t_(gold|rose|galaxy|diamond)_/.test(id) || /^m_(gold|chrome)_/.test(id);
+const PRICE = id => /^c_/.test(id) ? (LEGENDARY(id) ? 600 : 250) : /^t_/.test(id) ? ({ neon: 200, lava: 200, gold: 400, rose: 400, galaxy: 700, diamond: 900 }[id.split('_')[1]] || 0) : ({ desert: 300, forest: 300, pink: 300, gold: 800, chrome: 1000 }[id.split('_')[1]] || 0);
 
 // ---------- connections ----------
 const clients = new Map();          // session id -> client
@@ -110,7 +116,7 @@ const handlers = {
     const old = byAccount.get(id); if (old) { send(old, { t: 'kicked', reason: 'elsewhere' }); old.ws.close(); }
     c.accId = id; c.acc = account(id, name); c.admin = admin; byAccount.set(id, c);
     c.has = k => c.acc.owned.includes(k); c.lvl = Rules.levels(c.has);
-    send(c, { t: 'welcome', sid: c.sid, name: c.acc.name, admin, plot: c.acc.plot, state: stateOf(c.acc), players: clients.size });
+    send(c, { t: 'welcome', sid: c.sid, name: c.acc.name, steam: id[0] === 's', admin, plot: c.acc.plot, state: stateOf(c.acc), look: lookOf(c.acc), players: clients.size });
     log('join', c.sid, id, c.acc.name, admin ? '(owner)' : '');
   },
   pos(c, m) {
@@ -167,7 +173,45 @@ const handlers = {
     appendLine('reports.log', { at: Date.now(), from: c.accId, fromName: c.acc.name, who: o.accId, whoName: o.acc.name, reason: String(m.reason || '').slice(0, 300) });
     sysChat(c, 'reported');
   },
-  ping(c, m) { send(c, { t: 'pong', t0: m.t0 }); }
+  ping(c, m) { send(c, { t: 'pong', t0: m.t0 }); },
+  // what you look like to others (costume, emblem, level); legendary costumes only if owned
+  look(c, m) {
+    const l = m.look || {}, cos = String(l.costume || '');
+    c.look = { costume: SKIN_RE.test(cos) && (!LEGENDARY(cos) || (c.acc.skins || []).includes(cos)) ? cos : 'c_miner_classic', emblem: String(l.emblem || '').slice(0, 16), level: Math.max(1, Math.min(999, l.level | 0)) };
+  },
+  wear(c, m) { if (m.wear && typeof m.wear === 'object') { c.acc.wear = JSON.parse(JSON.stringify(m.wear).slice(0, 2000)); dirtyAcc = true; } },
+  buySkin(c, m) {
+    const id = String(m.id || ''), price = PRICE(id), a = c.acc; a.skins = a.skins || []; a.gold = a.gold || 0;
+    if (SKIN_RE.test(id) && price > 0 && !a.skins.includes(id) && a.gold >= price) { a.gold -= price; a.skins.push(id); dirtyAcc = true; appendLine('purchases.log', { at: Date.now(), id: c.accId, skin: id, gold: price }); }
+    send(c, { t: 'look', ...lookOf(a) });
+  },
+  // gold through Steam: start the order; the player approves it in the Steam overlay; then it is finalised and paid
+  async goldBuy(c, m) {
+    const pack = PACKS[m.pack | 0]; if (!pack || c.accId[0] !== 's' || !steam.enabled()) return send(c, { t: 'txn', ok: false });
+    const orderid = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    try { await steam.initTxn(orderid, c.accId.slice(1), pack, m.lang); } catch (e) { log('txn init', e.message); return send(c, { t: 'txn', ok: false }); }
+    appendLine('purchases.log', { at: Date.now(), id: c.accId, order: orderid, pack: pack.id, state: 'init' });
+    for (let i = 0; i < 60; i++) {   // up to 3 minutes for the player to approve
+      await new Promise(r => setTimeout(r, 3000));
+      const q = await steam.queryTxn(orderid).catch(() => null);
+      if (!q) continue;
+      if (q.status === 'Approved') {
+        if (await steam.finalizeTxn(orderid).catch(() => false)) {
+          const a = accounts[c.accId]; a.gold = (a.gold || 0) + pack.gold; dirtyAcc = true;
+          appendLine('purchases.log', { at: Date.now(), id: c.accId, order: orderid, gold: pack.gold, state: 'paid' });
+          const cl = byAccount.get(c.accId); if (cl) { send(cl, { t: 'look', ...lookOf(a) }); send(cl, { t: 'txn', ok: true, gold: pack.gold }); }
+        }
+        return;
+      }
+      if (q.status === 'Failed' || q.status === 'Refunded' || q.status === 'Init' && i > 50) return send(c, { t: 'txn', ok: false });
+    }
+  },
+  friend(c, m) {
+    const o = clients.get(m.sid | 0); if (!o || !o.acc || o === c) return;
+    c.acc.friends = c.acc.friends || []; if (!c.acc.friends.includes(o.accId) && c.acc.friends.length < 200) { c.acc.friends.push(o.accId); dirtyAcc = true; }
+    handlers.friends(c);
+  },
+  friends(c) { send(c, { t: 'friends', list: (c.acc.friends || []).map(id => ({ name: accounts[id] ? accounts[id].name : '?', online: byAccount.has(id) })) }); }
 };
 // owner commands (typed in chat): /ban <player> <reason>, /unban <id>, /mute <player> <minutes>, /unmute <player>, /kick <player>, /say <text>, /who
 function admin(c, a) {
@@ -192,7 +236,7 @@ setInterval(() => {
     const gx = Math.floor(c.pos[0] / G), gy = Math.floor(c.pos[1] / G), gz = Math.floor(c.pos[2] / G), list = [];
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let d = -1; d <= 1; d++) {
       const l = grid.get((gx + a) + ',' + (gy + b) + ',' + (gz + d)); if (!l) continue;
-      for (const o of l) if (o !== c && Math.hypot(o.pos[0] - c.pos[0], o.pos[1] - c.pos[1], o.pos[2] - c.pos[2]) < G) list.push([o.sid, o.acc.name, +o.pos[0].toFixed(2), +o.pos[1].toFixed(2), +o.pos[2].toFixed(2), +o.f[0].toFixed(3), +o.f[1].toFixed(3), +o.f[2].toFixed(3), +o.pitch.toFixed(3), o.tool, o.drive]);
+      for (const o of l) if (o !== c && Math.hypot(o.pos[0] - c.pos[0], o.pos[1] - c.pos[1], o.pos[2] - c.pos[2]) < G) list.push([o.sid, o.acc.name, +o.pos[0].toFixed(2), +o.pos[1].toFixed(2), +o.pos[2].toFixed(2), +o.f[0].toFixed(3), +o.f[1].toFixed(3), +o.f[2].toFixed(3), +o.pitch.toFixed(3), o.tool, o.drive, o.look || null]);
     }
     if (list.length || c.sawOthers) { send(c, { t: 'players', list }); c.sawOthers = list.length > 0; }
   }

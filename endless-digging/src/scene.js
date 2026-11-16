@@ -930,6 +930,7 @@
     else if (id === 'derrick') { const d = A.derrick(); mesh(d.tower); parts.block = mesh(d.block, g, d.blockAt); parts.blockY = d.blockAt[1]; }
     else if (id === 'shaft') { const h = A.headframe(); mesh(h.frame); parts.sheaves = h.sheaveAt.map(a => mesh(h.sheave, g, a)); }
     scene.add(g);
+    if (MSKIN[id]) setTimeout(() => Scene.setMachineSkin(id, MSKIN[id]), 0);
     const groundAt = (lx, lz) => { const w = anchor.clone().addScaledVector(PX, lx).addScaledVector(PZ, lz), l = w.length(); return w.multiplyScalar((W.R + W.heightDir(w.x / l, w.y / l, w.z / l)) / l); };
     const pos = saved ? new T.Vector3().fromArray(saved.pos) : groundAt(st[0], st[1]);
     const M = Heavy.m[id] = { id, g, parts, pos, yaw: saved ? saved.yaw : st[2], scale, upperYaw: 0, armDip: 0, t: Math.random() * 10, auto: true, block: null };
@@ -999,7 +1000,7 @@
     }
   };
   // while driving: no hand, no first-person shadow body
-  Scene.setDriving = function (on) { Hand.hold.visible = !on; Shadow.group.visible = Shadow.hold.visible = !on; Scene.driving = on; };
+  Scene.setDriving = function (on) { Scene.driving = on; Hand.hold.visible = !on && !LOOK.third; Shadow.group.visible = !on; Shadow.hold.visible = !on && !LOOK.third; };
 
   // ---------- metal detector sweep: a ring that runs out over the ground, then marks over the ore found ----------
   const Scan = { ring: null, marks: [], t: 0, life: 12 };
@@ -1147,6 +1148,7 @@
       // the spade points ahead and down, the hand tools keep the spoon's pose
       if (k === 'shovel' || k === 'pick') this.pose(v3(-0.3, -0.45, -0.84), v3(0.28, -0.13, -0.42), v3(0.1, -1, 0.5)); else this.pose(v3(-0.25, 0.85, -0.46), v3(0.185, -0.160, -0.45));
       Shadow.setTool(this.hand.quaternion, k === 'spoon' ? null : this.tools[k].metalGeo);
+      if (LOOK.third) Scene.setThirdPerson(true);
     },
     setContainer(scale) { this.bucketScale = scale; this.bucket.scale.setScalar(0.95 * scale); },
     setFill(k) { this.fill = k; this.bucketSoil.visible = k > 0.01; this.bucketSoil.position.y = -0.155 + k * 0.155; this.bucketSoil.scale.setScalar(0.86 + 0.14 * k); },
@@ -1183,29 +1185,33 @@
     group: new T.Group(), body: new T.Group(), hold: new T.Group(), ph: 0, amp: 0, air: 0,
     build(handGeo, spoonGeo, handQ) {
       const mat = MAT.shadowOnly, add = (parent, m) => { m.castShadow = true; m.frustumCulled = false; parent.add(m); return m; };
-      const capY = (parent, rad, len, y0) => { const m = new T.Mesh(new T.CapsuleGeometry(rad, len, 4, 10), mat); m.position.y = y0 - len / 2; return add(parent, m); };   // hangs down from its joint
+      const capY = (parent, rad, len, y0, role) => { const m = new T.Mesh(new T.CapsuleGeometry(rad, len, 4, 10), mat); m.position.y = y0 - len / 2; m.userData.role = role; return add(parent, m); };   // hangs down from its joint
       const joint = (parent, x, y, z) => { const g = new T.Group(); g.position.set(x, y, z); parent.add(g); return g; };
       // legs: hip -> thigh -> knee -> shin -> foot
       this.legs = [-0.1, 0.1].map(x => {
-        const hip = joint(this.body, x, 0.9, 0); capY(hip, 0.075, 0.36, -0.04);
-        const knee = joint(hip, 0, -0.44, 0); capY(knee, 0.065, 0.34, -0.03);
-        const foot = new T.Mesh(new T.BoxGeometry(0.11, 0.07, 0.26), mat); foot.position.set(0, -0.43, -0.05); add(knee, foot);
+        const hip = joint(this.body, x, 0.9, 0); capY(hip, 0.075, 0.36, -0.04, 'pants');
+        const knee = joint(hip, 0, -0.44, 0); capY(knee, 0.065, 0.34, -0.03, 'pants');
+        const foot = new T.Mesh(new T.BoxGeometry(0.11, 0.07, 0.26), mat); foot.position.set(0, -0.43, -0.05); foot.userData.role = 'boots'; add(knee, foot);
         return { hip, knee };
       });
       // upper body turns at the hips (lean)
       this.torso = joint(this.body, 0, 0.92, 0);
       const t2 = this.torso;
-      { const m = new T.Mesh(new T.CapsuleGeometry(0.15, 0.14, 4, 12), mat); m.position.y = 0.13; add(t2, m); }
-      { const m = new T.Mesh(new T.CapsuleGeometry(0.165, 0.14, 4, 12), mat); m.position.y = 0.31; add(t2, m); }
-      { const m = new T.Mesh(new T.CapsuleGeometry(0.075, 0.34, 4, 10), mat); m.rotation.z = Math.PI / 2; m.position.y = 0.48; add(t2, m); }
+      { const m = new T.Mesh(new T.CapsuleGeometry(0.15, 0.14, 4, 12), mat); m.position.y = 0.13; m.userData.role = 'shirt'; add(t2, m); }
+      { const m = new T.Mesh(new T.CapsuleGeometry(0.165, 0.14, 4, 12), mat); m.position.y = 0.31; m.userData.role = 'vest'; add(t2, m); }
+      { const m = new T.Mesh(new T.CapsuleGeometry(0.075, 0.34, 4, 10), mat); m.rotation.z = Math.PI / 2; m.position.y = 0.48; m.userData.role = 'shirt'; add(t2, m); }
       this.neck = joint(t2, 0, 0.55, 0);
-      { const m = new T.Mesh(new T.CapsuleGeometry(0.045, 0.06, 4, 8), mat); m.position.y = 0.04; add(this.neck, m); }
-      { const m = new T.Mesh(new T.SphereGeometry(1, 16, 12), mat); m.scale.set(0.095, 0.12, 0.105); m.position.set(0, 0.17, 0); add(this.neck, m); }
+      { const m = new T.Mesh(new T.CapsuleGeometry(0.045, 0.06, 4, 8), mat); m.position.y = 0.04; m.userData.role = 'skin'; add(this.neck, m); }
+      { const m = new T.Mesh(new T.SphereGeometry(1, 16, 12), mat); m.scale.set(0.095, 0.12, 0.105); m.position.set(0, 0.17, 0); m.userData.role = 'skin'; add(this.neck, m); }
       // left arm swings; right arm reaches for the tool
-      this.armL = joint(t2, -0.23, 0.47, 0); capY(this.armL, 0.05, 0.24, -0.02);
-      this.elbowL = joint(this.armL, 0, -0.3, 0); capY(this.elbowL, 0.045, 0.22, -0.02);
+      this.armL = joint(t2, -0.23, 0.47, 0); capY(this.armL, 0.05, 0.24, -0.02, 'shirt');
+      this.elbowL = joint(this.armL, 0, -0.3, 0); capY(this.elbowL, 0.045, 0.22, -0.02, 'shirt');
       this.shR = joint(t2, 0.23, 0.47, 0);
-      this.armR = new T.Mesh(new T.CapsuleGeometry(0.05, 1, 4, 10), mat); add(this.shR, this.armR);
+      this.armR = new T.Mesh(new T.CapsuleGeometry(0.05, 1, 4, 10), mat); this.armR.userData.role = 'shirt'; add(this.shR, this.armR);
+      // third person: a hand and the tool at the end of the right arm, extra pieces of the costume
+      this.hand3 = new T.Mesh(new T.SphereGeometry(0.055, 10, 8), mat); this.hand3.userData.role = 'skin'; add(this.body, this.hand3); this.hand3.visible = false;
+      this.tool3 = new T.Group(); this.body.add(this.tool3); this.tool3.visible = false;
+      this.look = new T.Group(); this.neck.add(this.look); this.lookT = new T.Group(); this.torso.add(this.lookT);
       const hd = new T.Group(); hd.quaternion.copy(handQ); add(hd, new T.Mesh(handGeo, mat)); this.toolMesh = new T.Mesh(spoonGeo, mat); this.spoonGeo = spoonGeo; add(hd, this.toolMesh); this.hold.add(hd); this.hd = hd;
       this.group.add(this.body); scene.add(this.group); camera.add(this.hold);
     },
@@ -1213,7 +1219,7 @@
     update(eye, q, info, dt) {
       info = info || {}; dt = Math.min(0.1, dt || 0.016);
       // body stands under the eye, facing where the camera looks (projected on the ground)
-      const fwd = v3(0, 0, -1).applyQuaternion(q); fwd.addScaledVector(up, -fwd.dot(up)); if (fwd.lengthSq() < 1e-6) fwd.set(1, 0, 0).addScaledVector(up, -up.x); fwd.normalize();
+      const fwd = info && info.bodyFwd ? info.bodyFwd.clone() : v3(0, 0, -1).applyQuaternion(q); fwd.addScaledVector(up, -fwd.dot(up)); if (fwd.lengthSq() < 1e-6) fwd.set(1, 0, 0).addScaledVector(up, -up.x); fwd.normalize();
       const right = new T.Vector3().crossVectors(fwd, up).normalize();
       // walking rhythm: a stride is about 1.4 m, so the steps match the real speed
       const walk = info.walk || 0, speed = walk * 7;
@@ -1231,12 +1237,20 @@
       this.neck.rotation.x = Math.max(-0.6, Math.min(0.5, (info.pitch || 0) * 0.6)) - this.torso.rotation.x * 0.5;
       this.armL.rotation.x = -sn * 0.55 * a + this.air * -0.4; this.elbowL.rotation.x = 0.25 + 0.3 * a;
       const bob = Math.abs(Math.cos(this.ph)) * 0.035 * a;
-      this.body.position.set(eye.x - O.x, eye.y - O.y, eye.z - O.z).addScaledVector(up, -1.62 - bob + this.air * 0.1);
+      const be = info.bodyEye || eye;
+      this.body.position.set(be.x - O.x, be.y - O.y, be.z - O.z).addScaledVector(up, -1.62 - bob + this.air * 0.1);
       this.body.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(right, up, fwd.clone().negate()));
       this.hold.position.copy(Hand.hold.position); this.hold.quaternion.copy(Hand.hold.quaternion);
       // right arm: from the shoulder to the hand that holds the tool (where the first-person hand is)
       this.body.updateMatrixWorld(true); this.hold.updateMatrixWorld(true);
-      const hand = this.hd.getWorldPosition(new T.Vector3()), sh = this.shR.getWorldPosition(new T.Vector3());
+      let hand = this.hd.getWorldPosition(new T.Vector3());
+      if (LOOK.third) {   // the tool is in your hand in front of you; a stroke swings it down
+        const dg = info.dig >= 0 ? Math.sin(Math.min(1, info.dig) * Math.PI) : 0;
+        hand = this.torso.localToWorld(v3(0.22, 0.2 - dg * 0.35, -0.38 - dg * 0.12));
+        this.hand3.position.copy(this.body.worldToLocal(hand.clone())); this.tool3.position.copy(this.hand3.position);
+        this.tool3.quaternion.copy(this.body.quaternion).invert().multiply(new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(right, up, fwd.clone().negate()))).multiply(new T.Quaternion().setFromAxisAngle(X_AX, -0.5 - dg * 0.9));
+      }
+      const sh = this.shR.getWorldPosition(new T.Vector3());
       const toLocal = this.shR.worldToLocal(hand.clone()), len = Math.max(0.2, Math.min(0.75, toLocal.length()));
       this.armR.scale.set(1, len / 1.1, 1);
       this.armR.position.copy(toLocal).setLength(len / 2);
@@ -1275,6 +1289,65 @@
   // ---------- per frame ----------
   // eye: camera position (planet metres), q: camera orientation, info: { dig, walk, look }
 
+
+  // ---------- how you look: costume colours on the body (seen in third person and as your shadow), tool and machine skins ----------
+  const LOOK = { third: false, mats: {}, lk: null, tool: 'spoon' };
+  const lookMat = c => new T.MeshStandardMaterial({ color: col(c), roughness: 0.78 });
+  Scene.setLook = function (lk) {
+    LOOK.lk = lk;
+    for (const role of ['skin', 'shirt', 'pants', 'boots', 'hat']) { if (!LOOK.mats[role]) LOOK.mats[role] = lookMat(lk[role]); else LOOK.mats[role].color.set(lk[role]); }
+    if (!LOOK.mats.vest) LOOK.mats.vest = lookMat(lk.vest || lk.shirt); else LOOK.mats.vest.color.set(lk.vest || lk.shirt);
+    LOOK.mats.hat.metalness = lk.shine ? 0.6 : 0; LOOK.mats.hat.roughness = lk.shine ? 0.3 : 0.7;
+    // hat and extra pieces
+    for (const g of [Shadow.look, Shadow.lookT]) { while (g.children.length) { const o = g.children.pop(); if (o.geometry) o.geometry.dispose(); } }
+    if (root.Cosmetics) Cosmetics.hatMesh(lk.hatType, LOOK.mats.hat, Shadow.look, 0.17);
+    const ex = lk.extra, add = (geo, mat, x, y, z) => { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; Shadow.lookT.add(o); return o; };
+    if (ex === 'backpack') add(new T.BoxGeometry(0.3, 0.38, 0.16), lookMat('#7a5a3a'), 0, 0.25, 0.2);
+    if (ex === 'tank') add(new T.CylinderGeometry(0.09, 0.09, 0.5, 14), lookMat('#d8dde2'), 0, 0.25, 0.2);
+    if (ex === 'cape') { const c2 = add(new T.PlaneGeometry(0.5, 0.9), LOOK.mats.hat, 0, 0.05, 0.18); c2.material = LOOK.mats.hat.clone(); c2.material.side = T.DoubleSide; c2.rotation.x = -0.12; }
+    for (const o of Shadow.look.children.concat(Shadow.lookT.children)) { o.castShadow = true; o.userData.extra = true; }
+    Scene.setThirdPerson(LOOK.third);
+  };
+  Scene.setThirdPerson = function (on) {
+    LOOK.third = on;
+    Shadow.body.traverse(o => {
+      if (!o.isMesh) return;
+      if (o.userData.role) o.material = on && LOOK.mats[o.userData.role] ? LOOK.mats[o.userData.role] : MAT.shadowOnly;
+      else if (o.userData.extra) o.visible = true;
+    });
+    for (const g of [Shadow.look, Shadow.lookT]) g.traverse(o => { if (o.isMesh && !on) { o.userData.mat = o.userData.mat || o.material; o.material = MAT.shadowOnly; } else if (o.isMesh && on && o.userData.mat) o.material = o.userData.mat; });
+    Shadow.hand3.visible = on; Shadow.tool3.visible = on; Shadow.hold.visible = !on && !Scene.driving; Hand.hold.visible = !on && !Scene.driving;
+    // the tool in the third-person hand: the same model as in first person
+    while (Shadow.tool3.children.length) Shadow.tool3.children.pop();
+    if (on && Hand.tools && Hand.tools[Hand.tool]) for (const m of Hand.tools[Hand.tool].meshes) { const c = new T.Mesh(m.geometry, m.material); c.castShadow = true; c.position.set(0, 0, 0.3); Shadow.tool3.add(c); }
+  };
+  Scene.thirdPerson = () => LOOK.third;
+  // tool skins: { spoon: finish|null, ... } with metal and handle colours (and a glow for some)
+  Scene.setToolSkins = function (map) {
+    if (!Hand.tools) return;
+    for (const k in Hand.tools) {
+      const f = map[k], tl = Hand.tools[k];
+      tl.meshes.forEach((m, i) => {
+        if (!m.userData.base) { m.material = m.material.clone(); m.userData.base = { c: m.material.color.clone(), e: m.material.emissive ? m.material.emissive.clone() : null }; }
+        const b = m.userData.base;
+        if (!f) { m.material.color.copy(b.c); if (m.material.emissive) m.material.emissive.set(0); }
+        else { m.material.color.set(i === 0 ? f.metal : f.wood); if (m.material.emissive) m.material.emissive.set(f.glow && i === 0 ? f.glow : 0).multiplyScalar(0.35); }
+      });
+    }
+    if (LOOK.third) Scene.setThirdPerson(true);
+  };
+  // machine skins: the paint (orange / yellow parts) in a new colour
+  const MSKIN = {};
+  function paintMat(color) {
+    const m = MAT.paint.clone(), u = { value: col(color) };
+    m.onBeforeCompile = sh => { sh.uniforms.uPaint = u; sh.fragmentShader = 'uniform vec3 uPaint;\n' + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n{ float mx = max(max(vColor.r, vColor.g), vColor.b), sat = mx - min(min(vColor.r, vColor.g), vColor.b); if (sat > 0.3 && vColor.r > vColor.b) diffuseColor.rgb = uPaint * (0.55 + 0.6 * mx); }'); };
+    m.customProgramCacheKey = () => 'paint'; m.userData.u = u; return m;
+  }
+  Scene.setMachineSkin = function (id, color) {
+    MSKIN[id] = color; const M = Heavy.m[id]; if (!M) return;
+    M.g.traverse(o => { if (!o.isMesh || (o.material !== MAT.paint && !o.material.userData.u)) return; if (!color) o.material = MAT.paint; else if (o.material.userData.u) o.material.userData.u.value.set(color); else o.material = paintMat(color); });
+  };
+
   // ---------- other players (co-op) ----------
   // A simple worker figure: work boots, trousers, a shirt in the player's own colour, a hard hat; the name above.
   const Peers = { m: new Map() };
@@ -1286,7 +1359,15 @@
     c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, 256 + 10, 48);
     const tx = new T.CanvasTexture(cv); tx.colorSpace = T.SRGBColorSpace; return tx;
   }
-  function makePeer(sid, name) {
+  function makePeer(sid, name, lookId) {
+    if (root.Cosmetics && lookId) {   // a player's own costume
+      const lk = Cosmetics.look(lookId), g = Cosmetics.buildAvatar(lk); g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.rotation.y = Math.PI;
+      const wrap = new T.Group(); wrap.add(g);
+      const label = new T.Sprite(new T.SpriteMaterial({ map: nameTex(name, lk.shirt), depthTest: true, transparent: true })); label.scale.set(1.6, 0.3, 1); label.position.set(0, 2.05, 0); wrap.add(label);
+      scene.add(wrap);
+      const arms = g.children.filter(o => o.geometry && o.geometry.type === 'CapsuleGeometry' && Math.abs(o.position.x) > 0.2);
+      return { g: wrap, armL: arms[0] || new T.Object3D(), armR: arms[1] || new T.Object3D(), pos: v3(0, 0, 0), target: v3(0, 0, 0), f: v3(1, 0, 0), walk: 0, t: Math.random() * 6, name, lookId };
+    }
     const hue = (sid * 0.618034) % 1, shirt = new T.Color().setHSL(hue, 0.6, 0.5), g = new T.Group();
     const m = c => new T.MeshStandardMaterial({ color: c, roughness: 0.8 });
     const add = (geo, mat, x, y, z) => { const o = new T.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; g.add(o); return o; };
@@ -1309,13 +1390,15 @@
     const seen = new Set();
     for (const e of list) {
       seen.add(e[0]); let P = Peers.m.get(e[0]);
-      if (!P || P.name !== e[1]) { if (P) dropPeer(P); P = makePeer(e[0], e[1]); Peers.m.set(e[0], P); P.pos.set(e[2], e[3], e[4]); }
+      const lookId = e[11] && e[11].costume;
+      if (!P || P.name !== e[1] || P.lookId !== lookId) { if (P) dropPeer(P); P = makePeer(e[0], e[1], lookId); Peers.m.set(e[0], P); P.pos.set(e[2], e[3], e[4]); }
       P.target.set(e[2], e[3], e[4]); P.f.set(e[5], e[6], e[7]); P.g.visible = !e[10];   // in a machine: the figure is inside it
     }
     for (const [sid, P] of Peers.m) if (!seen.has(sid)) { dropPeer(P); Peers.m.delete(sid); }
   };
   Scene.removePeer = sid => { const P = Peers.m.get(sid); if (P) { dropPeer(P); Peers.m.delete(sid); } };
   Scene.peerCount = () => Peers.m.size;
+  Scene.peers = () => [...Peers.m.entries()].map(([sid, P]) => ({ sid, name: P.name }));
   const pUp = v3(0, 0, 0), pR = v3(0, 0, 0), pF = v3(0, 0, 0), pM = new T.Matrix4();
   Peers.update = function (dt) {
     for (const P of Peers.m.values()) {

@@ -28,3 +28,30 @@ async function verify(ticket) {
   return { steamid: String(p.steamid), owner: String(p.ownersteamid || p.steamid), name, avatar };
 }
 module.exports = { enabled, verify, IDENTITY };
+
+// ---------- Steam microtransactions (gold): InitTxn -> the player approves in the Steam overlay -> FinalizeTxn ----------
+// Docs: partner.steamgames.com/doc/webapi/ISteamMicroTxn. STEAM_TXN_SANDBOX=1 uses the sandbox interface for testing.
+const IFACE = () => process.env.STEAM_TXN_SANDBOX === '1' ? 'ISteamMicroTxnSandbox' : 'ISteamMicroTxn';
+function post(path, form) {
+  return new Promise((res, rej) => {
+    const body = new URLSearchParams(form).toString();
+    const q = https.request({ host: 'partner.steam-api.com', path, method: 'POST', timeout: 10000, headers: { 'content-type': 'application/x-www-form-urlencoded', 'content-length': Buffer.byteLength(body) } },
+      r => { let b = ''; r.on('data', d => b += d); r.on('end', () => { try { res(JSON.parse(b)); } catch (e) { rej(new Error('steam txn: bad answer ' + r.statusCode)); } }); });
+    q.on('timeout', () => q.destroy(new Error('steam txn: timeout'))); q.on('error', rej); q.end(body);
+  });
+}
+async function initTxn(orderid, steamid, pack, language) {
+  const a = await post(`/${IFACE()}/InitTxn/v3/`, { key: KEY, orderid: String(orderid), steamid, appid: APP, itemcount: 1, language: language || 'en', currency: 'USD', usersession: 'client',
+    'itemid[0]': String(pack.id), 'qty[0]': 1, 'amount[0]': String(pack.cents), 'description[0]': pack.gold + ' gold' });
+  if (!a.response || a.response.result !== 'OK') throw new Error((a.response && a.response.error && a.response.error.errordesc) || 'InitTxn failed');
+  return a.response.params;
+}
+async function queryTxn(orderid) {
+  const a = await getJSON(`https://partner.steam-api.com/${IFACE()}/QueryTxn/v3/?key=${KEY}&appid=${APP}&orderid=${orderid}`);
+  return a.response && a.response.result === 'OK' ? a.response.params : null;
+}
+async function finalizeTxn(orderid) {
+  const a = await post(`/${IFACE()}/FinalizeTxn/v2/`, { key: KEY, orderid: String(orderid), appid: APP });
+  return !!(a.response && a.response.result === 'OK');
+}
+module.exports.initTxn = initTxn; module.exports.queryTxn = queryTxn; module.exports.finalizeTxn = finalizeTxn;
